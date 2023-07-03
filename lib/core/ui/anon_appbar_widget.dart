@@ -8,6 +8,8 @@ class AnonAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     return AppBar(
       automaticallyImplyLeading: false,
+      backgroundColor: Colors.transparent,
+      elevation: 0,
       title: Center(child: Image.asset('assets/img/logo.png', height: 40)),
     );
   }
