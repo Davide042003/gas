@@ -6,9 +6,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:gas/styles/colors.dart';
+import 'dart:async';
 
 import '../core/ui/anon_appbar_widget.dart';
 import '../styles/styles_provider.dart';
+
+import 'package:firebase_auth/firebase_auth.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key, required this.step});
@@ -51,6 +54,36 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   void initState() {
     super.initState();
     step = widget.step;
+  }
+
+
+  int countdownSeconds = 60; // Initial countdown time in seconds
+  bool isCountdownActive = false; // Flag to track countdown state
+  Timer? countdownTimer; // Timer object
+
+  void startCountdown() {
+    stopCountdown();
+    isCountdownActive = true;
+    countdownSeconds = 60;
+    countdownTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+      setState(() {
+        if (countdownSeconds > 0) {
+          countdownSeconds--;
+        } else {
+          stopCountdown();
+        }
+      });
+    });
+  }
+
+  void stopCountdown() {
+    if (countdownTimer != null) {
+      countdownTimer!.cancel();
+      countdownTimer = null;
+    }
+    setState(() {
+      isCountdownActive = false;
+    });
   }
 
   Widget _step1() {
@@ -239,12 +272,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 ElevatedButton(
                     style: ref.watch(stylesProvider).button.buttonOnBoarding,
                     onPressed: () {
-                      if (controllers[step].text.isNotEmpty) {
+                      if (controllers[step].text.length == 10) {
                         setState(() {
                           titles[step + 1] =
                               titles[step + 1].replaceAll("#phone", '+${country.phoneCode} ${controllers[step].text}');
                //           ref.refresh(phoneVerificationProvider);
                           step = step + 1;
+
+                          startCountdown();
                         });
                       } else {
                         setState(() {
@@ -342,7 +377,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 SizedBox(height: screenHeight/50),
                 ElevatedButton(
                     style: ref.watch(stylesProvider).button.buttonOnBoarding,
-                    onPressed: () {
+                    onPressed: isCountdownActive ? null : () => {
                       Fluttertoast.showToast(
                           msg: "Use the code: 123456",
                           toastLength: Toast.LENGTH_LONG,
@@ -350,9 +385,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           timeInSecForIosWeb: 1,
                           backgroundColor: Colors.white,
                           textColor: Colors.black,
-                          fontSize: 16.0);
+                          fontSize: 16.0),
+                      startCountdown()
                     },
-                    child: const Text('Send new code'))
+                    child:  Text(isCountdownActive
+                        ? 'Resend in $countdownSeconds seconds' // Show countdown
+                        : 'Resend Code',))
               ],
             )),
       ],
