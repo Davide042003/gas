@@ -24,7 +24,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   List<String> titles = [
     "Enter your Phone Number",
-    "Enter the Code we sent to #phone",
+    "Enter the code we sent to #phone",
     "What's your Name?",
     "#name, choose your Username"
   ];
@@ -66,6 +66,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               Text(
                 titles[step],
                 style: ref.watch(stylesProvider).text.titleOnBoarding,
+                  textAlign: TextAlign.center
               ),
               Padding(
                 padding: EdgeInsets.only(top: screenHeight/100),
@@ -173,7 +174,103 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Widget _step2() {
-    return Column();
+    double screenWidth = MediaQuery.of(context).size.width;
+    double screenHeight = MediaQuery.of(context).size.height;
+
+  /*  ref.listen<PhoneVerificationState>(phoneVerificationProvider,
+            (PhoneVerificationState? oldValue, PhoneVerificationState newValue) {
+          if (newValue.isValid) {
+            const storage = FlutterSecureStorage();
+            storage
+                .write(
+                key: 'user',
+                value: UserModel(name: controllers[0].text, birthdate: controllers[1].text, phone: controllers[2].text)
+                    .toJson()
+                    .toString())
+                .then((_) => context.go('/'));
+          } else if (newValue.hasError) {
+            controllers[step].clear();
+            Fluttertoast.showToast(
+                msg: "Bad verification code, please retry.",
+                toastLength: Toast.LENGTH_SHORT,
+                gravity: ToastGravity.CENTER,
+                timeInSecForIosWeb: 1,
+                backgroundColor: Colors.red,
+                textColor: Colors.white,
+                fontSize: 16.0);
+            ref.refresh(phoneVerificationProvider);
+          }
+        });*/
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(vertical:screenHeight/6, horizontal: 80),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                titles[step],
+                style: ref.watch(stylesProvider).text.titleOnBoarding,
+                  textAlign: TextAlign.center
+              ),
+              TextField(
+                controller: controllers[step],
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                keyboardType: TextInputType.number,
+                maxLength: 6,
+                onChanged: (value) => {
+                  if (value.length == 6)
+                    print("code")
+                //   ref.read(phoneVerificationProvider.notifier).verifyPhoneNumber(controllers[step].text)
+              },
+                textAlign: TextAlign.center,
+                decoration: InputDecoration(
+                  counterText: "",
+                  border: InputBorder.none,
+                  hintText: placeholders[step],
+                  hintStyle: ref.watch(stylesProvider).text.hintOnBoarding.copyWith(fontSize: 45, fontWeight: FontWeight.bold),
+                  errorText: hasError[step] ? 'Value can\'t be empty' : null,
+                ),
+                style: ref.watch(stylesProvider).text.bodyOnBoarding,
+                cursorColor: AppColors.brown,
+              ),
+            ],
+          ),
+        ),
+        Padding(
+            padding: EdgeInsets.symmetric(vertical: 20, horizontal: screenWidth/20),
+            child: Column(
+              children: [
+                TextButton(
+                    onPressed: () {
+                      setState(() {
+                        step = step - 1;
+                      });
+                    },
+                    child: Text(
+                      'Change the phone number',
+                      style: ref.read(stylesProvider).text.policyOnBoardingBold),
+                    ),
+                SizedBox(height: screenHeight/50),
+                ElevatedButton(
+                    style: ref.watch(stylesProvider).button.buttonOnBoarding,
+                    onPressed: () {
+              /*        Fluttertoast.showToast(
+                          msg: "Use the code: 123456",
+                          toastLength: Toast.LENGTH_LONG,
+                          gravity: ToastGravity.CENTER,
+                          timeInSecForIosWeb: 1,
+                          backgroundColor: Colors.white,
+                          textColor: Colors.black,
+                          fontSize: 16.0);*/
+                    },
+                    child: const Text('Send new code'))
+              ],
+            )),
+      ],
+    );
   }
 
   Widget _step3() {
