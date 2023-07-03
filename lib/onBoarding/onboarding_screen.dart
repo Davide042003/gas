@@ -23,17 +23,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Country country = CountryParser.parseCountryCode('FR');
 
   List<String> titles = [
-    "Enter your Phone Number",
-    "Enter the code we sent to #phone",
     "What's your Name?",
-    "#name, choose your Username"
+    "#name, choose a Username",
+    "#name, what's your Phone Number?",
+    "Enter the code we sent to #phone"
   ];
 
   List<String> placeholders = [
-    "Phone Number",
-    "••••••",
     "Your name",
-    "Your username"
+    "Your username",
+    "Phone Number",
+    "••••••"
   ];
 
   List<TextEditingController> controllers = [
@@ -52,6 +52,126 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Widget _step1() {
+    double screenWidth = MediaQuery.of(context).size.width;
+    double screenHeight = MediaQuery.of(context).size.height;
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(vertical:screenHeight/6, horizontal: 80),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                  titles[step],
+                  style: ref.watch(stylesProvider).text.titleOnBoarding,
+                  textAlign: TextAlign.center
+              ),
+              Padding(
+                padding: EdgeInsets.only(top: screenHeight/80),
+                child: TextField(
+                  autocorrect: false,
+                  controller: controllers[step],
+                  keyboardType: TextInputType.name,
+                  maxLength: 10,
+                  textAlign: TextAlign.center,
+                  decoration: InputDecoration(
+                    counterText: "",
+                    border: InputBorder.none,
+                    hintText: placeholders[step],
+                    hintStyle: ref.watch(stylesProvider).text.hintOnBoarding,
+                    errorText: hasError[step] ? 'Value can\'t be empty' : null,
+                  ),
+                  style: ref.watch(stylesProvider).text.bodyOnBoarding,
+                  cursorColor: AppColors.brown,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+            padding: EdgeInsets.symmetric(vertical: 20, horizontal: screenWidth/20),
+            child: ElevatedButton(
+                style: ref.watch(stylesProvider).button.buttonOnBoarding,
+                onPressed: () {
+                  if (controllers[step].text.isNotEmpty) {
+                    setState(() {
+                      titles[step + 1] = titles[step + 1].replaceAll("#name", controllers[step].text);
+                      step = step + 1;
+                    });
+                  } else {
+                    setState(() {
+                      hasError[step] = true;
+                    });
+                  }
+                },
+                child: const Text('Continue'))),
+      ],
+    );
+  }
+
+  Widget _step2() {
+    double screenWidth = MediaQuery.of(context).size.width;
+    double screenHeight = MediaQuery.of(context).size.height;
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(vertical:screenHeight/6),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                  titles[step],
+                  style: ref.watch(stylesProvider).text.titleOnBoarding,
+                  textAlign: TextAlign.center
+              ),
+              Padding(
+                padding: EdgeInsets.only(top: screenHeight/80),
+                child: TextField(
+                  autocorrect: false,
+                  controller: controllers[step],
+                  keyboardType: TextInputType.name,
+                  maxLength: 10,
+                  textAlign: TextAlign.center,
+                  decoration: InputDecoration(
+                    counterText: "",
+                    border: InputBorder.none,
+                    hintText: placeholders[step],
+                    hintStyle: ref.watch(stylesProvider).text.hintOnBoarding,
+                    errorText: hasError[step] ? 'Value can\'t be empty' : null,
+                  ),
+                  style: ref.watch(stylesProvider).text.bodyOnBoarding,
+                  cursorColor: AppColors.brown,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+            padding: EdgeInsets.symmetric(vertical: 20, horizontal: screenWidth/20),
+            child: ElevatedButton(
+                style: ref.watch(stylesProvider).button.buttonOnBoarding,
+                onPressed: () {
+                  if (controllers[step].text.isNotEmpty) {
+                    setState(() {
+                      titles[step + 1] = titles[step + 1].replaceAll("#name", controllers[step].text);
+                      step = step + 1;
+                    });
+                  } else {
+                    setState(() {
+                      hasError[step] = true;
+                    });
+                  }
+                },
+                child: const Text('Continue'))),
+      ],
+    );
+  }
+
+  Widget _step3() {
     double screenWidth = MediaQuery.of(context).size.width;
     double screenHeight = MediaQuery.of(context).size.height;
 
@@ -79,7 +199,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         ElevatedButton(
                             onPressed: () {
                               showCountryPicker(
-                                countryListTheme: CountryListThemeData(backgroundColor: AppColors.white, textStyle: ref.watch(stylesProvider).text.policyOnBoarding.copyWith(color: Colors.black)),
+                                countryListTheme: CountryListThemeData(
+                                    backgroundColor: AppColors.backgroundDefault,
+                                    textStyle: ref.watch(stylesProvider).text.policyOnBoarding,
+                                    padding: null,),
                                 context: context,
                                 showPhoneCode: true, // optional. Shows phone code before the country name.
                                 onSelect: (Country country) {
@@ -173,7 +296,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  Widget _step2() {
+  Widget _step4() {
     double screenWidth = MediaQuery.of(context).size.width;
     double screenHeight = MediaQuery.of(context).size.height;
 
@@ -271,14 +394,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             )),
       ],
     );
-  }
-
-  Widget _step3() {
-    return Column();
-  }
-
-  Widget _step4() {
-    return Column();
   }
 
   @override
