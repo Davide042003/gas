@@ -4,6 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:gas/styles/colors.dart';
 
 import '../core/ui/anon_appbar_widget.dart';
@@ -24,16 +25,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   List<String> titles = [
     "What's your Name?",
-    "#name, choose a Username",
     "#name, what's your Phone Number?",
-    "Enter the code we sent to #phone"
+    "Enter the code we sent to #phone",
+    "#name, choose a Username",
+
   ];
 
   List<String> placeholders = [
     "Your name",
-    "Your username",
     "Phone Number",
-    "••••••"
+    "••••••",
+    "Your username"
   ];
 
   List<TextEditingController> controllers = [
@@ -52,24 +54,34 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Widget _step1() {
-    double screenWidth = MediaQuery.of(context).size.width;
-    double screenHeight = MediaQuery.of(context).size.height;
+    double screenWidth = MediaQuery
+        .of(context)
+        .size
+        .width;
+    double screenHeight = MediaQuery
+        .of(context)
+        .size
+        .height;
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Padding(
-          padding: EdgeInsets.symmetric(vertical:screenHeight/6, horizontal: 80),
+          padding: EdgeInsets.only(
+              top: screenHeight / 6, left: 80, right: 80),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
                   titles[step],
-                  style: ref.watch(stylesProvider).text.titleOnBoarding,
+                  style: ref
+                      .watch(stylesProvider)
+                      .text
+                      .titleOnBoarding,
                   textAlign: TextAlign.center
               ),
               Padding(
-                padding: EdgeInsets.only(top: screenHeight/80),
+                padding: EdgeInsets.only(top: screenHeight / 80),
                 child: TextField(
                   autocorrect: false,
                   controller: controllers[step],
@@ -80,10 +92,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     counterText: "",
                     border: InputBorder.none,
                     hintText: placeholders[step],
-                    hintStyle: ref.watch(stylesProvider).text.hintOnBoarding,
+                    hintStyle: ref
+                        .watch(stylesProvider)
+                        .text
+                        .hintOnBoarding,
                     errorText: hasError[step] ? 'Value can\'t be empty' : null,
                   ),
-                  style: ref.watch(stylesProvider).text.bodyOnBoarding,
+                  style: ref
+                      .watch(stylesProvider)
+                      .text
+                      .bodyOnBoarding,
                   cursorColor: AppColors.brown,
                 ),
               ),
@@ -91,13 +109,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
         ),
         Padding(
-            padding: EdgeInsets.symmetric(vertical: 20, horizontal: screenWidth/20),
+            padding: EdgeInsets.symmetric(
+                vertical: 20, horizontal: screenWidth / 20),
             child: ElevatedButton(
-                style: ref.watch(stylesProvider).button.buttonOnBoarding,
+                style: ref
+                    .watch(stylesProvider)
+                    .button
+                    .buttonOnBoarding,
                 onPressed: () {
                   if (controllers[step].text.isNotEmpty) {
                     setState(() {
-                      titles[step + 1] = titles[step + 1].replaceAll("#name", controllers[step].text);
+                      titles[step + 1] = titles[step + 1].replaceAll(
+                          "#name", controllers[step].text);
                       step = step + 1;
                     });
                   } else {
@@ -119,67 +142,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Padding(
-          padding: EdgeInsets.symmetric(vertical:screenHeight/6),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                  titles[step],
-                  style: ref.watch(stylesProvider).text.titleOnBoarding,
-                  textAlign: TextAlign.center
-              ),
-              Padding(
-                padding: EdgeInsets.only(top: screenHeight/80),
-                child: TextField(
-                  autocorrect: false,
-                  controller: controllers[step],
-                  keyboardType: TextInputType.name,
-                  maxLength: 10,
-                  textAlign: TextAlign.center,
-                  decoration: InputDecoration(
-                    counterText: "",
-                    border: InputBorder.none,
-                    hintText: placeholders[step],
-                    hintStyle: ref.watch(stylesProvider).text.hintOnBoarding,
-                    errorText: hasError[step] ? 'Value can\'t be empty' : null,
-                  ),
-                  style: ref.watch(stylesProvider).text.bodyOnBoarding,
-                  cursorColor: AppColors.brown,
-                ),
-              ),
-            ],
-          ),
-        ),
-        Padding(
-            padding: EdgeInsets.symmetric(vertical: 20, horizontal: screenWidth/20),
-            child: ElevatedButton(
-                style: ref.watch(stylesProvider).button.buttonOnBoarding,
-                onPressed: () {
-                  if (controllers[step].text.isNotEmpty) {
-                    setState(() {
-                      titles[step + 1] = titles[step + 1].replaceAll("#name", controllers[step].text);
-                      step = step + 1;
-                    });
-                  } else {
-                    setState(() {
-                      hasError[step] = true;
-                    });
-                  }
-                },
-                child: const Text('Continue'))),
-      ],
-    );
-  }
-
-  Widget _step3() {
-    double screenWidth = MediaQuery.of(context).size.width;
-    double screenHeight = MediaQuery.of(context).size.height;
-
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Padding(
-          padding: EdgeInsets.symmetric(vertical:screenHeight/6),
+          padding: EdgeInsets.only(top: screenHeight / 6, left: 20, right: 20),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -296,7 +259,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  Widget _step4() {
+  Widget _step3() {
     double screenWidth = MediaQuery.of(context).size.width;
     double screenHeight = MediaQuery.of(context).size.height;
 
@@ -329,7 +292,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Padding(
-          padding: EdgeInsets.symmetric(vertical:screenHeight/6, horizontal: 80),
+          padding: EdgeInsets.only(top: screenHeight / 6, left: 20, right: 20),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -380,14 +343,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 ElevatedButton(
                     style: ref.watch(stylesProvider).button.buttonOnBoarding,
                     onPressed: () {
-              /*        Fluttertoast.showToast(
+                      Fluttertoast.showToast(
                           msg: "Use the code: 123456",
                           toastLength: Toast.LENGTH_LONG,
                           gravity: ToastGravity.CENTER,
                           timeInSecForIosWeb: 1,
                           backgroundColor: Colors.white,
                           textColor: Colors.black,
-                          fontSize: 16.0);*/
+                          fontSize: 16.0);
                     },
                     child: const Text('Send new code'))
               ],
@@ -396,6 +359,67 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
+  Widget _step4() {
+    double screenWidth = MediaQuery.of(context).size.width;
+    double screenHeight = MediaQuery.of(context).size.height;
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Padding(
+          padding: EdgeInsets.only(top: screenHeight / 6, left: 20, right: 20),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                  titles[step],
+                  style: ref.watch(stylesProvider).text.titleOnBoarding,
+                  textAlign: TextAlign.center
+              ),
+              Padding(
+                padding: EdgeInsets.only(top: screenHeight/80),
+                child: TextField(
+                  autocorrect: false,
+                  controller: controllers[step],
+                  keyboardType: TextInputType.name,
+                  maxLength: 10,
+                  textAlign: TextAlign.center,
+                  decoration: InputDecoration(
+                    counterText: "",
+                    border: InputBorder.none,
+                    hintText: placeholders[step],
+                    hintStyle: ref.watch(stylesProvider).text.hintOnBoarding,
+                    errorText: hasError[step] ? 'Value can\'t be empty' : null,
+                  ),
+                  style: ref.watch(stylesProvider).text.bodyOnBoarding,
+                  cursorColor: AppColors.brown,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+            padding: EdgeInsets.symmetric(vertical: 20, horizontal: screenWidth/20),
+            child: ElevatedButton(
+                style: ref.watch(stylesProvider).button.buttonOnBoarding,
+                onPressed: () {
+                  if (controllers[step].text.isNotEmpty) {
+                    setState(() {
+                      titles[step + 1] = titles[step + 1].replaceAll("#name", controllers[step].text);
+                      step = step + 1;
+                    });
+                  } else {
+                    setState(() {
+                      hasError[step] = true;
+                    });
+                  }
+                },
+                child: const Text('Continue'))),
+      ],
+    );
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -403,7 +427,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       child: Scaffold(
         backgroundColor: AppColors.backgroundDefault,
         extendBodyBehindAppBar: true,
-        resizeToAvoidBottomInset: false,
         appBar: const AnonAppBar(),
         body: SafeArea(
             child: Center(
