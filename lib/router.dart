@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
+import 'home_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 final GoRouter router = GoRouter(
   routes: <GoRoute>[
@@ -10,10 +12,11 @@ final GoRouter router = GoRouter(
         path: '/',
         builder: (BuildContext context, GoRouterState state) => const OnboardingScreen(step: 0), // const HomeScreen()
         redirect: (context, state) async {
-          const storage = FlutterSecureStorage();
           FlutterNativeSplash.remove();
-          final user = await storage.read(key: 'user');
-          if (user == null) {
+          User? user = FirebaseAuth.instance.currentUser;
+          if (user != null) {
+            return null;
+          }else {
             return '/onboarding';
           }
           return null;

@@ -13,6 +13,12 @@ import '../styles/styles_provider.dart';
 
 import 'package:gas/core/models/phone_auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:gas/core/models/user_info_service.dart';
+
+import 'package:permission_handler/permission_handler.dart';
+import 'package:contacts_service/contacts_service.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key, required this.step});
@@ -57,11 +63,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     step = widget.step;
   }
 
-
   int countdownSeconds = 45; // Initial countdown time in seconds
   bool isCountdownActive = false; // Flag to track countdown state
   Timer? countdownTimer; // Timer object
   String _verificationId = '';
+  List<Contact> _contacts = [];
 
   void _onCodeSent(String verificationId) {
     setState(() {
@@ -77,6 +83,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     });
   }
 
+  void _onCodeSentReAsked(String verificationId) {
+    setState(() {
+      _verificationId = verificationId;
+
+      startCountdown();
+    });
+  }
+
   void _signInWithCredential() async {
     String otp = controllers[2].text;
     PhoneAuthCredential credential = PhoneAuthProvider.credential(
@@ -84,8 +98,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     try {
       await FirebaseAuth.instance.signInWithCredential(credential);
       print("logged in");
-      // User logged in successfully
-      // You can navigate to the main page or perform additional actions
+
+      titles[step + 1] = titles[step + 1].replaceAll(
+          "#name", controllers[0].text);
+      step = step + 1;
+
     } on FirebaseAuthException catch (e) {
       print("invalid OTP");
       // Invalid OTP
@@ -114,6 +131,31 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
     setState(() {
       isCountdownActive = false;
+    });
+  }
+
+  Future<Iterable<Contact>> getContacts() async {
+    // Request permission to access contacts
+    PermissionStatus permissionStatus = await Permission.contacts.request();
+    print ("ask permission");
+
+    if (permissionStatus.isGranted) {
+      // Permission granted, retrieve contacts
+      Iterable<Contact> contacts = await ContactsService.getContacts();
+      print("l");
+      print(contacts.first );
+      return contacts;
+    } else {
+      print("l-");
+      // Permission denied, handle accordingly (show error message, etc.)
+      return [];
+    }
+  }
+  void contactsToList(){
+    getContacts().then((contacts) {
+      setState(() {
+        _contacts = contacts.toList();
+      });
     });
   }
 
@@ -403,16 +445,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 SizedBox(height: screenHeight/50),
                 ElevatedButton(
                     style: ref.watch(stylesProvider).button.buttonOnBoarding,
-                    onPressed: isCountdownActive ? null : () => {
-                      Fluttertoast.showToast(
-                          msg: "Use the code: 123456",
-                          toastLength: Toast.LENGTH_LONG,
-                          gravity: ToastGravity.CENTER,
-                          timeInSecForIosWeb: 1,
-                          backgroundColor: Colors.white,
-                          textColor: Colors.black,
-                          fontSize: 16.0),
-                      startCountdown()
+                    onPressed: isCountdownActive ? null : ()
+                    {
+                      String phoneNumber = "+" + country.phoneCode + controllers[1].text;
+                      PhoneAuthService().verifyPhoneNumber(
+                          phoneNumber, _onCodeSentReAsked);
                     },
                     child:  Text(isCountdownActive
                         ? 'Resend in $countdownSeconds seconds' // Show countdown
@@ -468,9 +505,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 style: ref.watch(stylesProvider).button.buttonOnBoarding,
                 onPressed: () {
                   if (controllers[step].text.isNotEmpty) {
+                    UserInfoService().storeUserInformation(controllers[0].text, controllers[3].text);
                     setState(() {
-                      titles[step + 1] = titles[step + 1].replaceAll("#name", controllers[step].text);
                       step = step + 1;
+                      contactsToList();
                     });
                   } else {
                     setState(() {
@@ -483,6 +521,45 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
+  Widget _step5() {
+    double screenWidth = MediaQuery.of(context).size.width;
+    double screenHeight = MediaQuery.of(context).size.height;
+
+    return Stack(
+      children: [
+    ListView.builder(
+    itemCount: _contacts.length,
+      itemBuilder: (context, index) {
+        Contact contact = _contacts[index];
+        return ListTile(
+          title: Text(contact.displayName ?? ''),
+        );
+      },
+    ),
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: Padding(
+              padding: EdgeInsets.only(left: screenWidth/20, right: screenWidth/20, bottom: screenHeight/42),
+              child: ElevatedButton(
+                  style: ref.watch(stylesProvider).button.buttonOnBoarding,
+                  onPressed: () {
+                    if (controllers[step].text.isNotEmpty) {
+                      UserInfoService().storeUserInformation(controllers[0].text, controllers[3].text);
+                      setState(() {
+                        step = step + 1;
+                        contactsToList();
+                      });
+                    } else {
+                      setState(() {
+                        hasError[step] = true;
+                      });
+                    }
+                  },
+                  child: const Text('Continue'))),
+        ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -510,6 +587,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         return _step3();
       case 3:
         return _step4();
+      case 4:
+        return _step5();
       default:
         return _step1();
     }
