@@ -38,7 +38,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     "#name, what's your Phone Number?",
     "Enter the code we sent to #phone",
     "#name, choose a Username",
-
   ];
 
   List<String> placeholders = [
@@ -73,10 +72,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     setState(() {
       _verificationId = verificationId;
 
-      titles[step + 1] =
-          titles[step + 1].replaceAll(
-              "#phone", '+${country
-              .phoneCode} ${controllers[step].text}');
+      titles[step + 1] = titles[step + 1].replaceAll(
+          "#phone", '+${country.phoneCode} ${controllers[step].text}');
       //           ref.refresh(phoneVerificationProvider);
       step = step + 1;
       startCountdown();
@@ -99,10 +96,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       await FirebaseAuth.instance.signInWithCredential(credential);
       print("logged in");
 
-      titles[step + 1] = titles[step + 1].replaceAll(
-          "#name", controllers[0].text);
+      titles[step + 1] =
+          titles[step + 1].replaceAll("#name", controllers[0].text);
       step = step + 1;
-
     } on FirebaseAuthException catch (e) {
       print("invalid OTP");
       // Invalid OTP
@@ -137,21 +133,21 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Future<Iterable<Contact>> getContacts() async {
     // Request permission to access contacts
     PermissionStatus permissionStatus = await Permission.contacts.request();
-    print ("ask permission");
+    print("ask permission");
 
     if (permissionStatus.isGranted) {
       // Permission granted, retrieve contacts
       Iterable<Contact> contacts = await ContactsService.getContacts();
-      print("l");
-      print(contacts.first );
+      print("permission contacts given");
       return contacts;
     } else {
-      print("l-");
+      print("no permission contacts");
       // Permission denied, handle accordingly (show error message, etc.)
       return [];
     }
   }
-  void contactsToList(){
+
+  void contactsToList() {
     getContacts().then((contacts) {
       setState(() {
         _contacts = contacts.toList();
@@ -160,32 +156,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Widget _step1() {
-    double screenWidth = MediaQuery
-        .of(context)
-        .size
-        .width;
-    double screenHeight = MediaQuery
-        .of(context)
-        .size
-        .height;
+    double screenWidth = MediaQuery.of(context).size.width;
+    double screenHeight = MediaQuery.of(context).size.height;
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Padding(
-          padding: EdgeInsets.only(
-              top: screenHeight / 6, left: 80, right: 80),
+          padding: EdgeInsets.only(top: screenHeight / 6, left: 80, right: 80),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                  titles[step],
-                  style: ref
-                      .watch(stylesProvider)
-                      .text
-                      .titleOnBoarding,
-                  textAlign: TextAlign.center
-              ),
+              Text(titles[step],
+                  style: ref.watch(stylesProvider).text.titleOnBoarding,
+                  textAlign: TextAlign.center),
               Padding(
                 padding: EdgeInsets.only(top: screenHeight / 80),
                 child: TextField(
@@ -198,16 +182,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     counterText: "",
                     border: InputBorder.none,
                     hintText: placeholders[step],
-                    hintStyle: ref
-                        .watch(stylesProvider)
-                        .text
-                        .hintOnBoarding,
+                    hintStyle: ref.watch(stylesProvider).text.hintOnBoarding,
                     errorText: hasError[step] ? 'Value can\'t be empty' : null,
                   ),
-                  style: ref
-                      .watch(stylesProvider)
-                      .text
-                      .bodyOnBoarding,
+                  style: ref.watch(stylesProvider).text.bodyOnBoarding,
                   cursorColor: AppColors.brown,
                 ),
               ),
@@ -218,15 +196,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             padding: EdgeInsets.symmetric(
                 vertical: 20, horizontal: screenWidth / 20),
             child: ElevatedButton(
-                style: ref
-                    .watch(stylesProvider)
-                    .button
-                    .buttonOnBoarding,
+                style: ref.watch(stylesProvider).button.buttonOnBoarding,
                 onPressed: () {
                   if (controllers[step].text.isNotEmpty) {
                     setState(() {
-                      titles[step + 1] = titles[step + 1].replaceAll(
-                          "#name", controllers[step].text);
+                      titles[step + 1] = titles[step + 1]
+                          .replaceAll("#name", controllers[step].text);
                       step = step + 1;
                     });
                   } else {
@@ -252,13 +227,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                titles[step],
-                style: ref.watch(stylesProvider).text.titleOnBoarding,
-                  textAlign: TextAlign.center
-              ),
+              Text(titles[step],
+                  style: ref.watch(stylesProvider).text.titleOnBoarding,
+                  textAlign: TextAlign.center),
               Padding(
-                padding: EdgeInsets.only(top: screenHeight/100),
+                padding: EdgeInsets.only(top: screenHeight / 100),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -269,11 +242,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                             onPressed: () {
                               showCountryPicker(
                                 countryListTheme: CountryListThemeData(
-                                    backgroundColor: AppColors.backgroundDefault,
-                                    textStyle: ref.watch(stylesProvider).text.policyOnBoarding,
-                                    padding: null,),
+                                  backgroundColor: AppColors.backgroundDefault,
+                                  textStyle: ref
+                                      .watch(stylesProvider)
+                                      .text
+                                      .policyOnBoarding,
+                                  padding: null,
+                                ),
                                 context: context,
-                                showPhoneCode: true, // optional. Shows phone code before the country name.
+                                showPhoneCode:
+                                    true, // optional. Shows phone code before the country name.
                                 onSelect: (Country country) {
                                   setState(() {
                                     this.country = country;
@@ -284,24 +262,31 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                             style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.transparent,
                                 elevation: 0),
-                            child: Text(country.flagEmoji, style: const TextStyle(fontSize: 30), textAlign: TextAlign.right)),
+                            child: Text(country.flagEmoji,
+                                style: const TextStyle(fontSize: 30),
+                                textAlign: TextAlign.right)),
                       ],
                     ),
                     SizedBox(
-                      width: screenWidth/2.2,
+                      width: screenWidth / 2.2,
                       child: TextField(
                         controller: controllers[step],
-                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly
+                        ],
                         keyboardType: TextInputType.number,
                         maxLength: 10,
                         decoration: InputDecoration(
-                          counterText: "",
-                          border: InputBorder.none,
-                          hintText: placeholders[step],
-                          hintStyle: ref.watch(stylesProvider).text.hintOnBoarding,
-                          errorText: hasError[step] ? 'Phone Number Not Valid' : null,
-                          errorStyle: ref.watch(stylesProvider).text.errorOnBoarding
-                        ),
+                            counterText: "",
+                            border: InputBorder.none,
+                            hintText: placeholders[step],
+                            hintStyle:
+                                ref.watch(stylesProvider).text.hintOnBoarding,
+                            errorText: hasError[step]
+                                ? 'Phone Number Not Valid'
+                                : null,
+                            errorStyle:
+                                ref.watch(stylesProvider).text.errorOnBoarding),
                         style: ref.watch(stylesProvider).text.bodyOnBoarding,
                         cursorColor: AppColors.brown,
                       ),
@@ -313,7 +298,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
         ),
         Padding(
-            padding: EdgeInsets.symmetric(vertical: 20, horizontal: screenWidth/20),
+            padding: EdgeInsets.symmetric(
+                vertical: 20, horizontal: screenWidth / 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -322,33 +308,50 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     text: TextSpan(
                         style: ref.watch(stylesProvider).text.policyOnBoarding,
                         children: [
-                          TextSpan(text: 'By tapping "Continue", you agree to our ', style: ref.watch(stylesProvider).text.policyOnBoarding,),
+                          TextSpan(
+                            text: 'By tapping "Continue", you agree to our ',
+                            style:
+                                ref.watch(stylesProvider).text.policyOnBoarding,
+                          ),
                           TextSpan(
                               text: 'Privacy Policy',
-                              style: ref.watch(stylesProvider).text.policyOnBoardingBold,
+                              style: ref
+                                  .watch(stylesProvider)
+                                  .text
+                                  .policyOnBoardingBold,
                               recognizer: TapGestureRecognizer()
                                 ..onTap = () {
                                   print('Privacy Policy');
                                 }),
-                          TextSpan(text: ' and ', style: ref.watch(stylesProvider).text.policyOnBoarding),
+                          TextSpan(
+                              text: ' and ',
+                              style: ref
+                                  .watch(stylesProvider)
+                                  .text
+                                  .policyOnBoarding),
                           TextSpan(
                               text: 'Terms of Service',
-                              style: ref.watch(stylesProvider).text.policyOnBoardingBold,
+                              style: ref
+                                  .watch(stylesProvider)
+                                  .text
+                                  .policyOnBoardingBold,
                               recognizer: TapGestureRecognizer()
                                 ..onTap = () {
                                   print('Terms of Service ');
                                 }),
                         ])),
                 SizedBox(
-                  height: screenHeight/100,
+                  height: screenHeight / 100,
                 ),
                 ElevatedButton(
                     style: ref.watch(stylesProvider).button.buttonOnBoarding,
                     onPressed: () {
                       if (controllers[step].text.length == 10) {
-                        String phoneNumber = "+" + country.phoneCode + controllers[step].text;
+                        String phoneNumber =
+                            "+" + country.phoneCode + controllers[step].text;
                         print(phoneNumber);
-                        PhoneAuthService().verifyPhoneNumber(phoneNumber, _onCodeSent);
+                        PhoneAuthService()
+                            .verifyPhoneNumber(phoneNumber, _onCodeSent);
                       } else {
                         setState(() {
                           hasError[step] = true;
@@ -366,7 +369,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     double screenWidth = MediaQuery.of(context).size.width;
     double screenHeight = MediaQuery.of(context).size.height;
 
-  /*  ref.listen<PhoneVerificationState>(phoneVerificationProvider,
+    /*  ref.listen<PhoneVerificationState>(phoneVerificationProvider,
             (PhoneVerificationState? oldValue, PhoneVerificationState newValue) {
           if (newValue.isValid) {
             const storage = FlutterSecureStorage();
@@ -399,27 +402,28 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                titles[step],
-                style: ref.watch(stylesProvider).text.titleOnBoarding,
-                  textAlign: TextAlign.center
-              ),
+              Text(titles[step],
+                  style: ref.watch(stylesProvider).text.titleOnBoarding,
+                  textAlign: TextAlign.center),
               TextField(
                 controller: controllers[step],
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 keyboardType: TextInputType.number,
                 maxLength: 6,
                 onChanged: (value) => {
-                  if (value.length == 6)
-                    _signInWithCredential()
-                //   ref.read(phoneVerificationProvider.notifier).verifyPhoneNumber(controllers[step].text)
-              },
+                  if (value.length == 6) _signInWithCredential()
+                  //   ref.read(phoneVerificationProvider.notifier).verifyPhoneNumber(controllers[step].text)
+                },
                 textAlign: TextAlign.center,
                 decoration: InputDecoration(
                   counterText: "",
                   border: InputBorder.none,
                   hintText: placeholders[step],
-                  hintStyle: ref.watch(stylesProvider).text.hintOnBoarding.copyWith(fontSize: 45, fontWeight: FontWeight.bold),
+                  hintStyle: ref
+                      .watch(stylesProvider)
+                      .text
+                      .hintOnBoarding
+                      .copyWith(fontSize: 45, fontWeight: FontWeight.bold),
                   errorText: hasError[step] ? 'Value can\'t be empty' : null,
                 ),
                 style: ref.watch(stylesProvider).text.bodyOnBoarding,
@@ -429,31 +433,36 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
         ),
         Padding(
-            padding: EdgeInsets.symmetric(vertical: 20, horizontal: screenWidth/20),
+            padding: EdgeInsets.symmetric(
+                vertical: 20, horizontal: screenWidth / 20),
             child: Column(
               children: [
                 TextButton(
-                    onPressed: () {
-                      setState(() {
-                        step = step - 1;
-                      });
-                    },
-                    child: Text(
-                      'Change the phone number',
-                      style: ref.read(stylesProvider).text.policyOnBoardingBold),
-                    ),
-                SizedBox(height: screenHeight/50),
+                  onPressed: () {
+                    setState(() {
+                      step = step - 1;
+                    });
+                  },
+                  child: Text('Change the phone number',
+                      style:
+                          ref.read(stylesProvider).text.policyOnBoardingBold),
+                ),
+                SizedBox(height: screenHeight / 50),
                 ElevatedButton(
                     style: ref.watch(stylesProvider).button.buttonOnBoarding,
-                    onPressed: isCountdownActive ? null : ()
-                    {
-                      String phoneNumber = "+" + country.phoneCode + controllers[1].text;
-                      PhoneAuthService().verifyPhoneNumber(
-                          phoneNumber, _onCodeSentReAsked);
-                    },
-                    child:  Text(isCountdownActive
-                        ? 'Resend in $countdownSeconds seconds' // Show countdown
-                        : 'Resend Code',))
+                    onPressed: isCountdownActive
+                        ? null
+                        : () {
+                            String phoneNumber =
+                                "+" + country.phoneCode + controllers[1].text;
+                            PhoneAuthService().verifyPhoneNumber(
+                                phoneNumber, _onCodeSentReAsked);
+                          },
+                    child: Text(
+                      isCountdownActive
+                          ? 'Resend in $countdownSeconds seconds' // Show countdown
+                          : 'Resend Code',
+                    ))
               ],
             )),
       ],
@@ -472,13 +481,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                  titles[step],
+              Text(titles[step],
                   style: ref.watch(stylesProvider).text.titleOnBoarding,
-                  textAlign: TextAlign.center
-              ),
+                  textAlign: TextAlign.center),
               Padding(
-                padding: EdgeInsets.only(top: screenHeight/80),
+                padding: EdgeInsets.only(top: screenHeight / 80),
                 child: TextField(
                   autocorrect: false,
                   controller: controllers[step],
@@ -500,12 +507,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
         ),
         Padding(
-            padding: EdgeInsets.symmetric(vertical: 20, horizontal: screenWidth/20),
+            padding: EdgeInsets.symmetric(
+                vertical: 20, horizontal: screenWidth / 20),
             child: ElevatedButton(
                 style: ref.watch(stylesProvider).button.buttonOnBoarding,
                 onPressed: () {
                   if (controllers[step].text.isNotEmpty) {
-                    UserInfoService().storeUserInformation(controllers[0].text, controllers[3].text);
+                    UserInfoService().storeUserInformation(
+                        controllers[0].text, controllers[3].text);
                     setState(() {
                       step = step + 1;
                       contactsToList();
@@ -522,41 +531,94 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Widget _step5() {
-    double screenWidth = MediaQuery.of(context).size.width;
-    double screenHeight = MediaQuery.of(context).size.height;
+    double screenWidth = MediaQuery
+        .of(context)
+        .size
+        .width;
+    double screenHeight = MediaQuery
+        .of(context)
+        .size
+        .height;
 
     return Stack(
       children: [
-    ListView.builder(
-    itemCount: _contacts.length,
-      itemBuilder: (context, index) {
-        Contact contact = _contacts[index];
-        return ListTile(
-          title: Text(contact.displayName ?? ''),
-        );
-      },
-    ),
+        Padding(padding: EdgeInsets.only(top: screenHeight / 14, bottom: screenHeight / 13),
+          child: ListView.builder(
+            itemCount: _contacts.length,
+            itemBuilder: (context, index) {
+              Contact contact = _contacts[index];
+              return Container(
+                padding: EdgeInsets.only(
+                    left: 20, right: 20, top: 13, bottom: 13),
+                child: Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Row(
+                        children: <Widget>[
+                          CircleAvatar(
+                            maxRadius: 38,
+                          ),
+                          SizedBox(width: 16,),
+                          Expanded(
+                            child: Container(
+                              color: Colors.transparent,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  Text(contact.displayName ?? '', style: ref
+                                      .watch(stylesProvider)
+                                      .text
+                                      .contactOnBoarding,),
+                                  SizedBox(height: 6,),
+                                  Text(contact.phones![0].value.toString(),
+                                    style: ref
+                                        .watch(stylesProvider)
+                                        .text
+                                        .numberContactOnBoarding,),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    ElevatedButton(onPressed: (){}, style: ref.watch(stylesProvider).button.buttonInvite, child: const Text("INVITE"),)
+                  ],
+                ),
+              );
+            },
+          ),),
         Align(
           alignment: Alignment.bottomCenter,
           child: Padding(
-              padding: EdgeInsets.only(left: screenWidth/20, right: screenWidth/20, bottom: screenHeight/42),
+              padding: EdgeInsets.only(
+                  left: screenWidth / 20,
+                  right: screenWidth / 20,
+                  bottom: screenHeight / 42),
               child: ElevatedButton(
-                  style: ref.watch(stylesProvider).button.buttonOnBoarding,
-                  onPressed: () {
-                    if (controllers[step].text.isNotEmpty) {
-                      UserInfoService().storeUserInformation(controllers[0].text, controllers[3].text);
-                      setState(() {
-                        step = step + 1;
-                        contactsToList();
-                      });
-                    } else {
-                      setState(() {
-                        hasError[step] = true;
-                      });
-                    }
-                  },
+                  style: ref
+                      .watch(stylesProvider)
+                      .button
+                      .buttonOnBoarding,
+                  onPressed: () {},
                   child: const Text('Continue'))),
         ),
+        Container(height: screenHeight / 18, margin: EdgeInsets.only(left: screenWidth/20),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("CONTACTS USING BEREAL", style: ref
+                  .watch(stylesProvider)
+                  .text
+                  .textInfoContactOnBoarding),
+              Text("INVITE YOUR CONTACTS", style: ref
+                  .watch(stylesProvider)
+                  .text
+                  .textInfoContactOnBoarding),
+            ],
+          ),
+        )
       ],
     );
   }
@@ -571,8 +633,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         appBar: const AnonAppBar(),
         body: SafeArea(
             child: Center(
-              child: _renderStep(),
-            )),
+          child: _renderStep(),
+        )),
       ),
     );
   }

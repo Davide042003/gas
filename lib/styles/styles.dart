@@ -21,6 +21,10 @@ class _Text {
   late final TextStyle policyOnBoardingBold = contentFont.copyWith(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.white, height: 1.2);
   late final TextStyle continueButton = contentFont.copyWith(fontWeight: FontWeight.bold, fontSize: 17, color: AppColors.brownShadow);
   late final TextStyle errorOnBoarding = contentFont.copyWith(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.brown);
+  late final TextStyle contactOnBoarding = contentFont.copyWith(fontWeight: FontWeight.bold, fontSize: 20, color: AppColors.white);
+  late final TextStyle numberContactOnBoarding = contentFont.copyWith(fontWeight: FontWeight.bold, fontSize: 17, color: AppColors.whiteShadow);
+  late final TextStyle textInfoContactOnBoarding = contentFont.copyWith(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.whiteShadow55);
+  late final TextStyle invite = contentFont.copyWith(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.white);
 
 
   late final TextStyle title = titleFont.copyWith(fontWeight: FontWeight.w700, fontSize: 30);
@@ -47,4 +51,11 @@ class _Button {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(45)),
       elevation: 0,
       textStyle: _Text().continueButton);
+
+  final ButtonStyle buttonInvite = ElevatedButton.styleFrom(
+      backgroundColor: AppColors.a,
+      foregroundColor: AppColors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(35)),
+      elevation: 0,
+      textStyle: _Text().invite);
 }
