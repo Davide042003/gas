@@ -542,7 +542,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
     return Stack(
       children: [
-        Padding(padding: EdgeInsets.only(top: screenHeight / 14, bottom: screenHeight / 13),
+        Padding(padding: EdgeInsets.only(top: screenHeight / 14, bottom: screenHeight / 30),
           child: ListView.builder(
             itemCount: _contacts.length,
             itemBuilder: (context, index) {
@@ -582,12 +582,29 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         ],
                       ),
                     ),
-                    ElevatedButton(onPressed: (){}, style: ref.watch(stylesProvider).button.buttonInvite, child: const Text("INVITE"),)
+                    Container(height: screenHeight/30 ,child: ElevatedButton(onPressed: () {}, style: ref
+                        .watch(stylesProvider)
+                        .button
+                        .buttonInvite, child: const Text("INVITE"),))
                   ],
                 ),
               );
             },
           ),),
+        Align(alignment: Alignment.bottomCenter,
+            child: Container(
+                height: screenHeight / 10,
+                decoration: BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.backgroundDefault,
+                      spreadRadius: 5,
+                      blurRadius: 45,
+                      offset: Offset(0, 2), // changes position of shadow
+                    ),
+                  ],
+                )
+            )),
         Align(
           alignment: Alignment.bottomCenter,
           child: Padding(
@@ -603,7 +620,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   onPressed: () {},
                   child: const Text('Continue'))),
         ),
-        Container(height: screenHeight / 18, margin: EdgeInsets.only(left: screenWidth/20),
+        Container(height: screenHeight / 18,
+          margin: EdgeInsets.only(left: screenWidth / 20),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -618,7 +636,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   .textInfoContactOnBoarding),
             ],
           ),
-        )
+        ),
       ],
     );
   }
