@@ -11,6 +11,7 @@ import 'dart:async';
 import '../core/ui/anon_appbar_widget.dart';
 import '../styles/styles_provider.dart';
 
+import 'package:gas/core/models/phone_auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -24,7 +25,7 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   int step = 0;
-  Country country = CountryParser.parseCountryCode('FR');
+  Country country = CountryParser.parseCountryCode('IT');
 
   List<String> titles = [
     "What's your Name?",
@@ -57,14 +58,44 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
 
-  int countdownSeconds = 60; // Initial countdown time in seconds
+  int countdownSeconds = 45; // Initial countdown time in seconds
   bool isCountdownActive = false; // Flag to track countdown state
   Timer? countdownTimer; // Timer object
+  String _verificationId = '';
+
+  void _onCodeSent(String verificationId) {
+    setState(() {
+      _verificationId = verificationId;
+
+      titles[step + 1] =
+          titles[step + 1].replaceAll(
+              "#phone", '+${country
+              .phoneCode} ${controllers[step].text}');
+      //           ref.refresh(phoneVerificationProvider);
+      step = step + 1;
+      startCountdown();
+    });
+  }
+
+  void _signInWithCredential() async {
+    String otp = controllers[2].text;
+    PhoneAuthCredential credential = PhoneAuthProvider.credential(
+        verificationId: _verificationId, smsCode: otp);
+    try {
+      await FirebaseAuth.instance.signInWithCredential(credential);
+      print("logged in");
+      // User logged in successfully
+      // You can navigate to the main page or perform additional actions
+    } on FirebaseAuthException catch (e) {
+      print("invalid OTP");
+      // Invalid OTP
+    }
+  }
 
   void startCountdown() {
     stopCountdown();
     isCountdownActive = true;
-    countdownSeconds = 60;
+    countdownSeconds = 45;
     countdownTimer = Timer.periodic(Duration(seconds: 1), (timer) {
       setState(() {
         if (countdownSeconds > 0) {
@@ -273,14 +304,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     style: ref.watch(stylesProvider).button.buttonOnBoarding,
                     onPressed: () {
                       if (controllers[step].text.length == 10) {
-                        setState(() {
-                          titles[step + 1] =
-                              titles[step + 1].replaceAll("#phone", '+${country.phoneCode} ${controllers[step].text}');
-               //           ref.refresh(phoneVerificationProvider);
-                          step = step + 1;
-
-                          startCountdown();
-                        });
+                        String phoneNumber = "+" + country.phoneCode + controllers[step].text;
+                        print(phoneNumber);
+                        PhoneAuthService().verifyPhoneNumber(phoneNumber, _onCodeSent);
                       } else {
                         setState(() {
                           hasError[step] = true;
@@ -343,7 +369,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 maxLength: 6,
                 onChanged: (value) => {
                   if (value.length == 6)
-                    print("code")
+                    _signInWithCredential()
                 //   ref.read(phoneVerificationProvider.notifier).verifyPhoneNumber(controllers[step].text)
               },
                 textAlign: TextAlign.center,
