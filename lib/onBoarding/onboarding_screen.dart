@@ -57,7 +57,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     step = widget.step;
   }
 
-
   int countdownSeconds = 45; // Initial countdown time in seconds
   bool isCountdownActive = false; // Flag to track countdown state
   Timer? countdownTimer; // Timer object
@@ -73,6 +72,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               .phoneCode} ${controllers[step].text}');
       //           ref.refresh(phoneVerificationProvider);
       step = step + 1;
+      startCountdown();
+    });
+  }
+
+  void _onCodeSentReAsked(String verificationId) {
+    setState(() {
+      _verificationId = verificationId;
+
       startCountdown();
     });
   }
@@ -403,16 +410,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 SizedBox(height: screenHeight/50),
                 ElevatedButton(
                     style: ref.watch(stylesProvider).button.buttonOnBoarding,
-                    onPressed: isCountdownActive ? null : () => {
-                      Fluttertoast.showToast(
-                          msg: "Use the code: 123456",
-                          toastLength: Toast.LENGTH_LONG,
-                          gravity: ToastGravity.CENTER,
-                          timeInSecForIosWeb: 1,
-                          backgroundColor: Colors.white,
-                          textColor: Colors.black,
-                          fontSize: 16.0),
-                      startCountdown()
+                    onPressed: isCountdownActive ? null : ()
+                    {
+                      String phoneNumber = "+" + country.phoneCode + controllers[1].text;
+                      PhoneAuthService().verifyPhoneNumber(
+                          phoneNumber, _onCodeSentReAsked);
                     },
                     child:  Text(isCountdownActive
                         ? 'Resend in $countdownSeconds seconds' // Show countdown
