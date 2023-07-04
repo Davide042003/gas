@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "397855418130",
+    "project_id": "gasapp-fc19d",
+    "storage_bucket": "gasapp-fc19d.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:397855418130:android:c3b0dcea30920c9aad75cb",
+        "android_client_info": {
+          "package_name": "com.davide.gas.gas"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "397855418130-hl56aqbvs0lgansq7otjiscbqc9dk6rs.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAIUSSlRMQHNaQV9WclbfI0BuKLnh18hF8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "397855418130-hl56aqbvs0lgansq7otjiscbqc9dk6rs.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
