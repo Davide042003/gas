@@ -1,8 +1,24 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'user_model.dart';
 
 class UserInfoService {
+
+  Future<void> storeUserInfo(UserModel user) async {
+    try {
+      // Assuming you have a 'users' collection in your Cloud Firestore
+      await FirebaseFirestore.instance.collection('users').doc(user.id).set(
+        user.toJson(), // Convert the UserModel object to a JSON representation
+      );
+      print('User information stored/updated successfully!');
+
+    } catch (error) {
+      // Handle any errors that occur during the process
+      print('Error storing user information: $error');
+    }
+  }
+
 
   Future<void> storeUserInformation(String name, String username) async {
     try {
@@ -66,6 +82,5 @@ class UserInfoService {
       return null;
     }
   }
-
 
 }

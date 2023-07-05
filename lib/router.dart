@@ -10,7 +10,7 @@ final GoRouter router = GoRouter(
   routes: <GoRoute>[
     GoRoute(
         path: '/',
-        builder: (BuildContext context, GoRouterState state) =>HomeScreen(), // const HomeScreen()
+        builder: (BuildContext context, GoRouterState state) =>const OnboardingScreen(step: 0), // const HomeScreen()
         redirect: (context, state) async {
           FlutterNativeSplash.remove();
           User? user = FirebaseAuth.instance.currentUser;

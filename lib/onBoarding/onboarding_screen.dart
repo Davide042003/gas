@@ -19,6 +19,7 @@ import 'package:gas/core/models/user_info_service.dart';
 
 import 'package:permission_handler/permission_handler.dart';
 import 'package:contacts_service/contacts_service.dart';
+import 'package:gas/core/models/user_model.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key, required this.step});
@@ -67,6 +68,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Timer? countdownTimer; // Timer object
   String _verificationId = '';
   List<Contact> _contacts = [];
+  String phoneNumber = '';
 
   void _onCodeSent(String verificationId) {
     setState(() {
@@ -347,8 +349,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     style: ref.watch(stylesProvider).button.buttonOnBoarding,
                     onPressed: () {
                       if (controllers[step].text.length == 10) {
-                        String phoneNumber =
-                            "+" + country.phoneCode + controllers[step].text;
+                        phoneNumber = "+" + country.phoneCode + controllers[step].text;
                         print(phoneNumber);
                         PhoneAuthService()
                             .verifyPhoneNumber(phoneNumber, _onCodeSent);
@@ -513,8 +514,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 style: ref.watch(stylesProvider).button.buttonOnBoarding,
                 onPressed: () {
                   if (controllers[step].text.isNotEmpty) {
-                    UserInfoService().storeUserInformation(
-                        controllers[0].text, controllers[3].text);
+                    String? userId = FirebaseAuth.instance.currentUser?.uid;
+                    if (userId != null) {
+                      UserInfoService().storeUserInfo(
+                        UserModel(
+                          id: userId,
+                          name: controllers[0].text,
+                          username: controllers[3].text,
+                          phoneNumber: phoneNumber,
+                          timestamp: Timestamp.now(),
+                        ),
+                      );
+                    } else {
+                      print('User not logged in.');
+                    }
                     setState(() {
                       step = step + 1;
                       contactsToList();
