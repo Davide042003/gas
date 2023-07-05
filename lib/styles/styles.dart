@@ -26,6 +26,7 @@ class _Text {
   late final TextStyle textInfoContactOnBoarding = contentFont.copyWith(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.whiteShadow55);
   late final TextStyle invite = contentFont.copyWith(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.white);
   late final TextStyle appBarHome = contentFont.copyWith(fontWeight: FontWeight.bold, fontSize: 22, color: AppColors.whiteShadow55);
+  late final TextStyle skipHome = contentFont.copyWith(fontWeight: FontWeight.w200, fontSize: 20, color: AppColors.white);
 
 
   late final TextStyle title = titleFont.copyWith(fontWeight: FontWeight.w700, fontSize: 30);

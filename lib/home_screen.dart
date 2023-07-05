@@ -71,6 +71,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           .text
                           .numberContactOnBoarding)),
                     ],))),
+              Spacer(),
+              Padding(padding: EdgeInsets.symmetric(horizontal: 20),
+                  child: Container(child: Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Column(
+                        children: [
+                          IconButton(onPressed: () {},
+                              icon: Icon(Ionicons.eye, color: AppColors.white,
+                                size: 32,)),
+                          Text("ANONYMOUS", style: ref.watch(stylesProvider).text.invite)
+                        ],
+                      ),
+                      Spacer(),
+                      IconButton(onPressed: () {},
+                          icon: Icon(Ionicons.play, color: AppColors.white,
+                            size: 28,)),
+                      Text("Skip", style: ref.watch(stylesProvider).text.skipHome,)
+                    ],))),
             ]
         ),
       ),
