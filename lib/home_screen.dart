@@ -4,6 +4,7 @@ import 'package:gas/core/ui/anon_appbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:gas/styles/styles_provider.dart';
 import 'package:ionicons/ionicons.dart';
+import 'package:go_router/go_router.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   @override
@@ -11,6 +12,16 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+
+  Color color = AppColors.backgroundDefault;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reset the background color every time the page is displayed
+    color = AppColors.backgroundDefault; // Set the initial background color
+  }
+
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery
@@ -23,7 +34,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         .height;
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundDefault,
+      backgroundColor: color,
       body: SafeArea(
         child: Column(
             children: [
@@ -38,7 +49,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   Container(margin: EdgeInsets.only(left: 25),
                     child: Image.asset('assets/img/logo.png', height: 40),
                     width: 100,),
-                  TextButton(onPressed: () {}, child: Text("Profile", style: ref
+                  TextButton(onPressed: () {
+                    context.push('/profile');
+                  }, child: Text("Profile", style: ref
                       .watch(stylesProvider)
                       .text
                       .appBarHome)),
@@ -53,12 +66,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               Padding(padding: EdgeInsets.symmetric(horizontal: 12),
                   child: Container(child: Row(
                     mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      IconButton(onPressed: () {},
-                          icon: Icon(Ionicons.people, color: AppColors.white,
-                            size: 28,)),
-                      SizedBox(width: screenWidth/9,),
+                      InkWell(
+                        child: Icon(
+                          Icons.people_rounded,
+                          size: 32,
+                          color: AppColors.white,
+                        ),
+                        onTap: () {},
+                      ),
+                      SizedBox(width: screenWidth / 7,),
                       TextButton(
                           onPressed: () {}, child: Text("My Friends", style: ref
                           .watch(stylesProvider)
@@ -79,17 +97,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     children: [
                       Column(
                         children: [
-                          IconButton(onPressed: () {},
-                              icon: Icon(Ionicons.eye, color: AppColors.white,
-                                size: 32,)),
-                          Text("ANONYMOUS", style: ref.watch(stylesProvider).text.invite)
+                          InkWell(
+                            child: Icon(
+                              Icons.remove_red_eye,
+                              size: 35,
+                              color: AppColors.white,
+                            ),
+                            onTap: () {
+                              context.pop();
+                            },
+                          ),
+                          SizedBox(height: screenHeight / 200,),
+                          Text("ANONYMOUS", style: ref
+                              .watch(stylesProvider)
+                              .text
+                              .invite)
                         ],
                       ),
                       Spacer(),
-                      IconButton(onPressed: () {},
+                      ElevatedButton.icon(
                           icon: Icon(Ionicons.play, color: AppColors.white,
-                            size: 28,)),
-                      Text("Skip", style: ref.watch(stylesProvider).text.skipHome,)
+                            size: 28,),
+                          onPressed: () {},
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              foregroundColor: Colors.transparent,
+                              elevation: 0,),
+                          label: Text("Skip", style: ref
+                              .watch(stylesProvider)
+                              .text
+                              .skipHome)),
                     ],))),
             ]
         ),
