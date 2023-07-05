@@ -20,7 +20,6 @@ final GoRouter router = GoRouter(
           } else {
             return '/onboarding';
           }
-          return null;
         },
         routes: <GoRoute>[
           GoRoute(
@@ -60,6 +59,47 @@ final GoRouter router = GoRouter(
                     );
                   });
             },
+            routes: <GoRoute>[
+              GoRoute(
+                  path: 'editProfile',
+                  pageBuilder: (context, state) {
+                    return CustomTransitionPage(
+                        transitionDuration: const Duration(milliseconds: 200),
+                        child: ProfileScreen(),
+                        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                          return Stack(
+                            children: <Widget>[
+                              SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: const Offset(1.0, 0.0),
+                                  end: const Offset(0.0, 0.0),
+                                ).animate(
+                                  CurvedAnimation(
+                                    parent: animation,
+                                    curve: Curves.linear,
+                                  ),
+                                ),
+                                child: child,
+                              ),
+                              SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: const Offset(0.0, 0.0),
+                                  end: const Offset(-1.0, 0.0),
+                                ).animate(
+                                  CurvedAnimation(
+                                    parent: animation,
+                                    curve: Curves.linear,
+                                  ),
+                                ),
+                                child: ProfileScreen(),
+                              )
+                            ],
+                          );
+                        });
+                  },
+              )
+            ]
+
           )
         ]),
     GoRoute(

@@ -5,6 +5,33 @@ import 'user_model.dart';
 
 class UserInfoService {
 
+  Future<UserModel?> fetchProfileData() async {
+    try {
+      // Get the current user's UID
+      String uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+
+      // Create a document reference for the user
+      DocumentReference userRef = FirebaseFirestore.instance.collection('users').doc(uid);
+
+      // Retrieve the document snapshot
+      DocumentSnapshot userSnapshot = await userRef.get();
+
+      // Check if the document exists
+      if (userSnapshot.exists) {
+        // Convert the document data to a UserModel object
+        UserModel user = UserModel.fromData(userSnapshot.data() as Map<String, dynamic>);
+        return user;
+      } else {
+        // Document doesn't exist
+        return null;
+      }
+    } catch (e) {
+      // Error handling
+      print('Error fetching user profile data: $e');
+      return null;
+    }
+  }
+
   Future<void> storeUserInfo(UserModel user) async {
     try {
       // Assuming you have a 'users' collection in your Cloud Firestore
@@ -18,6 +45,7 @@ class UserInfoService {
       print('Error storing user information: $error');
     }
   }
+
 
 
   Future<void> storeUserInformation(String name, String username) async {

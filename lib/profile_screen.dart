@@ -1,10 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gas/styles/colors.dart';
-import 'package:gas/core/ui/anon_appbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:gas/styles/styles_provider.dart';
-import 'package:ionicons/ionicons.dart';
 import 'package:go_router/go_router.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'core/models/user_model.dart';
+import 'core/models/user_info_service.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   @override
@@ -12,14 +13,24 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-
-  Color color = AppColors.backgroundDefault;
+  UserModel? userProfile;
+  late UserInfoService userInfoService;
 
   @override
+  void initState() {
+    super.initState();
+    userInfoService = UserInfoService();
+    fetchProfileData();
+  }
+
+  Future<void> fetchProfileData() async {
+    userProfile = await userInfoService.fetchProfileData();
+    setState(() {});
+  }
+
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Reset the background color every time the page is displayed
-    color = AppColors.backgroundDefault; // Set the initial background color
+    fetchProfileData();
   }
 
   @override
@@ -34,7 +45,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         .height;
 
     return Scaffold(
-      backgroundColor: color,
+      backgroundColor: AppColors.backgroundDefault,
       body: SafeArea(
         child: Column(
             children: [
@@ -59,7 +70,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       size: 35,
                       color: AppColors.white,
                     ),
-                    onTap: () {context.pop();},
+                    onTap: () {},
                   ),
                 ],)),
               SizedBox(height: 10,),
@@ -70,6 +81,37 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   height: screenHeight / 400,
                   width: screenWidth / 3,))
               ],),
+              SizedBox(height: 30),
+              Stack(
+                alignment: Alignment.topCenter,
+                children: [
+                  Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 75,
+                        backgroundImage: null,
+                      ),
+                      SizedBox(height: 20),
+                      Text(
+                        userProfile?.name ?? '',
+                        style: ref.watch(stylesProvider).text.titleOnBoarding.copyWith(fontSize: 28),
+                      ),
+                      SizedBox(height: 5),
+                      Text(
+                        userProfile?.username ?? '',
+                        style: ref.watch(stylesProvider).text.titleOnBoarding.copyWith(fontSize: 17),
+                      ),
+                    ],
+                  ),
+                  GestureDetector(behavior: HitTestBehavior.translucent, child: Container(width:screenWidth/1.5, height: screenHeight/3.5,), onTap: () {context.push("/profile/editProfile");},),
+                ],
+              ),
+              SizedBox(height: 50),
+              Align(alignment: Alignment.centerLeft, child: Padding(padding:EdgeInsets.only(left: 20), child: Text(
+                "Your Pools",
+                textAlign: TextAlign.left,
+                style: ref.watch(stylesProvider).text.titleOnBoarding.copyWith(fontSize: 28),
+              ),))
             ]
         ),
       ),
