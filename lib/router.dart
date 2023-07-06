@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'home_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'profile_screen.dart';
+import 'profile_edit_screen.dart';
 
 final GoRouter router = GoRouter(
   routes: <GoRoute>[
@@ -65,7 +66,7 @@ final GoRouter router = GoRouter(
                   pageBuilder: (context, state) {
                     return CustomTransitionPage(
                         transitionDuration: const Duration(milliseconds: 200),
-                        child: ProfileScreen(),
+                        child: EditProfileScreen(),
                         transitionsBuilder: (context, animation, secondaryAnimation, child) {
                           return Stack(
                             children: <Widget>[

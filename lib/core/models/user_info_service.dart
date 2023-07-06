@@ -5,7 +5,34 @@ import 'user_model.dart';
 
 class UserInfoService {
 
-  Future<UserModel?> fetchProfileData() async {
+  Stream<UserModel?> fetchProfileData() {
+    try {
+      // Get the current user's UID4
+      String uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+
+      // Create a document reference for the user
+      DocumentReference userRef = FirebaseFirestore.instance.collection('users').doc(uid);
+
+      // Return the snapshot changes as a stream
+      return userRef.snapshots().map((snapshot) {
+        if (snapshot.exists) {
+          // Convert the document data to a UserModel object
+          UserModel user = UserModel.fromData(snapshot.data() as Map<String, dynamic>);
+          print('FETCHED user profile data');
+          return user;
+        } else {
+          // Document doesn't exist
+          return null;
+        }
+      });
+    } catch (e) {
+      // Error handling
+      print('Error fetching user profile data: $e');
+      return Stream.error('Error fetching user profile data');
+    }
+  }
+
+  Future<void> updateUser(UserModel updatedUser, Function? onCompleted) async {
     try {
       // Get the current user's UID
       String uid = FirebaseAuth.instance.currentUser?.uid ?? '';
@@ -13,22 +40,18 @@ class UserInfoService {
       // Create a document reference for the user
       DocumentReference userRef = FirebaseFirestore.instance.collection('users').doc(uid);
 
-      // Retrieve the document snapshot
-      DocumentSnapshot userSnapshot = await userRef.get();
+      // Update the user document with the new data
+      await userRef.update(updatedUser.toJson());
 
-      // Check if the document exists
-      if (userSnapshot.exists) {
-        // Convert the document data to a UserModel object
-        UserModel user = UserModel.fromData(userSnapshot.data() as Map<String, dynamic>);
-        return user;
-      } else {
-        // Document doesn't exist
-        return null;
+      print('UPDATED user profile data');
+
+      if (onCompleted != null) {
+        onCompleted();
       }
     } catch (e) {
       // Error handling
-      print('Error fetching user profile data: $e');
-      return null;
+      print('Error updating user profile data: $e');
+      throw Exception('Error updating user profile data');
     }
   }
 
