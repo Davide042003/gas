@@ -81,14 +81,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             CupertinoActionSheetAction(
               onPressed: () {
                 context.pop();
-                _pickImage(ImageSource.gallery);
+                _pickImage(ImageSource.gallery, imageUrl);
               },
               child: Text('Choose from Gallery'),
             ),
             CupertinoActionSheetAction(
               onPressed: () {
                 context.pop();
-                _pickImage(ImageSource.camera);
+                _pickImage(ImageSource.camera, imageUrl);
               },
               child: Text('Take a Photo'),
             ),
@@ -111,7 +111,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     );
   }
 
-  Future<void> _pickImage(ImageSource source) async {
+  Future<void> _pickImage(ImageSource source, String? imageUrl) async {
     final picker = ImagePicker();
 
     final XFile? pickedFile = await picker.pickImage(source: source, preferredCameraDevice: CameraDevice.front, imageQuality: 2);
@@ -119,6 +119,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     if (pickedFile != null) {
       print("got image");
       // Handle the selected image file
+      //**-- delete profile
+      imageUrl != "" ? userInfoService.deleteImageProfile(imageUrl!) : null;
+
       UpdateProfilePic(File(pickedFile.path));
 
       // You can pass the imageFile to the next step or store it in a variable or state
