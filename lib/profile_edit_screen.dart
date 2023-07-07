@@ -6,6 +6,9 @@ import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'core/models/user_model.dart';
 import 'core/models/user_info_service.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   @override
@@ -23,8 +26,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     TextEditingController(),
   ];
 
-  List<bool> hasError = [false, false, false];
+  bool firstOpen = true;
 
+  List<bool> hasError = [false, false, false];
 
   @override
   void initState() {
@@ -37,12 +41,91 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     super.didChangeDependencies();
     userProfileStream = userInfoService.fetchProfileData();
     showWait = false;
+    firstOpen = true;
   }
 
-  void UpdateData() {
+  Future<void> UpdateData() async {
     userInfoService.updateUser(UserModel(name: controllers[0].text,
-        username: controllers[1].text,
-        bio: controllers[2].text), () {context.pop();    showWait = false;});
+      username: controllers[1].text,
+      bio: controllers[2].text,
+    ), () {
+          context.pop();
+          showWait = false;
+        });
+  }
+
+  Future<void> UpdateProfilePic(File? imageGot) async {
+    userInfoService.updateUser(UserModel(
+      imageUrl: imageGot != null ? await userInfoService.saveImage(
+          imageGot!) : null,
+    ), () {
+    });
+  }
+
+  void DeleteProfilePic() {
+    userInfoService.updateUser(UserModel(
+      imageUrl: "",
+    ), () {
+      print("changed");
+    });
+  }
+
+  void _showImagePicker(BuildContext context, String? imageUrl) {
+    print("open action sheet photo profile");
+    showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) {
+        return CupertinoActionSheet(
+          title: Text('Select Photo'),
+          actions: [
+            CupertinoActionSheetAction(
+              onPressed: () {
+                context.pop();
+                _pickImage(ImageSource.gallery);
+              },
+              child: Text('Choose from Gallery'),
+            ),
+            CupertinoActionSheetAction(
+              onPressed: () {
+                context.pop();
+                _pickImage(ImageSource.camera);
+              },
+              child: Text('Take a Photo'),
+            ),
+            imageUrl != "" ? CupertinoActionSheetAction(onPressed: () {
+              context.pop();
+              userInfoService.deleteImageProfile(imageUrl!);
+              DeleteProfilePic();
+              },
+              child: Text('Delete Profile Photo', style: TextStyle(color: Colors.red)),
+            ) : SizedBox(),
+          ],
+          cancelButton: CupertinoActionSheetAction(
+            onPressed: () {
+              context.pop();
+            },
+            child: Text('Cancel'),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    final picker = ImagePicker();
+
+    final XFile? pickedFile = await picker.pickImage(source: source, preferredCameraDevice: CameraDevice.front, imageQuality: 2);
+
+    if (pickedFile != null) {
+      print("got image");
+      // Handle the selected image file
+      UpdateProfilePic(File(pickedFile.path));
+
+      // You can pass the imageFile to the next step or store it in a variable or state
+    } else {
+      // User canceled the image selection
+      print("no image");
+    }
   }
 
   @override
@@ -64,10 +147,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               builder: (context, snapshot) {
                 if (snapshot.hasData) {
                   UserModel? userProfile = snapshot.data;
-                  controllers[0] = new TextEditingController(text: userProfile?.name ?? '');
-                  controllers[1] = new TextEditingController(text: userProfile?.username ?? '');
-                  controllers[2] = new TextEditingController(text: userProfile?.bio ?? '');
+                  if(firstOpen) {
+                    controllers[0] = new TextEditingController(text: userProfile?.name ?? '');
+                    controllers[1] = new TextEditingController(text: userProfile?.username ?? '');
+                    controllers[2] = new TextEditingController(text: userProfile?.bio ?? '');
 
+                    firstOpen = false;
+                  }
+                  
                   return Column(
                       children: [
                         Padding(padding: EdgeInsets.symmetric(horizontal: 12),
@@ -127,11 +214,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                   CircleAvatar(
                                     radius: 70,
                                     backgroundImage: userProfile?.imageUrl !=
-                                        null
-                                        ? NetworkImage(
-                                        userProfile!.imageUrl ?? '')
+                                        ""
+                                        ? NetworkImage(userProfile!.imageUrl!)
                                         : null,
-                                    child: userProfile?.imageUrl == null
+                                    child: userProfile?.imageUrl == ""
                                         ? Text(userProfile?.name != null
                                         ? userProfile!.name![0]
                                         : '', style: ref
@@ -143,9 +229,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                   ),
                                   Container(margin: EdgeInsets.only(
                                       top: 105, left: 100),
-                                    width: 30,
-                                    height: 30,
-                                    child: Icon(Icons.add_a_photo_rounded, size: 30, color: AppColors.white,))
+                                      width: 30,
+                                      height: 30,
+                                      child: Icon(Icons.add_a_photo_rounded, size: 30, color: AppColors.white,)),
                                 ],),
                                 SizedBox(height: 40),
                                 Container(
@@ -282,7 +368,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                 color: Colors.transparent,
                                 width: screenWidth / 2,
                                 height: screenHeight / 5.5,),
-                              onTap: () {},),
+                              onTap: () {_showImagePicker(context, userProfile?.imageUrl);},),
                           ],
                         ),
                       ]

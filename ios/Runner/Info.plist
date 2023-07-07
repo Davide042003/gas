@@ -4,6 +4,10 @@
 <dict>
     <key>NSContactsUsageDescription</key>
     <string>Let's Connect With Your Friends!</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Get photos from the gallery!</string>
+    <key>NSCameraUsageDescription</key>
+    <string>Open camera to shoot a photo!</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>

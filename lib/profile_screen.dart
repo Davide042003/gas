@@ -99,12 +99,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               children: [
                                 CircleAvatar(
                                   radius: 70,
-                                  backgroundImage: userProfile?.imageUrl != null
+                                  backgroundImage: userProfile?.imageUrl != ""
                                       ? NetworkImage(
                                       userProfile!.imageUrl ?? '')
                                       : null,
-                                  child: userProfile?.imageUrl == null
-                                      ? Text(userProfile?.name != null
+                                  child: userProfile?.imageUrl == ""
+                                      ? Text(userProfile?.name != ""
                                       ? userProfile!.name![0]
                                       : '', style: ref
                                       .watch(stylesProvider)

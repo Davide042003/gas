@@ -522,6 +522,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           name: controllers[0].text,
                           username: controllers[3].text,
                           phoneNumber: phoneNumber,
+                          imageUrl: "",
                           timestamp: Timestamp.now(),
                         ),
                       );
