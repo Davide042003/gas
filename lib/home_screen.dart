@@ -74,7 +74,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           size: 32,
                           color: AppColors.white,
                         ),
-                        onTap: () {},
+                        onTap: () {context.push("/contact");},
                       ),
                       SizedBox(width: screenWidth / 7,),
                       TextButton(

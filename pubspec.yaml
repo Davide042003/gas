@@ -50,6 +50,7 @@ dependencies:
   ionicons: ^0.2.2
   image_picker: ^1.0.0
   firebase_storage: ^11.2.4
+  animate_do: ^3.0.2
 
 dev_dependencies:
   flutter_test:

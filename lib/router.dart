@@ -7,6 +7,7 @@ import 'home_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'profile_screen.dart';
 import 'profile_edit_screen.dart';
+import 'friends_screen.dart';
 
 final GoRouter router = GoRouter(
   routes: <GoRoute>[
@@ -23,6 +24,44 @@ final GoRouter router = GoRouter(
           }
         },
         routes: <GoRoute>[
+          GoRoute(
+            path: 'contact',
+            pageBuilder: (context, state) {
+              return CustomTransitionPage(
+                  transitionDuration: const Duration(milliseconds: 200),
+                  child: FriendsScreen(),
+                  transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                    return Stack(
+                      children: <Widget>[
+                        SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(-1.0, 0.0),
+                            end: const Offset(0.0, 0.0),
+                          ).animate(
+                            CurvedAnimation(
+                              parent: animation,
+                              curve: Curves.linear,
+                            ),
+                          ),
+                          child: child,
+                        ),
+                        SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0.0, 0.0),
+                            end: const Offset(1.0, 0.0),
+                          ).animate(
+                            CurvedAnimation(
+                              parent: animation,
+                              curve: Curves.linear,
+                            ),
+                          ),
+                          child: HomeScreen(),
+                        )
+                      ],
+                    );
+                  });
+            },
+          ),
           GoRoute(
             path: 'profile',
             pageBuilder: (context, state) {
