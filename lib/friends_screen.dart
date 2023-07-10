@@ -306,121 +306,162 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
           return Text('Error: ${snapshot.error}');
         } else {
           final registeredContacts = snapshot.data ?? [];
-          return Column(
-            children: [
-              Text('ADD YOUR CONTACTS',),
-              AnimatedList(
-                shrinkWrap: true,
-                initialItemCount: registeredContacts.length,
-                itemBuilder: (context, index, animation) {
-                  final contact = registeredContacts[index];
-                  final phoneNumber = contact.phones?.firstOrNull?.value;
 
-                  return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                    future: phoneNumber != null ? getUserData(phoneNumber) : null,
-                    builder: (context, userSnapshot) {
-                      if (userSnapshot.connectionState == ConnectionState.waiting) {
-                        return CircularProgressIndicator();
-                      } else if (userSnapshot.hasError) {
-                        return Text('Error: ${userSnapshot.error}');
-                      } else {
-                        final userData = userSnapshot.data?.data();
-                        if (userData != null) {
-                          final name = userData['name'];
-                          final username = userData['username'];
-                          final profilePicture = userData['imageUrl'];
+          if (registeredContacts.length > 0) {
+            return ListView(
+              children: [
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'ADD YOUR CONTACTS',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                AnimatedList(
+                  shrinkWrap: true,
+                  physics: NeverScrollableScrollPhysics(),
+                  // Disable list scrolling
+                  initialItemCount: registeredContacts.length,
+                  itemBuilder: (context, index, animation) {
+                    final contact = registeredContacts[index];
+                    final phoneNumber = contact.phones?.firstOrNull?.value;
 
-                          return SizeTransition(
-                            sizeFactor: animation,
-                            child: Container(
-                              padding: EdgeInsets.only(
-                                  left: 20, right: 20, top: 13, bottom: 13),
-                              child: Row(
-                                children: <Widget>[
-                                  Expanded(
-                                    child: Row(
-                                      children: <Widget>[
-                                        CircleAvatar(
-                                          maxRadius: 38,
-                                          backgroundImage: profilePicture != "" ? NetworkImage(profilePicture) : null,
-                                          child: profilePicture == ""
-                                              ? Text(name != ""
-                                              ? name[0]
-                                              : '', style: ref
-                                              .watch(stylesProvider)
-                                              .text
-                                              .titleOnBoarding
-                                              .copyWith(fontSize: 26),)
-                                              : null,
-                                        ),
-                                        SizedBox(width: 16,),
-                                        Expanded(
-                                          child: Container(
-                                            color: Colors.transparent,
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: <Widget>[
-                                                Text(name ?? '', style: ref
-                                                    .watch(stylesProvider)
-                                                    .text
-                                                    .contactOnBoarding,),
-                                                SizedBox(height: 6,),
-                                                Text(username ?? '',
-                                                  style: ref
-                                                      .watch(stylesProvider)
-                                                      .text
-                                                      .numberContactOnBoarding,),
-                                                SizedBox(height: 6,),
-                                                Row(
-                                                  children: [
-                                                    Icon(Icons.account_circle_rounded, size: 25),
-                                                    SizedBox(width: 5,),
-                                                    Text(contact.displayName ?? '',
-                                                    style: ref
+                    return FutureBuilder<
+                        DocumentSnapshot<Map<String, dynamic>>>(
+                      future: phoneNumber != null
+                          ? getUserData(phoneNumber)
+                          : null,
+                      builder: (context, userSnapshot) {
+                        if (userSnapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return CircularProgressIndicator();
+                        } else if (userSnapshot.hasError) {
+                          return Text('Error: ${userSnapshot.error}');
+                        } else {
+                          final userData = userSnapshot.data?.data();
+                          if (userData != null) {
+                            final name = userData['name'];
+                            final username = userData['username'];
+                            final profilePicture = userData['imageUrl'];
+
+                            return SizeTransition(
+                                sizeFactor: animation,
+                                child: Container(
+                                  padding: EdgeInsets.only(
+                                      left: 20, right: 20, top: 13, bottom: 13),
+                                  child: Row(
+                                    children: <Widget>[
+                                      Expanded(
+                                        child: Row(
+                                          children: <Widget>[
+                                            CircleAvatar(
+                                              maxRadius: 38,
+                                              backgroundImage: profilePicture !=
+                                                  "" ? NetworkImage(
+                                                  profilePicture) : null,
+                                              child: profilePicture == ""
+                                                  ? Text(name != ""
+                                                  ? name[0]
+                                                  : '', style: ref
+                                                  .watch(stylesProvider)
+                                                  .text
+                                                  .titleOnBoarding
+                                                  .copyWith(fontSize: 26),)
+                                                  : null,
+                                            ),
+                                            SizedBox(width: 16,),
+                                            Expanded(
+                                              child: Container(
+                                                color: Colors.transparent,
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment
+                                                      .start,
+                                                  children: <Widget>[
+                                                    Text(name ?? '', style: ref
                                                         .watch(stylesProvider)
                                                         .text
-                                                        .numberContactOnBoarding,),],
-                                                )
-                                              ],
+                                                        .contactOnBoarding,),
+                                                    SizedBox(height: 6,),
+                                                    Text(username ?? '',
+                                                      style: ref
+                                                          .watch(stylesProvider)
+                                                          .text
+                                                          .numberContactOnBoarding,),
+                                                    SizedBox(height: 6,),
+                                                    Row(
+                                                      children: [
+                                                        Icon(Icons
+                                                            .account_circle_rounded,
+                                                            size: 25),
+                                                        SizedBox(width: 5,),
+                                                        Text(contact
+                                                            .displayName ?? '',
+                                                          style: ref
+                                                              .watch(
+                                                              stylesProvider)
+                                                              .text
+                                                              .numberContactOnBoarding,),
+                                                      ],
+                                                    )
+                                                  ],
+                                                ),
+                                              ),
                                             ),
-                                          ),
+                                          ],
                                         ),
-                                      ],
-                                    ),
+                                      ),
+                                      Container(height: screenHeight / 30,
+                                          child: ElevatedButton(
+                                            onPressed: () async {
+                                              final recipientUserId = userSnapshot
+                                                  .data?.id;
+                                              if (recipientUserId != null) {
+                                                await sendFriendRequest(
+                                                    recipientUserId);
+                                                setState(() {
+                                                  registeredContacts.removeAt(
+                                                      index);
+                                                });
+                                              } else {
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                        'Recipient user ID not found.'),
+                                                    duration: const Duration(
+                                                        seconds: 2),
+                                                  ),
+                                                );
+                                              }
+                                            },
+                                            style: ref
+                                                .watch(stylesProvider)
+                                                .button
+                                                .buttonInvite,
+                                            child: const Text("ADD"),))
+                                    ],
                                   ),
-                                  Container(height: screenHeight/30 ,child: ElevatedButton(onPressed: () async {
-                                    final recipientUserId = userSnapshot.data?.id;
-                                    if (recipientUserId != null) {
-                                      await sendFriendRequest(recipientUserId);
-                                      setState(() {
-                                        registeredContacts.removeAt(index);
-                                      });
-                                    } else {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text('Recipient user ID not found.'),
-                                          duration: const Duration(seconds: 2),
-                                        ),
-                                      );
-                                    }
-                                  }, style: ref
-                                      .watch(stylesProvider)
-                                      .button
-                                      .buttonInvite, child: const Text("ADD"),))
-                                ],
-                              ),
-                            )
-                          );
-                        } else {
-                          return Text('User data not found.');
+                                )
+                            );
+                          } else {
+                            return Text('User data not found.');
+                          }
                         }
-                      }
-                    },
-                  );
-                },
-              ),
-            ],
-          );
+                      },
+                    );
+                  },
+                ),
+              ],
+            );
+          }else{
+            return Container();
+          }
         }
       },
     );
