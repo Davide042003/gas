@@ -5,26 +5,76 @@ import 'package:flutter/services.dart';
 import 'package:gas/styles/styles_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:gas/core/models/friends_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:contacts_service/contacts_service.dart';
 
 class FriendsScreen extends ConsumerStatefulWidget {
   @override
   _FriendsScreenState createState() => _FriendsScreenState();
 }
 
-class _FriendsScreenState extends ConsumerState<FriendsScreen> {
+class _FriendsScreenState extends ConsumerState<FriendsScreen> with TickerProviderStateMixin {
   bool _searchBoxFocused = false;
   final TextEditingController _searchController = TextEditingController();
   late AnimationController _animationController;
+  final FriendSystem friendSystem =
+  FriendSystem(userId: FirebaseAuth.instance.currentUser?.uid ?? '');
+  late Stream<List<Contact>> registeredContactsStream;
+
+  int _currentIndex = 0;
+
+  final List<String> _texts = [
+    'Suggested',
+    'Friends',
+    'Requests',
+  ];
 
   @override
   void initState() {
     super.initState();
     HapticFeedback.lightImpact();
+    registeredContactsStream =
+        Stream.fromFuture(friendSystem.getNonFriendsContacts());
+  }
+
+  Future<void> sendFriendRequest(String recipientUserId) async {
+    try {
+      await friendSystem.sendFriendRequest(recipientUserId);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Friend request sent.'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to send friend request.'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  Future<DocumentSnapshot<Map<String, dynamic>>> getUserData(String phoneNumber) {
+    return FirebaseFirestore.instance
+        .collection('users')
+        .where('phoneNumber', isEqualTo: phoneNumber)
+        .get()
+        .then((querySnapshot) {
+      if (querySnapshot.size > 0) {
+        return querySnapshot.docs.first;
+      } else {
+        throw Exception('User data not found.');
+      }
+    });
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  void dispose() {
+    super.dispose();
   }
 
   @override
@@ -38,89 +88,252 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
         .size
         .height;
 
+    final List<Widget> pages = [
+      pageContactsNoFriend(),
+      pageContactsNoFriend(),
+      pageContactsNoFriend()
+    ];
+
     return Scaffold(
       backgroundColor: AppColors.backgroundDefault,
       body: SafeArea(
-        child: Column(
-            children: [
-              Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(margin: EdgeInsets.only(left: 140),
-                    child: Image.asset('assets/img/logo.png', height: 40),
-                    width: 100,),
-                  InkWell(
-                    child: Icon(
-                      Icons.arrow_forward_rounded,
-                      size: 35,
-                      color: AppColors.white,
-                    ),
-                    onTap: () {
-                      context.pop();
-                    },
-                  ),
-                ],)),
-              SizedBox(height: 10,),
-              Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Flexible(child: Container(
-                    decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
-                        color: AppColors.white),
-                    child: Focus(
-                      child: TextField(
-                        controller: _searchController,
-                        textAlignVertical: TextAlignVertical.center,
-                        decoration: InputDecoration(
-                            prefixIcon: Icon(Icons.search, color: _searchBoxFocused ? AppColors.brownShadow : AppColors.a,),
-                            iconColor: AppColors.a,
-                            border: InputBorder.none,
-                            hintText: 'Add or search friends',
-                            hintStyle: ref
-                                .watch(stylesProvider)
-                                .text
-                                .hintOnBoarding.copyWith(color: AppColors.a, fontSize: 16)),
-                        style: ref
-                            .watch(stylesProvider)
-                            .text
-                            .hintOnBoarding.copyWith(color: AppColors.brown, fontSize: 16),
-                        cursorColor: AppColors.brownShadow,
+        bottom: false,
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        margin: EdgeInsets.only(left: 140),
+                        child: Image.asset('assets/img/logo.png', height: 40),
+                        width: 100,
                       ),
-                      onFocusChange: (value) {
-                        setState(() {
-                          if (value) {
-                            _searchBoxFocused = true;
-                          } else {
-                            _searchController.clear();
-                            _searchBoxFocused = false;
-                          }
-                        });
-                      },
-                    ),
-                  ),),
-                  Visibility(
-                      visible: _searchBoxFocused,
-                      child: FadeInRight(
-                        duration: const Duration(milliseconds: 300),
-                        controller: (controller) =>
-                        _animationController = controller,
-                        child: TextButton(
-                          child: Text("Cancel", style: ref.watch(stylesProvider).text.editProfile.copyWith(fontSize: 18),),
-                          onPressed: () {
-                            setState(() {
-                              FocusScope.of(context).unfocus();
-                            });
-                          },
+                      InkWell(
+                        child: Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 35,
+                          color: AppColors.white,
                         ),
-                      ))
+                        onTap: () {
+                          context.pop();
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 10,),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Flexible(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            color: AppColors.white,
+                          ),
+                          child: Focus(
+                            child: TextField(
+                              controller: _searchController,
+                              textAlignVertical: TextAlignVertical.center,
+                              decoration: InputDecoration(
+                                prefixIcon: Icon(
+                                  Icons.search,
+                                  color: _searchBoxFocused ? AppColors
+                                      .brownShadow : AppColors.a,
+                                ),
+                                iconColor: AppColors.a,
+                                border: InputBorder.none,
+                                hintText: 'Add or search friends',
+                                hintStyle: ref
+                                    .watch(stylesProvider)
+                                    .text
+                                    .hintOnBoarding
+                                    .copyWith(color: AppColors.a, fontSize: 16),
+                              ),
+                              style: ref
+                                  .watch(stylesProvider)
+                                  .text
+                                  .hintOnBoarding
+                                  .copyWith(
+                                  color: AppColors.brown, fontSize: 16),
+                              cursorColor: AppColors.brownShadow,
+                            ),
+                            onFocusChange: (value) {
+                              setState(() {
+                                if (value) {
+                                  _searchBoxFocused = true;
+                                } else {
+                                  _searchController.clear();
+                                  _searchBoxFocused = false;
+                                }
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                      Visibility(
+                        visible: _searchBoxFocused,
+                        child: FadeInRight(
+                          duration: const Duration(milliseconds: 300),
+                          controller: (controller) =>
+                          _animationController = controller,
+                          child: TextButton(
+                            child: Text(
+                              "Cancel",
+                              style: ref
+                                  .watch(stylesProvider)
+                                  .text
+                                  .editProfile
+                                  .copyWith(fontSize: 18),
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                FocusScope.of(context).unfocus();
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 25,),
+                Expanded(child: Container(
+                  color: Colors.transparent, child: pages[_currentIndex],))
+              ],
+            ),
+            Align(alignment: Alignment.bottomCenter, child: Padding(
+                padding: EdgeInsets.only(left: 70, right: 70, bottom: 50), child: Container(
+              height: 45,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(40),
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.5),
+                    spreadRadius: 1,
+                    blurRadius: 5,
+                  ),
                 ],
-              )),
-            ]
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: List.generate(
+                  _texts.length,
+                      (index) =>
+                      GestureDetector(
+                        behavior: HitTestBehavior.translucent,
+                        onTap: () {
+                          setState(() {
+                            _currentIndex = index;
+                          });
+                        },
+                        child: Container(
+                          padding: EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            color: _currentIndex == index
+                                ? Colors.blue.withOpacity(0.5)
+                                : Colors.transparent,
+                          ),
+                          child: Text(
+                            _texts[index],
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: _currentIndex == index
+                                  ? Colors.blue
+                                  : Colors.black,
+                            ),
+                          ),
+                        ),
+                      ),
+                ),
+              ),
+            )
+            ))
+          ],
         ),
       ),
+    );
+  }
+
+  Widget pageContactsNoFriend(){
+    return StreamBuilder<List<Contact>>(
+      stream: registeredContactsStream,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return CircularProgressIndicator();
+        } else if (snapshot.hasError) {
+          return Text('Error: ${snapshot.error}');
+        } else {
+          final registeredContacts = snapshot.data ?? [];
+          return Column(
+            children: [
+              Text('Registered Contacts'),
+              ListView.builder(
+                shrinkWrap: true,
+                itemCount: registeredContacts.length,
+                itemBuilder: (context, index) {
+                  final contact = registeredContacts[index];
+                  final phoneNumber = contact.phones?.firstOrNull?.value;
+                  return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                    future: phoneNumber != null ? getUserData(phoneNumber) : null,
+                    builder: (context, userSnapshot) {
+                      if (userSnapshot.connectionState == ConnectionState.waiting) {
+                        return CircularProgressIndicator();
+                      } else if (userSnapshot.hasError) {
+                        return Text('Error: ${userSnapshot.error}');
+                      } else {
+                        final userData = userSnapshot.data?.data();
+                        if (userData != null) {
+                          final name = userData['name'];
+                          final profilePicture = userData['profilePicture'];
+                          return ListTile(
+                            leading: CircleAvatar(
+                              backgroundImage: profilePicture != null
+                                  ? NetworkImage(profilePicture)
+                                  : null,
+                            ),
+                            title: Text(name ?? ''),
+                            // Additional registered contact information can be displayed here
+                            trailing: ElevatedButton(
+                              onPressed: () async {
+                                final recipientUserId = userSnapshot.data?.id;
+                                if (recipientUserId != null) {
+                                  await sendFriendRequest(recipientUserId);
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Recipient user ID not found.'),
+                                      duration: const Duration(seconds: 2),
+                                    ),
+                                  );
+                                }
+                              },
+                              child: Text('Add Friend'),
+                            ),
+                          );
+                        } else {
+                          return Text('User data not found.');
+                        }
+                      }
+                    },
+                  );
+                },
+              ),
+            ],
+          );
+        }
+      },
     );
   }
 }
