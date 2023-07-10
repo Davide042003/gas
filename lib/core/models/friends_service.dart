@@ -75,11 +75,14 @@ class FriendSystem {
         // Check if user exists by phone number
         bool userExists = await checkUserExistsByPhoneNumber(phoneNumber);
 
-        if (userExists &&
-            !sentRequests.contains(phoneNumber) &&
-            !receivedRequests.contains(phoneNumber) &&
-            !friends.contains(phoneNumber)) {
-          nonFriends.add(contact);
+        if (userExists) {
+          String receiverUserId = await getUserIdFromPhoneNumber(phoneNumber);
+
+          if (!sentRequests.contains(receiverUserId) &&
+              !receivedRequests.contains(receiverUserId) &&
+              !friends.contains(receiverUserId)) {
+            nonFriends.add(contact);
+          }
         }
       }
     }
@@ -96,6 +99,18 @@ class FriendSystem {
 
     return snapshot.docs.isNotEmpty;
   }
+
+  Future<String> getUserIdFromPhoneNumber(String phoneNumber) async {
+    QuerySnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore
+        .instance
+        .collection('users')
+        .where('phoneNumber', isEqualTo: phoneNumber)
+        .limit(1)
+        .get();
+
+      return snapshot.docs[0].id;
+  }
+
   Future<void> sendFriendRequest(String recipientUserId) async {
     final senderRef = FirebaseFirestore.instance
         .collection('users')

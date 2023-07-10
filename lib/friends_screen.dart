@@ -59,7 +59,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
   }
 
   Future<DocumentSnapshot<Map<String, dynamic>>> getUserData(String phoneNumber) {
-    print(phoneNumber);
     return FirebaseFirestore.instance
         .collection('users')
         .where('phoneNumber', isEqualTo: phoneNumber)
@@ -92,7 +91,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
     final List<Widget> pages = [
       pageContactsNoFriend(),
       myFriends(),
-      pageContactsNoFriend()
+      requests()
     ];
 
     return Scaffold(
@@ -290,9 +289,13 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
     );
   }
 
-  Widget pageContactsNoFriend(){
-    final registeredContactsStream =
-    Stream.fromFuture(friendSystem.getNonFriendsContacts());
+  Widget pageContactsNoFriend() {
+    double screenHeight = MediaQuery
+        .of(context)
+        .size
+        .height;
+
+    final registeredContactsStream = Stream.fromFuture(friendSystem.getNonFriendsContacts());
 
     return StreamBuilder<List<Contact>>(
       stream: registeredContactsStream,
@@ -305,13 +308,14 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
           final registeredContacts = snapshot.data ?? [];
           return Column(
             children: [
-              Text('Registered Contacts'),
-              ListView.builder(
+              Text('ADD YOUR CONTACTS',),
+              AnimatedList(
                 shrinkWrap: true,
-                itemCount: registeredContacts.length,
-                itemBuilder: (context, index) {
+                initialItemCount: registeredContacts.length,
+                itemBuilder: (context, index, animation) {
                   final contact = registeredContacts[index];
                   final phoneNumber = contact.phones?.firstOrNull?.value;
+
                   return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
                     future: phoneNumber != null ? getUserData(phoneNumber) : null,
                     builder: (context, userSnapshot) {
@@ -323,31 +327,89 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                         final userData = userSnapshot.data?.data();
                         if (userData != null) {
                           final name = userData['name'];
+                          final username = userData['username'];
                           final profilePicture = userData['imageUrl'];
-                          return ListTile(
-                            leading: CircleAvatar(
-                              backgroundImage: profilePicture != ""
-                                  ? NetworkImage(profilePicture)
-                                  : null,
-                            ),
-                            title: Text(name ?? ''),
-                            // Additional registered contact information can be displayed here
-                            trailing: ElevatedButton(
-                              onPressed: () async {
-                                final recipientUserId = userSnapshot.data?.id;
-                                if (recipientUserId != null) {
-                                  await sendFriendRequest(recipientUserId);
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Recipient user ID not found.'),
-                                      duration: const Duration(seconds: 2),
+
+                          return SizeTransition(
+                            sizeFactor: animation,
+                            child: Container(
+                              padding: EdgeInsets.only(
+                                  left: 20, right: 20, top: 13, bottom: 13),
+                              child: Row(
+                                children: <Widget>[
+                                  Expanded(
+                                    child: Row(
+                                      children: <Widget>[
+                                        CircleAvatar(
+                                          maxRadius: 38,
+                                          backgroundImage: profilePicture != "" ? NetworkImage(profilePicture) : null,
+                                          child: profilePicture == ""
+                                              ? Text(name != ""
+                                              ? name[0]
+                                              : '', style: ref
+                                              .watch(stylesProvider)
+                                              .text
+                                              .titleOnBoarding
+                                              .copyWith(fontSize: 26),)
+                                              : null,
+                                        ),
+                                        SizedBox(width: 16,),
+                                        Expanded(
+                                          child: Container(
+                                            color: Colors.transparent,
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: <Widget>[
+                                                Text(name ?? '', style: ref
+                                                    .watch(stylesProvider)
+                                                    .text
+                                                    .contactOnBoarding,),
+                                                SizedBox(height: 6,),
+                                                Text(username ?? '',
+                                                  style: ref
+                                                      .watch(stylesProvider)
+                                                      .text
+                                                      .numberContactOnBoarding,),
+                                                SizedBox(height: 6,),
+                                                Row(
+                                                  children: [
+                                                    Icon(Icons.account_circle_rounded, size: 25),
+                                                    SizedBox(width: 5,),
+                                                    Text(contact.displayName ?? '',
+                                                    style: ref
+                                                        .watch(stylesProvider)
+                                                        .text
+                                                        .numberContactOnBoarding,),],
+                                                )
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  );
-                                }
-                              },
-                              child: Text('Add Friend'),
-                            ),
+                                  ),
+                                  Container(height: screenHeight/30 ,child: ElevatedButton(onPressed: () async {
+                                    final recipientUserId = userSnapshot.data?.id;
+                                    if (recipientUserId != null) {
+                                      await sendFriendRequest(recipientUserId);
+                                      setState(() {
+                                        registeredContacts.removeAt(index);
+                                      });
+                                    } else {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Recipient user ID not found.'),
+                                          duration: const Duration(seconds: 2),
+                                        ),
+                                      );
+                                    }
+                                  }, style: ref
+                                      .watch(stylesProvider)
+                                      .button
+                                      .buttonInvite, child: const Text("ADD"),))
+                                ],
+                              ),
+                            )
                           );
                         } else {
                           return Text('User data not found.');
@@ -424,6 +486,118 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
 
         return Center(
           child: CircularProgressIndicator(),
+        );
+      },
+    );
+  }
+  Widget requests() {
+    return Column(
+      children: [
+        ElevatedButton(
+          onPressed: () => _showSentRequestsBottomSheet(context),
+          child: Text('View Sent Requests'),
+        ),
+        SizedBox(height: 20),
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
+            stream: friendSystem.getReceivedRequests(),
+            builder: (context, snapshot) {
+              if (snapshot.hasData) {
+                final receivedRequests = snapshot.data!.docs;
+
+                return ListView.builder(
+                  itemCount: receivedRequests.length,
+                  itemBuilder: (context, index) {
+                    final request = receivedRequests[index];
+                    final senderUserId = request['senderUserId'] as String;
+
+                    return FutureBuilder<DocumentSnapshot>(
+                      future: FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(senderUserId)
+                          .get(),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData) {
+                          final user = snapshot.data!.data() as Map<String, dynamic>;
+                          final username = user['username'] as String;
+                          final profilePictureUrl = user['profilePictureUrl'] as String;
+                          final name = user['name'] as String;
+
+                          return ListTile(
+                            leading: CircleAvatar(
+                              // Display the profile picture
+                              backgroundImage: NetworkImage(profilePictureUrl),
+                            ),
+                            title: Text(username), // Display the username
+                            subtitle: Text(name), // Display the name
+                            trailing: ElevatedButton(
+                              onPressed: () {},
+                              child: Text('Accept'),
+                            ),
+                          );
+                        }
+
+                        return CircularProgressIndicator();
+                      },
+                    );
+                  },
+                );
+              }
+
+              return CircularProgressIndicator();
+            },
+          ),
+        ),
+      ],
+    );
+  }
+  void _showSentRequestsBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return StreamBuilder<QuerySnapshot>(
+          stream: friendSystem.getSentRequests(),
+          builder: (context, snapshot) {
+            if (snapshot.hasData) {
+              final sentRequests = snapshot.data!.docs;
+
+              return ListView.builder(
+                itemCount: sentRequests.length,
+                itemBuilder: (context, index) {
+                  final request = sentRequests[index];
+                  final recipientUserId = request['recipientUserId'] as String;
+
+                  return FutureBuilder<DocumentSnapshot>(
+                    future: FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(recipientUserId)
+                        .get(),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData) {
+                        final user = snapshot.data!.data() as Map<String, dynamic>;
+                        final username = user['username'] as String;
+                        final profilePictureUrl = user['imageUrl'] as String;
+                        final name = user['name'] as String;
+
+                        return ListTile(
+                          leading: CircleAvatar(
+                            // Display the profile picture
+                            backgroundImage: NetworkImage(profilePictureUrl),
+                          ),
+                          title: Text(username), // Display the username
+                          subtitle: Text(name), // Display the name
+                        );
+                      }
+
+                      return CircularProgressIndicator();
+                    },
+                  );
+                },
+              );
+            }
+
+            return CircularProgressIndicator();
+          },
         );
       },
     );
