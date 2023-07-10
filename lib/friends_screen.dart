@@ -15,15 +15,17 @@ class FriendsScreen extends ConsumerStatefulWidget {
   _FriendsScreenState createState() => _FriendsScreenState();
 }
 
-class _FriendsScreenState extends ConsumerState<FriendsScreen> with TickerProviderStateMixin {
+class _FriendsScreenState extends ConsumerState<FriendsScreen> {
   bool _searchBoxFocused = false;
   final TextEditingController _searchController = TextEditingController();
   late AnimationController _animationController;
   final FriendSystem friendSystem =
   FriendSystem(userId: FirebaseAuth.instance.currentUser?.uid ?? '');
-  late Stream<List<Contact>> registeredContactsStream;
 
   int _currentIndex = 0;
+  int _lastIndex = 0;
+
+  String _searchQuery = '';
 
   final List<String> _texts = [
     'Suggested',
@@ -35,8 +37,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> with TickerProvid
   void initState() {
     super.initState();
     HapticFeedback.lightImpact();
-    registeredContactsStream =
-        Stream.fromFuture(friendSystem.getNonFriendsContacts());
   }
 
   Future<void> sendFriendRequest(String recipientUserId) async {
@@ -59,6 +59,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> with TickerProvid
   }
 
   Future<DocumentSnapshot<Map<String, dynamic>>> getUserData(String phoneNumber) {
+    print(phoneNumber);
     return FirebaseFirestore.instance
         .collection('users')
         .where('phoneNumber', isEqualTo: phoneNumber)
@@ -90,7 +91,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> with TickerProvid
 
     final List<Widget> pages = [
       pageContactsNoFriend(),
-      pageContactsNoFriend(),
+      myFriends(),
       pageContactsNoFriend()
     ];
 
@@ -165,6 +166,11 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> with TickerProvid
                                   .copyWith(
                                   color: AppColors.brown, fontSize: 16),
                               cursorColor: AppColors.brownShadow,
+                              onChanged: (value) {
+                                setState(() {
+                                  _searchQuery = value;
+                                });
+                              },
                             ),
                             onFocusChange: (value) {
                               setState(() {
@@ -197,6 +203,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> with TickerProvid
                             onPressed: () {
                               setState(() {
                                 FocusScope.of(context).unfocus();
+                                _searchQuery = "";
                               });
                             },
                           ),
@@ -206,11 +213,27 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> with TickerProvid
                   ),
                 ),
                 SizedBox(height: 25,),
-                Expanded(child: Container(
-                  color: Colors.transparent, child: pages[_currentIndex],))
+                _searchQuery.isEmpty ? Expanded(
+                    child: AnimatedSwitcher(
+                      duration: Duration(milliseconds: 300),
+                      transitionBuilder: (Widget child,
+                          Animation<double> animation) {
+                        final tween = Tween<Offset>(
+                          begin: Offset(
+                              _currentIndex > _lastIndex ? -1.0 : 1.0, 0.0),
+                          end: Offset(0.0, 0.0),
+                        );
+                        return SlideTransition(
+                          position: tween.animate(animation),
+                          child: child,
+                        );
+                      },
+                      child: pages[_currentIndex],
+                    ),
+                  ) : Container(),
               ],
             ),
-            Align(alignment: Alignment.bottomCenter, child: Padding(
+            _searchQuery.isEmpty ? Align(alignment: Alignment.bottomCenter, child: Padding(
                 padding: EdgeInsets.only(left: 70, right: 70, bottom: 50), child: Container(
               height: 45,
               decoration: BoxDecoration(
@@ -233,6 +256,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> with TickerProvid
                         behavior: HitTestBehavior.translucent,
                         onTap: () {
                           setState(() {
+                            _lastIndex = _currentIndex;
                             _currentIndex = index;
                           });
                         },
@@ -259,7 +283,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> with TickerProvid
                 ),
               ),
             )
-            ))
+            )) : SizedBox()
           ],
         ),
       ),
@@ -267,6 +291,9 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> with TickerProvid
   }
 
   Widget pageContactsNoFriend(){
+    final registeredContactsStream =
+    Stream.fromFuture(friendSystem.getNonFriendsContacts());
+
     return StreamBuilder<List<Contact>>(
       stream: registeredContactsStream,
       builder: (context, snapshot) {
@@ -296,10 +323,10 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> with TickerProvid
                         final userData = userSnapshot.data?.data();
                         if (userData != null) {
                           final name = userData['name'];
-                          final profilePicture = userData['profilePicture'];
+                          final profilePicture = userData['imageUrl'];
                           return ListTile(
                             leading: CircleAvatar(
-                              backgroundImage: profilePicture != null
+                              backgroundImage: profilePicture != ""
                                   ? NetworkImage(profilePicture)
                                   : null,
                             ),
@@ -333,6 +360,71 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> with TickerProvid
             ],
           );
         }
+      },
+    );
+  }
+  Widget myFriends(){
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: friendSystem.getFriends(),
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          final friends = snapshot.data!.docs;
+
+          return ListView.builder(
+            itemCount: friends.length,
+            itemBuilder: (context, index) {
+              final friendData = friends[index].data();
+              final friendId = friends[index].id;
+              return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                future: FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(friendId)
+                    .get(),
+                builder: (context, userSnapshot) {
+                  if (userSnapshot.hasData) {
+                    final userData = userSnapshot.data!.data();
+                    final profilePicture = userData!['imageUrl'] as String?;
+                    final name = userData['name'];
+                    final username = userData['username'];
+
+                    return ListTile(
+                      leading: CircleAvatar(
+                        radius: 70,
+                        backgroundImage: profilePicture != ""
+                            ? NetworkImage(
+                            profilePicture ?? '')
+                            : null,
+                        child: profilePicture == ""
+                            ? Text(name != ""
+                            ? name[0]
+                            : '', style: ref
+                            .watch(stylesProvider)
+                            .text
+                            .titleOnBoarding
+                            .copyWith(fontSize: 50),)
+                            : null,
+                      ),
+                      title: Text(name ?? ''),
+                      subtitle: Text(username ?? ''),
+                    );
+                  } else if (userSnapshot.hasError) {
+                    return Text('Error: ${userSnapshot.error}');
+                  }
+
+                  return ListTile(
+                    title: Text('Loading...'),
+                  );
+                },
+              );
+            },
+          );
+        } else if (snapshot.hasError) {
+          return Text('Error: ${snapshot.error}');
+        }
+
+        return Center(
+          child: CircularProgressIndicator(),
+        );
       },
     );
   }

@@ -43,33 +43,59 @@ class FriendSystem {
   }
 
   Future<List<Contact>> getNonFriendsContacts() async {
-    List<Contact> contacts = await ContactsService.getContacts();;
-    List<String?> phoneNumbers = contacts.map((contact) => contact.phones?.first.value).toList();
+    List<Contact> contacts = await ContactsService.getContacts();
+    List<String?> phoneNumbers =
+    contacts.map((contact) => contact.phones?.first.value).toList();
 
-    QuerySnapshot<Map<String, dynamic>> sentRequestsSnapshot = await getSentRequests().first;
-    QuerySnapshot<Map<String, dynamic>> receivedRequestsSnapshot = await getReceivedRequests().first;
-    QuerySnapshot<Map<String, dynamic>> friendsSnapshot = await getFriends().first;
+    QuerySnapshot<Map<String, dynamic>> sentRequestsSnapshot =
+    await getSentRequests().first;
+    QuerySnapshot<Map<String, dynamic>> receivedRequestsSnapshot =
+    await getReceivedRequests().first;
+    QuerySnapshot<Map<String, dynamic>> friendsSnapshot =
+    await getFriends().first;
 
-    List<String?> sentRequests = sentRequestsSnapshot.docs.map((doc) => doc['recipientUserId'] as String?).toList();
-    List<String?> receivedRequests = receivedRequestsSnapshot.docs.map((doc) => doc['senderUserId'] as String?).toList();
-    List<String> friends = friendsSnapshot.docs.map((doc) => doc.id).toList();
+    List<String?> sentRequests =
+    sentRequestsSnapshot.docs.map((doc) => doc['recipientUserId'] as String?)
+        .toList();
+    List<String?> receivedRequests =
+    receivedRequestsSnapshot.docs.map((doc) => doc['senderUserId'] as String?)
+        .toList();
+    List<String> friends =
+    friendsSnapshot.docs.map((doc) => doc.id).toList();
 
     List<Contact> nonFriends = [];
+
+    // Check user existence for each contact
     for (var contact in contacts) {
       if (contact.phones != null &&
           contact.phones!.isNotEmpty &&
-          contact.phones!.first.value != null &&
-          !phoneNumbers.contains(contact.phones!.first.value) &&
-          !sentRequests.contains(contact.phones!.first.value) &&
-          !receivedRequests.contains(contact.phones!.first.value) &&
-          !friends.contains(contact.phones!.first.value)) {
-        nonFriends.add(contact);
+          contact.phones!.first.value != null) {
+        String phoneNumber = contact.phones!.first.value!;
+
+        // Check if user exists by phone number
+        bool userExists = await checkUserExistsByPhoneNumber(phoneNumber);
+
+        if (userExists &&
+            !sentRequests.contains(phoneNumber) &&
+            !receivedRequests.contains(phoneNumber) &&
+            !friends.contains(phoneNumber)) {
+          nonFriends.add(contact);
+        }
       }
     }
 
     return nonFriends;
   }
 
+  Future<bool> checkUserExistsByPhoneNumber(String phoneNumber) async {
+
+    QuerySnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .where('phoneNumber', isEqualTo: phoneNumber)
+        .get();
+
+    return snapshot.docs.isNotEmpty;
+  }
   Future<void> sendFriendRequest(String recipientUserId) async {
     final senderRef = FirebaseFirestore.instance
         .collection('users')
