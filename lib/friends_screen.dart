@@ -9,6 +9,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:gas/core/models/friends_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:contacts_service/contacts_service.dart';
+import 'package:flutter/cupertino.dart';
 
 class FriendsScreen extends ConsumerStatefulWidget {
   @override
@@ -74,6 +75,42 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
     });
   }
 
+  bool isLoading = false;
+  String friendToDeleteId = '';
+  void showDialogWithChoices() {
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (BuildContext context) {
+        return CupertinoAlertDialog(
+          title: Text('Choose an option'),
+          content: Text('Your friend will not see you anymore'),
+          actions: [
+            CupertinoDialogAction(
+              child: Text('Annulla'),
+              onPressed: () {
+                setState(() {
+                  isLoading = false;
+                });
+                Navigator.pop(context);
+              },
+            ),
+            CupertinoDialogAction(
+              child: Text('Elimina'),
+              onPressed: () {
+                setState(() {
+                  isLoading = false;
+                });
+                friendSystem.deleteFriend(friendToDeleteId);
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
     super.dispose();
@@ -86,7 +123,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
 
     final List<Widget> pages = [
       pageContactsNoFriend(),
-      myFriends(),
+      tryFriends(),
       requests()
     ];
 
@@ -491,69 +528,173 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
     );
   }
 
-  Widget myFriends() {
-    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: friendSystem.getFriends(),
-      builder: (context, snapshot) {
-        if (snapshot.hasData) {
-          final friends = snapshot.data!.docs;
+  Widget tryFriends() {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        children: [
+          Align(
+              alignment: Alignment.centerLeft,
+              child: StreamBuilder<QuerySnapshot>(
+                stream: friendSystem.getFriends(),
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    final friends = snapshot.data!.docs;
+                    final friendsCount = friends.length;
 
-          return ListView.builder(
-            itemCount: friends.length,
-            itemBuilder: (context, index) {
-              final friendData = friends[index].data();
-              final friendId = friends[index].id;
-              return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                future: FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(friendId)
-                    .get(),
-                builder: (context, userSnapshot) {
-                  if (userSnapshot.hasData) {
-                    final userData = userSnapshot.data!.data();
-                    final profilePicture = userData!['imageUrl'] as String?;
-                    final name = userData['name'];
-                    final username = userData['username'];
-
-                    return ListTile(
-                      leading: CircleAvatar(
-                        radius: 70,
-                        backgroundImage: profilePicture != ""
-                            ? NetworkImage(profilePicture ?? '')
-                            : null,
-                        child: profilePicture == ""
-                            ? Text(
-                                name != "" ? name[0] : '',
-                                style: ref
-                                    .watch(stylesProvider)
-                                    .text
-                                    .titleOnBoarding
-                                    .copyWith(fontSize: 50),
-                              )
-                            : null,
-                      ),
-                      title: Text(name ?? ''),
-                      subtitle: Text(username ?? ''),
-                    );
-                  } else if (userSnapshot.hasError) {
-                    return Text('Error: ${userSnapshot.error}');
+                    if (friends.length <= 50) {
+                      return Text(
+                        "MY FRIENDS ($friendsCount)",
+                      );
+                    } else {
+                      return Text("MY FRIENDS (50+)");
+                    }
                   }
 
-                  return ListTile(
-                    title: Text('Loading...'),
-                  );
+                  return Text(
+                      "MY FRIENDS (0)"); // Default count when data is not available
                 },
-              );
-            },
-          );
-        } else if (snapshot.hasError) {
-          return Text('Error: ${snapshot.error}');
-        }
+              )),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+          stream: friendSystem.getFriends(),
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  final friends = snapshot.data!.docs;
 
-        return Center(
-          child: CircularProgressIndicator(),
-        );
-      },
+                  if (friends.length > 0) {
+                    return ListView.builder(
+                      itemCount: friends.length,
+                      itemBuilder: (context, index) {
+                        final friendData = friends[index].data();
+                        final friendId = friends[index].id;
+
+                        return FutureBuilder<DocumentSnapshot>(
+                          future: FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(friendId)
+                              .get(),
+                          builder: (context, snapshot) {
+                            if (snapshot.hasData) {
+                              final user = snapshot.data!.data() as Map<String, dynamic>;
+                              final username = user['username'] as String;
+                              final profilePictureUrl =
+                              user['imageUrl'] as String;
+                              final name = user['name'] as String;
+
+                              return Container(
+                                  padding: EdgeInsets.symmetric(
+                                    vertical: 13,
+                                  ),
+                                  child: Row(
+                                    children: <Widget>[
+                                      Expanded(
+                                        child: Row(
+                                          children: <Widget>[
+                                            CircleAvatar(
+                                              maxRadius: 38,
+                                              backgroundImage:
+                                              profilePictureUrl != ""
+                                                  ? NetworkImage(
+                                                  profilePictureUrl)
+                                                  : null,
+                                              child: profilePictureUrl == ""
+                                                  ? Text(
+                                                name != "" ? name[0] : '',
+                                                style: ref
+                                                    .watch(stylesProvider)
+                                                    .text
+                                                    .titleOnBoarding
+                                                    .copyWith(fontSize: 26),
+                                              )
+                                                  : null,
+                                            ),
+                                            SizedBox(
+                                              width: 16,
+                                            ),
+                                            Expanded(
+                                              child: Container(
+                                                color: Colors.transparent,
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                                  children: <Widget>[
+                                                    Text(
+                                                      name ?? '',
+                                                      style: ref
+                                                          .watch(stylesProvider)
+                                                          .text
+                                                          .contactOnBoarding,
+                                                    ),
+                                                    SizedBox(
+                                                      height: 6,
+                                                    ),
+                                                    Text(
+                                                      username ?? '',
+                                                      style: ref
+                                                          .watch(stylesProvider)
+                                                          .text
+                                                          .numberContactOnBoarding,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      SizedBox(width: 10),
+
+                                      InkWell(
+                                        onTap: ()  {
+                                          setState(() {
+                                            friendToDeleteId = friendId;
+                                            isLoading = true;
+                                          });
+                                          showDialogWithChoices();
+                                        },
+                                        child: isLoading
+                                            ? CircularProgressIndicator() : Icon(
+                                          Icons.close_rounded,
+                                          size: 25,
+                                          color: AppColors.a,
+                                        ),
+                                      ),
+                                    ],
+                                  ));
+                            }
+
+                            return CircularProgressIndicator();
+                          },
+                        );
+                      },
+                    );
+                  } else {
+                    return Container(
+                        margin: EdgeInsets.only(
+                            top: 25, bottom: 450, left: 25, right: 25),
+                        width: 400,
+                        height: 50,
+                        decoration: BoxDecoration(
+                            borderRadius: BorderRadius.all(Radius.circular(20)),
+                            color: AppColors.a),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text('Non hai ancora nessun amico!'),
+                            SizedBox(height: 20),
+                            Text('Aggiungi nuovi amici!'),
+                          ],
+                        ));
+                  }
+                }
+
+                return CircularProgressIndicator();
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -578,7 +719,8 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                         return Text("FRIEND REQUESTS ($requestCount)");
                       }
 
-                      return Text("FRIEND REQUESTS (0)"); // Default count when data is not available
+                      return Text(
+                          "FRIEND REQUESTS (0)"); // Default count when data is not available
                     },
                   ),
                   ElevatedButton(
@@ -629,81 +771,96 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                             final profilePictureUrl =
                                 user['imageUrl'] as String;
                             final name = user['name'] as String;
-                            bool isAccepted = false;
 
                             return Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 20,
-                                      vertical: 13,
-                                    ),
-                                    child: Row(
-                                      children: <Widget>[
-                                        Expanded(
-                                          child: Row(
-                                            children: <Widget>[
-                                              CircleAvatar(
-                                                maxRadius: 38,
-                                                backgroundImage: profilePictureUrl != ""
-                                                    ? NetworkImage(profilePictureUrl)
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 13,
+                                ),
+                                child: Row(
+                                  children: <Widget>[
+                                    Expanded(
+                                      child: Row(
+                                        children: <Widget>[
+                                          CircleAvatar(
+                                            maxRadius: 38,
+                                            backgroundImage:
+                                                profilePictureUrl != ""
+                                                    ? NetworkImage(
+                                                        profilePictureUrl)
                                                     : null,
-                                                child: profilePictureUrl == ""
-                                                    ? Text(
-                                                  name != "" ? name[0] : '',
-                                                  style: ref.watch(stylesProvider).text.titleOnBoarding.copyWith(fontSize: 26),
-                                                )
-                                                    : null,
-                                              ),
-                                              SizedBox(
-                                                width: 16,
-                                              ),
-                                              Expanded(
-                                                child: Container(
-                                                  color: Colors.transparent,
-                                                  child: Column(
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                    children: <Widget>[
-                                                      Text(
-                                                        name ?? '',
-                                                        style: ref.watch(stylesProvider).text.contactOnBoarding,
-                                                      ),
-                                                      SizedBox(
-                                                        height: 6,
-                                                      ),
-                                                      Text(
-                                                        username ?? '',
-                                                        style: ref.watch(stylesProvider).text.numberContactOnBoarding,
-                                                      ),
-                                                    ],
+                                            child: profilePictureUrl == ""
+                                                ? Text(
+                                                    name != "" ? name[0] : '',
+                                                    style: ref
+                                                        .watch(stylesProvider)
+                                                        .text
+                                                        .titleOnBoarding
+                                                        .copyWith(fontSize: 26),
+                                                  )
+                                                : null,
+                                          ),
+                                          SizedBox(
+                                            width: 16,
+                                          ),
+                                          Expanded(
+                                            child: Container(
+                                              color: Colors.transparent,
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: <Widget>[
+                                                  Text(
+                                                    name ?? '',
+                                                    style: ref
+                                                        .watch(stylesProvider)
+                                                        .text
+                                                        .contactOnBoarding,
                                                   ),
-                                                ),
+                                                  SizedBox(
+                                                    height: 6,
+                                                  ),
+                                                  Text(
+                                                    username ?? '',
+                                                    style: ref
+                                                        .watch(stylesProvider)
+                                                        .text
+                                                        .numberContactOnBoarding,
+                                                  ),
+                                                ],
                                               ),
-                                            ],
+                                            ),
                                           ),
-                                        ),
-                                        ElevatedButton(
-                                          onPressed: () async {
-                                            await friendSystem.acceptFriendRequest(senderUserId);
-                                          },
-                                          style: ref.watch(stylesProvider).button.buttonInvite,
-                                          child: const Text("ACCEPT"),
-                                        ),
-                                        SizedBox(width: 10),
-                                        InkWell(
-                                          onTap: () async {
-                                            // await friendSystem.deleteSentRequest(recipientUserId);
-                                            setState(() {
-                                              // sentRequests.removeAt(index);
-                                            });
-                                          },
-                                          child: Icon(
-                                            Icons.close_rounded,
-                                            size: 25,
-                                            color: AppColors.a,
-                                          ),
-                                        ),
-                                      ],
-                                    )
-                            );
+                                        ],
+                                      ),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () async {
+                                        await friendSystem
+                                            .acceptFriendRequest(senderUserId);
+                                      },
+                                      style: ref
+                                          .watch(stylesProvider)
+                                          .button
+                                          .buttonInvite,
+                                      child: const Text("ACCEPT"),
+                                    ),
+                                    SizedBox(width: 10),
+                                    InkWell(
+                                      onTap: () async {
+                                        // await friendSystem.deleteSentRequest(recipientUserId);
+                                        setState(() {
+                                          // sentRequests.removeAt(index);
+                                        });
+                                      },
+                                      child: Icon(
+                                        Icons.close_rounded,
+                                        size: 25,
+                                        color: AppColors.a,
+                                      ),
+                                    ),
+                                  ],
+                                ));
                           }
 
                           return CircularProgressIndicator();
@@ -712,7 +869,22 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                     },
                   );
                 } else {
-                  return Container();
+                  return Container(
+                      margin: EdgeInsets.only(
+                          top: 25, bottom: 450, left: 25, right: 25),
+                      width: 400,
+                      height: 50,
+                      decoration: BoxDecoration(
+                          borderRadius: BorderRadius.all(Radius.circular(20)),
+                          color: AppColors.a),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('Nessuna richiesta in attesa'),
+                          SizedBox(height: 20),
+                          Text('Aggiungi nuovi amici!'),
+                        ],
+                      ));
                 }
               }
 
@@ -781,11 +953,11 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                   builder: (context, snapshot) {
                                     if (snapshot.hasData) {
                                       final user = snapshot.data!.data()
-                                      as Map<String, dynamic>;
+                                          as Map<String, dynamic>;
                                       final username =
-                                      user['username'] as String;
+                                          user['username'] as String;
                                       final profilePictureUrl =
-                                      user['imageUrl'] as String;
+                                          user['imageUrl'] as String;
                                       final name = user['name'] as String;
                                       bool isDismissed = true;
 
@@ -801,43 +973,44 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                                 children: <Widget>[
                                                   CircleAvatar(
                                                     maxRadius: 38,
-                                                    backgroundImage: profilePictureUrl !=
-                                                        ""
-                                                        ? NetworkImage(
-                                                        profilePictureUrl)
-                                                        : null,
-                                                    child: profilePictureUrl ==
-                                                        ""
-                                                        ? Text(
-                                                      name != ""
-                                                          ? name[0]
-                                                          : '',
-                                                      style: ref
-                                                          .watch(
-                                                          stylesProvider)
-                                                          .text
-                                                          .titleOnBoarding
-                                                          .copyWith(
-                                                          fontSize: 26),
-                                                    )
-                                                        : null,
+                                                    backgroundImage:
+                                                        profilePictureUrl != ""
+                                                            ? NetworkImage(
+                                                                profilePictureUrl)
+                                                            : null,
+                                                    child:
+                                                        profilePictureUrl == ""
+                                                            ? Text(
+                                                                name != ""
+                                                                    ? name[0]
+                                                                    : '',
+                                                                style: ref
+                                                                    .watch(
+                                                                        stylesProvider)
+                                                                    .text
+                                                                    .titleOnBoarding
+                                                                    .copyWith(
+                                                                        fontSize:
+                                                                            26),
+                                                              )
+                                                            : null,
                                                   ),
                                                   SizedBox(
                                                     width: 16,
                                                   ),
                                                   Expanded(
                                                     child: Container(
-                                                      color: Colors
-                                                          .transparent,
+                                                      color: Colors.transparent,
                                                       child: Column(
-                                                        crossAxisAlignment: CrossAxisAlignment
-                                                            .start,
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
                                                         children: <Widget>[
                                                           Text(
                                                             name ?? '',
                                                             style: ref
                                                                 .watch(
-                                                                stylesProvider)
+                                                                    stylesProvider)
                                                                 .text
                                                                 .contactOnBoarding,
                                                           ),
@@ -848,7 +1021,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                                             username ?? '',
                                                             style: ref
                                                                 .watch(
-                                                                stylesProvider)
+                                                                    stylesProvider)
                                                                 .text
                                                                 .numberContactOnBoarding,
                                                           ),
@@ -862,11 +1035,10 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                             Container(
                                               height: screenHeight / 27,
                                               width: screenWidth / 5,
-                                              child: Center(
-                                                  child: Text("ADDED")),
+                                              child:
+                                                  Center(child: Text("ADDED")),
                                               decoration: BoxDecoration(
-                                                borderRadius:
-                                                BorderRadius.all(
+                                                borderRadius: BorderRadius.all(
                                                     Radius.circular(20)),
                                                 color: AppColors.a,
                                               ),
@@ -876,10 +1048,9 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                               onTap: () async {
                                                 await friendSystem
                                                     .deleteSentRequest(
-                                                    recipientUserId);
+                                                        recipientUserId);
                                                 setState(() {
-                                                  sentRequests
-                                                      .removeAt(index);
+                                                  sentRequests.removeAt(index);
                                                 });
                                               },
                                               child: Icon(

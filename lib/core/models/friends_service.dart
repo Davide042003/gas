@@ -218,4 +218,26 @@ class FriendSystem {
       await recipientRef.delete();
     }
   }
+
+  Future<void> deleteFriend(String friendUserId) async {
+    final senderAcceptedRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .collection('friends')
+        .doc('accepted_friends')
+        .collection('friends')
+        .doc(friendUserId);
+
+    await senderAcceptedRef.delete();
+
+    final recipientAcceptedRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(friendUserId)
+        .collection('friends')
+        .doc('accepted_friends')
+        .collection('friends')
+        .doc(userId);
+
+    await recipientAcceptedRef.delete();
+  }
 }
