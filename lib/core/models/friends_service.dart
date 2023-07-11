@@ -111,7 +111,7 @@ class FriendSystem {
       return snapshot.docs[0].id;
   }
 
-  Future<void> sendFriendRequest(String recipientUserId) async {
+  Future<void> sendFriendRequest(String recipientUserId, String senderUserId) async {
     final senderRef = FirebaseFirestore.instance
         .collection('users')
         .doc(userId)
@@ -120,10 +120,27 @@ class FriendSystem {
         .collection('requests')
         .doc();
 
-    await senderRef.set({
+    final recipientRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(recipientUserId)
+        .collection('friends')
+        .doc('received_requests')
+        .collection('requests')
+        .doc(senderRef.id);
+
+    final requestData = {
       'recipientUserId': recipientUserId,
       // Additional request information can be added here
-    });
+    };
+
+    await senderRef.set(requestData);
+
+    final requestData2 = {
+      'senderUserId': senderUserId,
+      // Additional request information can be added here
+    };
+
+    await recipientRef.set(requestData2);
   }
 
   Future<void> acceptFriendRequest(String senderUserId) async {
@@ -174,5 +191,31 @@ class FriendSystem {
         .doc(userId);
 
     await recipientAcceptedRef.set({});
+  }
+
+  Future<void> deleteSentRequest(String recipientUserId) async {
+    final senderRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .collection('friends')
+        .doc('sent_requests')
+        .collection('requests')
+        .where('recipientUserId', isEqualTo: recipientUserId);
+
+    final senderSnapshot = await senderRef.get();
+    if (senderSnapshot.size > 0) {
+      final requestDoc = senderSnapshot.docs.first;
+      await requestDoc.reference.delete();
+
+      final recipientRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(recipientUserId)
+          .collection('friends')
+          .doc('received_requests')
+          .collection('requests')
+          .doc(requestDoc.id);
+
+      await recipientRef.delete();
+    }
   }
 }

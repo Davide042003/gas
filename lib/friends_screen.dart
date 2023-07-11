@@ -41,7 +41,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
 
   Future<void> sendFriendRequest(String recipientUserId) async {
     try {
-      await friendSystem.sendFriendRequest(recipientUserId);
+      await friendSystem.sendFriendRequest(recipientUserId, FirebaseAuth.instance.currentUser?.uid ?? '');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Friend request sent.'),
@@ -317,7 +317,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                     child: Text(
                       'ADD YOUR CONTACTS',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -593,51 +593,177 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
     );
   }
   void _showSentRequestsBottomSheet(BuildContext context) {
+    double screenHeight = MediaQuery
+        .of(context)
+        .size
+        .height;
+    double screenWidth = MediaQuery
+        .of(context)
+        .size
+        .width;
+
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.backgroundDefault,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16.0)),
+      ),
       builder: (context) {
-        return StreamBuilder<QuerySnapshot>(
-          stream: friendSystem.getSentRequests(),
-          builder: (context, snapshot) {
-            if (snapshot.hasData) {
-              final sentRequests = snapshot.data!.docs;
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return SingleChildScrollView(
+              child: Container(
+                padding: EdgeInsets.all(16.0),
+                height: MediaQuery.of(context).size.height * 0.9,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          Icon(Icons.arrow_downward),
+                          SizedBox(width: 100,),
+                          Text('Sent Requests'),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 16.0),
+                    Expanded(
+                      child: StreamBuilder<QuerySnapshot>(
+                        stream: friendSystem.getSentRequests(),
+                        builder: (context, snapshot) {
+                          if (snapshot.hasData) {
+                            final sentRequests = snapshot.data!.docs;
 
-              return ListView.builder(
-                itemCount: sentRequests.length,
-                itemBuilder: (context, index) {
-                  final request = sentRequests[index];
-                  final recipientUserId = request['recipientUserId'] as String;
+                            return ListView.builder(
+                              itemCount: sentRequests.length,
+                              itemBuilder: (context, index) {
+                                final request = sentRequests[index];
+                                final recipientUserId = request['recipientUserId'] as String;
 
-                  return FutureBuilder<DocumentSnapshot>(
-                    future: FirebaseFirestore.instance
-                        .collection('users')
-                        .doc(recipientUserId)
-                        .get(),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasData) {
-                        final user = snapshot.data!.data() as Map<String, dynamic>;
-                        final username = user['username'] as String;
-                        final profilePictureUrl = user['imageUrl'] as String;
-                        final name = user['name'] as String;
+                                return FutureBuilder<DocumentSnapshot>(
+                                  future: FirebaseFirestore.instance
+                                      .collection('users')
+                                      .doc(recipientUserId)
+                                      .get(),
+                                  builder: (context, snapshot) {
+                                    if (snapshot.hasData) {
+                                      final user = snapshot.data!.data() as Map<String, dynamic>;
+                                      final username = user['username'] as String;
+                                      final profilePictureUrl = user['imageUrl'] as String;
+                                      final name = user['name'] as String;
 
-                        return ListTile(
-                          leading: CircleAvatar(
-                            // Display the profile picture
-                            backgroundImage: NetworkImage(profilePictureUrl),
-                          ),
-                          title: Text(username), // Display the username
-                          subtitle: Text(name), // Display the name
-                        );
-                      }
+                                      return Dismissible(
+                                        key: Key(request.id),
+                                        direction: DismissDirection.endToStart,
+                                        onDismissed: (direction) async {
+                                          await friendSystem.deleteSentRequest(recipientUserId);
+                                          setState(() {
+                                            sentRequests.removeAt(index);
+                                          });
+                                        },
+                                        background: Container(
+                                          alignment: Alignment.centerRight,
+                                          padding: EdgeInsets.symmetric(horizontal: 20),
+                                          color: Colors.red,
+                                          child: Icon(
+                                            Icons.delete,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        child: Container(
+                                          padding: EdgeInsets.only(left: 2, right: 2, top: 13, bottom: 13),
+                                          child: Row(
+                                            children: <Widget>[
+                                              Expanded(
+                                                child: Row(
+                                                  children: <Widget>[
+                                                    CircleAvatar(
+                                                      maxRadius: 38,
+                                                      backgroundImage: profilePictureUrl != ""
+                                                          ? NetworkImage(profilePictureUrl)
+                                                          : null,
+                                                      child: profilePictureUrl == ""
+                                                          ? Text(
+                                                        name != "" ? name[0] : '',
+                                                        style: ref
+                                                            .watch(stylesProvider)
+                                                            .text
+                                                            .titleOnBoarding
+                                                            .copyWith(fontSize: 26),
+                                                      )
+                                                          : null,
+                                                    ),
+                                                    SizedBox(width: 16,),
+                                                    Expanded(
+                                                      child: Container(
+                                                        color: Colors.transparent,
+                                                        child: Column(
+                                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                                          children: <Widget>[
+                                                            Text(name ?? '', style: ref
+                                                                .watch(stylesProvider)
+                                                                .text
+                                                                .contactOnBoarding,),
+                                                            SizedBox(height: 6,),
+                                                            Text(username ?? '', style: ref
+                                                                .watch(stylesProvider)
+                                                                .text
+                                                                .numberContactOnBoarding,),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              Container(
+                                                height: screenHeight / 27,
+                                                width: screenWidth / 5,
+                                                child: Center(child: Text("ADDED")),
+                                                decoration: BoxDecoration(
+                                                  borderRadius: BorderRadius.all(Radius.circular(20)),
+                                                  color: AppColors.a,
+                                                ),
+                                              ),
+                                              SizedBox(width: 15),
+                                              InkWell(
+                                                onTap: () async {
+                                                  await friendSystem.deleteSentRequest(recipientUserId);
+                                                  setState(() {
+                                                    sentRequests.removeAt(index);
+                                                  });
+                                                },
+                                                child: Icon(
+                                                  Icons.close_rounded,
+                                                  size: 25,
+                                                  color: AppColors.a,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    }
 
-                      return CircularProgressIndicator();
-                    },
-                  );
-                },
-              );
-            }
+                                    return CircularProgressIndicator();
+                                  },
+                                );
+                              },
+                            );
+                          }
 
-            return CircularProgressIndicator();
+                          return CircularProgressIndicator();
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
           },
         );
       },
