@@ -10,6 +10,10 @@ import 'package:gas/core/models/friends_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:contacts_service/contacts_service.dart';
 import 'package:flutter/cupertino.dart';
+import 'core/ui/contact_widget.dart';
+import 'core/ui/friend_widget.dart';
+import 'core/ui/request_widget.dart';
+import 'core/ui/sent_request_widget.dart';
 
 class FriendsScreen extends ConsumerStatefulWidget {
   @override
@@ -271,36 +275,37 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                         ),
                       )
                     : Expanded(
-                  child: StreamBuilder<List<QueryDocumentSnapshot<Map<String, dynamic>>>>(
-                    stream: friendSystem.searchUsers(_searchQuery, id),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasData) {
-                        final users = snapshot.data!;
-                        return ListView.builder(
-                          itemCount: users.length,
-                          itemBuilder: (context, index) {
-                            final userData = users[index].data();
-                            return ListTile(
-                              title: Text(userData['username']),
-                              subtitle: Text(userData['name']),
-                              // Add any other user information you want to display
-                              onTap: () {
-                                // Handle tapping on a user
-                                // e.g., send a friend request, navigate to user profile, etc.
-                              },
-                            );
+                        child: StreamBuilder<
+                            List<QueryDocumentSnapshot<Map<String, dynamic>>>>(
+                          stream: friendSystem.searchUsers(_searchQuery, id),
+                          builder: (context, snapshot) {
+                            if (snapshot.hasData) {
+                              final users = snapshot.data!;
+                              return ListView.builder(
+                                itemCount: users.length,
+                                itemBuilder: (context, index) {
+                                  final userData = users[index].data();
+                                  return ListTile(
+                                    title: Text(userData['username']),
+                                    subtitle: Text(userData['name']),
+                                    // Add any other user information you want to display
+                                    onTap: () {
+                                      // Handle tapping on a user
+                                      // e.g., send a friend request, navigate to user profile, etc.
+                                    },
+                                  );
+                                },
+                              );
+                            } else if (snapshot.hasError) {
+                              return Text('Error: ${snapshot.error}');
+                            } else {
+                              return Center(
+                                child: CircularProgressIndicator(),
+                              );
+                            }
                           },
-                        );
-                      } else if (snapshot.hasError) {
-                        return Text('Error: ${snapshot.error}');
-                      } else {
-                        return Center(
-                          child: CircularProgressIndicator(),
-                        );
-                      }
-                    },
-                  ),
-                )
+                        ),
+                      )
               ],
             ),
             _searchQuery.isEmpty
@@ -422,125 +427,29 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                             final username = userData['username'];
                             final profilePicture = userData['imageUrl'];
 
-                            return SizeTransition(
-                                sizeFactor: animation,
-                                child: Container(
-                                  padding: EdgeInsets.only(
-                                      left: 20, right: 20, top: 13, bottom: 13),
-                                  child: Row(
-                                    children: <Widget>[
-                                      Expanded(
-                                        child: Row(
-                                          children: <Widget>[
-                                            CircleAvatar(
-                                              maxRadius: 38,
-                                              backgroundImage: profilePicture !=
-                                                      ""
-                                                  ? NetworkImage(profilePicture)
-                                                  : null,
-                                              child: profilePicture == ""
-                                                  ? Text(
-                                                      name != "" ? name[0] : '',
-                                                      style: ref
-                                                          .watch(stylesProvider)
-                                                          .text
-                                                          .titleOnBoarding
-                                                          .copyWith(
-                                                              fontSize: 26),
-                                                    )
-                                                  : null,
-                                            ),
-                                            SizedBox(
-                                              width: 16,
-                                            ),
-                                            Expanded(
-                                              child: Container(
-                                                color: Colors.transparent,
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: <Widget>[
-                                                    Text(
-                                                      name ?? '',
-                                                      style: ref
-                                                          .watch(stylesProvider)
-                                                          .text
-                                                          .contactOnBoarding,
-                                                    ),
-                                                    SizedBox(
-                                                      height: 6,
-                                                    ),
-                                                    Text(
-                                                      username ?? '',
-                                                      style: ref
-                                                          .watch(stylesProvider)
-                                                          .text
-                                                          .numberContactOnBoarding,
-                                                    ),
-                                                    SizedBox(
-                                                      height: 6,
-                                                    ),
-                                                    Row(
-                                                      children: [
-                                                        Icon(
-                                                            Icons
-                                                                .account_circle_rounded,
-                                                            size: 25),
-                                                        SizedBox(
-                                                          width: 5,
-                                                        ),
-                                                        Text(
-                                                          contact.displayName ??
-                                                              '',
-                                                          style: ref
-                                                              .watch(
-                                                                  stylesProvider)
-                                                              .text
-                                                              .numberContactOnBoarding,
-                                                        ),
-                                                      ],
-                                                    )
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
+                            return ContactWidget(
+                                animation: animation,
+                                profilePicture: profilePicture,
+                                name: name,
+                                username: username,
+                                nameContact: contact.displayName ?? '',
+                                onTap: () async {
+                                  final recipientUserId = userSnapshot.data?.id;
+                                  if (recipientUserId != null) {
+                                    await sendFriendRequest(recipientUserId);
+                                    setState(() {
+                                      registeredContacts.removeAt(index);
+                                    });
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                            'Recipient user ID not found.'),
+                                        duration: const Duration(seconds: 2),
                                       ),
-                                      Container(
-                                          height: screenHeight / 30,
-                                          child: ElevatedButton(
-                                            onPressed: () async {
-                                              final recipientUserId =
-                                                  userSnapshot.data?.id;
-                                              if (recipientUserId != null) {
-                                                await sendFriendRequest(
-                                                    recipientUserId);
-                                                setState(() {
-                                                  registeredContacts
-                                                      .removeAt(index);
-                                                });
-                                              } else {
-                                                ScaffoldMessenger.of(context)
-                                                    .showSnackBar(
-                                                  SnackBar(
-                                                    content: Text(
-                                                        'Recipient user ID not found.'),
-                                                    duration: const Duration(
-                                                        seconds: 2),
-                                                  ),
-                                                );
-                                              }
-                                            },
-                                            style: ref
-                                                .watch(stylesProvider)
-                                                .button
-                                                .buttonInvite,
-                                            child: const Text("ADD"),
-                                          ))
-                                    ],
-                                  ),
-                                ));
+                                    );
+                                  }
+                                });
                           } else {
                             return Text('User data not found.');
                           }
@@ -588,7 +497,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
               )),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-          stream: friendSystem.getFriends(),
+              stream: friendSystem.getFriends(),
               builder: (context, snapshot) {
                 if (snapshot.hasData) {
                   final friends = snapshot.data!.docs;
@@ -615,92 +524,25 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                               .get(),
                           builder: (context, snapshot) {
                             if (snapshot.hasData) {
-                              final user = snapshot.data!.data() as Map<String, dynamic>;
+                              final user =
+                                  snapshot.data!.data() as Map<String, dynamic>;
                               final username = user['username'] as String;
                               final profilePictureUrl =
-                              user['imageUrl'] as String;
+                                  user['imageUrl'] as String;
                               final name = user['name'] as String;
 
-                              return Container(
-                                  padding: EdgeInsets.symmetric(
-                                    vertical: 13,
-                                  ),
-                                  child: Row(
-                                    children: <Widget>[
-                                      Expanded(
-                                        child: Row(
-                                          children: <Widget>[
-                                            CircleAvatar(
-                                              maxRadius: 38,
-                                              backgroundImage:
-                                              profilePictureUrl != ""
-                                                  ? NetworkImage(
-                                                  profilePictureUrl)
-                                                  : null,
-                                              child: profilePictureUrl == ""
-                                                  ? Text(
-                                                name != "" ? name[0] : '',
-                                                style: ref
-                                                    .watch(stylesProvider)
-                                                    .text
-                                                    .titleOnBoarding
-                                                    .copyWith(fontSize: 26),
-                                              )
-                                                  : null,
-                                            ),
-                                            SizedBox(
-                                              width: 16,
-                                            ),
-                                            Expanded(
-                                              child: Container(
-                                                color: Colors.transparent,
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                                  children: <Widget>[
-                                                    Text(
-                                                      name ?? '',
-                                                      style: ref
-                                                          .watch(stylesProvider)
-                                                          .text
-                                                          .contactOnBoarding,
-                                                    ),
-                                                    SizedBox(
-                                                      height: 6,
-                                                    ),
-                                                    Text(
-                                                      username ?? '',
-                                                      style: ref
-                                                          .watch(stylesProvider)
-                                                          .text
-                                                          .numberContactOnBoarding,
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      SizedBox(width: 10),
-
-                                      InkWell(
-                                        onTap: ()  {
-                                          setState(() {
-                                            friendToDeleteId = friendId;
-                                            isLoading = true;
-                                          });
-                                          showDialogWithChoices();
-                                        },
-                                        child: isLoading
-                                            ? CircularProgressIndicator() : Icon(
-                                          Icons.close_rounded,
-                                          size: 25,
-                                          color: AppColors.a,
-                                        ),
-                                      ),
-                                    ],
-                                  ));
+                              return FriendWidget(
+                                  profilePictureUrl: profilePictureUrl,
+                                  name: name,
+                                  username: username,
+                                  isLoading: isLoading,
+                                  onDeleteFriend: () {
+                                    setState(() {
+                                      friendToDeleteId = friendId;
+                                      isLoading = true;
+                                    });
+                                    showDialogWithChoices();
+                                  });
                             }
 
                             return CircularProgressIndicator();
@@ -811,95 +653,20 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                 user['imageUrl'] as String;
                             final name = user['name'] as String;
 
-                            return Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                  vertical: 13,
-                                ),
-                                child: Row(
-                                  children: <Widget>[
-                                    Expanded(
-                                      child: Row(
-                                        children: <Widget>[
-                                          CircleAvatar(
-                                            maxRadius: 38,
-                                            backgroundImage:
-                                                profilePictureUrl != ""
-                                                    ? NetworkImage(
-                                                        profilePictureUrl)
-                                                    : null,
-                                            child: profilePictureUrl == ""
-                                                ? Text(
-                                                    name != "" ? name[0] : '',
-                                                    style: ref
-                                                        .watch(stylesProvider)
-                                                        .text
-                                                        .titleOnBoarding
-                                                        .copyWith(fontSize: 26),
-                                                  )
-                                                : null,
-                                          ),
-                                          SizedBox(
-                                            width: 16,
-                                          ),
-                                          Expanded(
-                                            child: Container(
-                                              color: Colors.transparent,
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: <Widget>[
-                                                  Text(
-                                                    name ?? '',
-                                                    style: ref
-                                                        .watch(stylesProvider)
-                                                        .text
-                                                        .contactOnBoarding,
-                                                  ),
-                                                  SizedBox(
-                                                    height: 6,
-                                                  ),
-                                                  Text(
-                                                    username ?? '',
-                                                    style: ref
-                                                        .watch(stylesProvider)
-                                                        .text
-                                                        .numberContactOnBoarding,
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    ElevatedButton(
-                                      onPressed: () async {
-                                        await friendSystem
-                                            .acceptFriendRequest(senderUserId);
-                                      },
-                                      style: ref
-                                          .watch(stylesProvider)
-                                          .button
-                                          .buttonInvite,
-                                      child: const Text("ACCEPT"),
-                                    ),
-                                    SizedBox(width: 10),
-                                    InkWell(
-                                      onTap: () async {
-                                        // await friendSystem.deleteSentRequest(recipientUserId);
-                                        setState(() {
-                                          // sentRequests.removeAt(index);
-                                        });
-                                      },
-                                      child: Icon(
-                                        Icons.close_rounded,
-                                        size: 25,
-                                        color: AppColors.a,
-                                      ),
-                                    ),
-                                  ],
-                                ));
+                            return RequestWidget(
+                                profilePictureUrl: profilePictureUrl,
+                                name: name,
+                                username: username,
+                                onAcceptFriendRequest: () async {
+                                  await friendSystem
+                                      .acceptFriendRequest(senderUserId);
+                                },
+                                onDeleteSentRequest: () async {
+                                  // await friendSystem.deleteSentRequest(recipientUserId);
+                                  setState(() {
+                                    // sentRequests.removeAt(index);
+                                  });
+                                });
                           }
 
                           return CircularProgressIndicator();
@@ -1000,107 +767,18 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                       final name = user['name'] as String;
                                       bool isDismissed = true;
 
-                                      return Container(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: 0,
-                                          vertical: 13,
-                                        ),
-                                        child: Row(
-                                          children: <Widget>[
-                                            Expanded(
-                                              child: Row(
-                                                children: <Widget>[
-                                                  CircleAvatar(
-                                                    maxRadius: 38,
-                                                    backgroundImage:
-                                                        profilePictureUrl != ""
-                                                            ? NetworkImage(
-                                                                profilePictureUrl)
-                                                            : null,
-                                                    child:
-                                                        profilePictureUrl == ""
-                                                            ? Text(
-                                                                name != ""
-                                                                    ? name[0]
-                                                                    : '',
-                                                                style: ref
-                                                                    .watch(
-                                                                        stylesProvider)
-                                                                    .text
-                                                                    .titleOnBoarding
-                                                                    .copyWith(
-                                                                        fontSize:
-                                                                            26),
-                                                              )
-                                                            : null,
-                                                  ),
-                                                  SizedBox(
-                                                    width: 16,
-                                                  ),
-                                                  Expanded(
-                                                    child: Container(
-                                                      color: Colors.transparent,
-                                                      child: Column(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
-                                                        children: <Widget>[
-                                                          Text(
-                                                            name ?? '',
-                                                            style: ref
-                                                                .watch(
-                                                                    stylesProvider)
-                                                                .text
-                                                                .contactOnBoarding,
-                                                          ),
-                                                          SizedBox(
-                                                            height: 6,
-                                                          ),
-                                                          Text(
-                                                            username ?? '',
-                                                            style: ref
-                                                                .watch(
-                                                                    stylesProvider)
-                                                                .text
-                                                                .numberContactOnBoarding,
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            Container(
-                                              height: screenHeight / 27,
-                                              width: screenWidth / 5,
-                                              child:
-                                                  Center(child: Text("ADDED")),
-                                              decoration: BoxDecoration(
-                                                borderRadius: BorderRadius.all(
-                                                    Radius.circular(20)),
-                                                color: AppColors.a,
-                                              ),
-                                            ),
-                                            SizedBox(width: 15),
-                                            InkWell(
-                                              onTap: () async {
-                                                await friendSystem
-                                                    .deleteSentRequest(
-                                                        recipientUserId);
-                                                setState(() {
-                                                  sentRequests.removeAt(index);
-                                                });
-                                              },
-                                              child: Icon(
-                                                Icons.close_rounded,
-                                                size: 25,
-                                                color: AppColors.a,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      );
+                                      return SentRequestWidget(
+                                          profilePictureUrl: profilePictureUrl,
+                                          name: name,
+                                          username: username,
+                                          onDeleteSentRequest: () async {
+                                            await friendSystem
+                                                .deleteSentRequest(
+                                                    recipientUserId);
+                                            setState(() {
+                                              sentRequests.removeAt(index);
+                                            });
+                                          });
                                     }
 
                                     return CircularProgressIndicator();
