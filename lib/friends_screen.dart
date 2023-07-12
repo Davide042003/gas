@@ -269,7 +269,37 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                           child: pages[_currentIndex],
                         ),
                       )
-                    : Container(),
+                    : Expanded(
+                  child: StreamBuilder<List<QueryDocumentSnapshot<Map<String, dynamic>>>>(
+                    stream: friendSystem.searchUsers(_searchQuery),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData) {
+                        final users = snapshot.data!;
+                        return ListView.builder(
+                          itemCount: users.length,
+                          itemBuilder: (context, index) {
+                            final userData = users[index].data();
+                            return ListTile(
+                              title: Text(userData['username']),
+                              subtitle: Text(userData['name']),
+                              // Add any other user information you want to display
+                              onTap: () {
+                                // Handle tapping on a user
+                                // e.g., send a friend request, navigate to user profile, etc.
+                              },
+                            );
+                          },
+                        );
+                      } else if (snapshot.hasError) {
+                        return Text('Error: ${snapshot.error}');
+                      } else {
+                        return Center(
+                          child: CircularProgressIndicator(),
+                        );
+                      }
+                    },
+                  ),
+                )
               ],
             ),
             _searchQuery.isEmpty
@@ -563,6 +593,14 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                   final friends = snapshot.data!.docs;
 
                   if (friends.length > 0) {
+                    //sort by username in alphabetical order
+                    friends.sort((a, b) {
+                      final friendDataA = (a.data() as Map<String, dynamic>);
+                      final friendDataB = (b.data() as Map<String, dynamic>);
+                      final usernameA = friendDataA['username'] as String;
+                      final usernameB = friendDataB['username'] as String;
+                      return usernameA.compareTo(usernameB);
+                    });
                     return ListView.builder(
                       itemCount: friends.length,
                       itemBuilder: (context, index) {

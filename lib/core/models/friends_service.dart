@@ -240,4 +240,23 @@ class FriendSystem {
 
     await recipientAcceptedRef.delete();
   }
+
+  Stream<List<QueryDocumentSnapshot<Map<String, dynamic>>>> searchUsers(
+      String searchText) {
+    final queryText = searchText.toLowerCase();
+
+    final stream = FirebaseFirestore.instance
+        .collection('users')
+        .orderBy('username', descending: false)
+        .snapshots();
+
+    return stream.map((snapshot) {
+      final filteredDocs = snapshot.docs
+          .where((doc) =>
+          doc['username'].toString().toLowerCase().contains(queryText))
+          .toList();
+
+      return filteredDocs;
+    });
+  }
 }
