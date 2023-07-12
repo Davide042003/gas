@@ -20,6 +20,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
   bool _searchBoxFocused = false;
   final TextEditingController _searchController = TextEditingController();
   late AnimationController _animationController;
+  String id = FirebaseAuth.instance.currentUser?.uid ?? '';
   final FriendSystem friendSystem =
       FriendSystem(userId: FirebaseAuth.instance.currentUser?.uid ?? '');
 
@@ -271,7 +272,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                       )
                     : Expanded(
                   child: StreamBuilder<List<QueryDocumentSnapshot<Map<String, dynamic>>>>(
-                    stream: friendSystem.searchUsers(_searchQuery),
+                    stream: friendSystem.searchUsers(_searchQuery, id),
                     builder: (context, snapshot) {
                       if (snapshot.hasData) {
                         final users = snapshot.data!;

@@ -242,7 +242,9 @@ class FriendSystem {
   }
 
   Stream<List<QueryDocumentSnapshot<Map<String, dynamic>>>> searchUsers(
-      String searchText) {
+      String searchText,
+      String currentUserId,
+      ) {
     final queryText = searchText.toLowerCase();
 
     final stream = FirebaseFirestore.instance
@@ -251,10 +253,11 @@ class FriendSystem {
         .snapshots();
 
     return stream.map((snapshot) {
-      final filteredDocs = snapshot.docs
-          .where((doc) =>
-          doc['username'].toString().toLowerCase().contains(queryText))
-          .toList();
+      final filteredDocs = snapshot.docs.where((doc) {
+        final username = doc.data()['username'].toString().toLowerCase();
+        final userId = doc.id;
+        return username.contains(queryText) && userId != currentUserId;
+      }).toList();
 
       return filteredDocs;
     });
