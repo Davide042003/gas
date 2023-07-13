@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:contacts_service/contacts_service.dart';
+import 'package:rxdart/rxdart.dart';
 
 class FriendSystem {
   final String userId;
@@ -385,5 +386,61 @@ class FriendSystem {
 
       return filteredDocs;
     });
+  }
+
+  Stream<List<Map<String, dynamic>>> combineStreams(String searchText) {
+    final queryText = searchText.toLowerCase();
+
+    final searchFriendsStream = searchFriends(searchText);
+    final searchSentRequestsStream = searchSentRequests(searchText);
+    final searchReceivedRequestsStream = searchReceivedRequests(searchText);
+    final searchContactsStream = searchContactsByUsername(searchText);
+
+    final combinedStream = Rx.combineLatest4(
+      searchFriendsStream,
+      searchReceivedRequestsStream,
+      searchSentRequestsStream,
+      searchContactsStream,
+          (
+          List<DocumentSnapshot<Map<String, dynamic>>> friends,
+          List<DocumentSnapshot<Map<String, dynamic>>> receivedRequests,
+          List<DocumentSnapshot<Map<String, dynamic>>> sentRequests,
+          List<DocumentSnapshot<Map<String, dynamic>>> contacts,
+          ) {
+        List<Map<String, dynamic>> combinedResults = [];
+
+        // Add friends with title
+        if (friends.isNotEmpty) {
+          combinedResults.add({'title': 'Friends'});
+          combinedResults.add({'type': 'friends'});
+          combinedResults.addAll(friends.map((doc) => doc.data()!));
+        }
+
+        // Add sent requests with title
+        if (sentRequests.isNotEmpty) {
+          combinedResults.add({'title': 'Sent Requests'});
+          combinedResults.add({'type': 'sentRequest'});
+          combinedResults.addAll(sentRequests.map((doc) => doc.data()!));
+        }
+
+        // Add received requests with title
+        if (receivedRequests.isNotEmpty) {
+          combinedResults.add({'title': 'Received Requests'});
+          combinedResults.add({'type': 'receivedRequest'});
+          combinedResults.addAll(receivedRequests.map((doc) => doc.data()!));
+        }
+
+        // Add contacts with title
+        if (contacts.isNotEmpty) {
+          combinedResults.add({'title': 'Contacts'});
+          combinedResults.add({'type': 'contact'});
+          combinedResults.addAll(contacts.map((doc) => doc.data()!));
+        }
+
+        return combinedResults;
+      },
+    );
+
+    return combinedStream;
   }
 }

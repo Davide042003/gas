@@ -274,29 +274,81 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                         ),
                       )
                     : Expanded(
-                        child: StreamBuilder<
-                            List<DocumentSnapshot<Map<String, dynamic>>>>(
-                          stream: friendSystem.searchContactsByUsername(_searchQuery),
+                        child: Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: StreamBuilder<List<Map<String, dynamic>>>(
+                          stream: friendSystem.combineStreams(_searchQuery),
                           builder: (context, snapshot) {
                             if (snapshot.hasData) {
-                              final users = snapshot.data!;
-                              return ListView.builder(
-                                itemCount: users.length,
-                                itemBuilder: (context, index) {
-                                  final doc = users[index];
-                                  final userData = doc.data();
-                                  final username = userData?['username'] ?? 'No username';
-                                  final name = userData?['name'] ?? 'No name';
-                                  return ListTile(
-                                    title: Text(username),
-                                    subtitle: Text(name),
-                                    // Add any other user information you want to display
-                                    onTap: () {
-                                      // Handle tapping on a user
-                                      // e.g., send a friend request, navigate to user profile, etc.
-                                    },
+                              final searchResults = snapshot.data!;
+                              final widgets = <Widget>[];
+                              String type = "";
+
+                              // Build widgets for each result
+                              for (final result in searchResults) {
+                                final userData = result;
+                                final username = userData['username'];
+                                final profilePictureUrl = userData['imageUrl'];
+                                final name = userData['name'];
+                                final id = userData['id'];
+
+                                final title = result['title'] as String?;
+
+                                if (result['type'] != null) {
+                                  type = result['type'];
+                                } else if (title != null) {
+                                  // Add title widget
+                                  widgets.add(Text(title,
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.bold)),
                                   );
-                                },
+                                } else if (type == 'friends') {
+                                  widgets.add(FriendWidget(
+                                      profilePictureUrl: profilePictureUrl,
+                                      name: name,
+                                      username: username,
+                                      isLoading: isLoading,
+                                      onDeleteFriend: () {
+                                        setState(() {
+                                          friendToDeleteId = id;
+                                          isLoading = true;
+                                        });
+                                        showDialogWithChoices();
+                                      }));
+                                } else if (type == 'sentRequest') {
+                                  print("added");
+                                  widgets.add(SentRequestWidget(
+                                      profilePictureUrl: profilePictureUrl ??
+                                          '',
+                                      name: name ?? '',
+                                      username: username ?? '',
+                                      onDeleteSentRequest: () async {
+                                        await friendSystem
+                                            .deleteSentRequest(id);
+                                        setState(() {
+                                          //    sentRequests.removeAt(index);
+                                        });
+                                      }));
+                                } else if (type == 'receivedRequest') {
+                                  widgets.add(RequestWidget(
+                                      profilePictureUrl: profilePictureUrl,
+                                      name: name,
+                                      username: username,
+                                      onAcceptFriendRequest: () async {
+                                        await friendSystem
+                                            .acceptFriendRequest(id);
+                                      },
+                                      onDeleteSentRequest: () async {
+                                        // await friendSystem.deleteSentRequest(recipientUserId);
+                                        setState(() {
+                                          // sentRequests.removeAt(index);
+                                        });
+                                      }));
+                                } else if (type == 'contact') {
+
+                                }
+                              }
+
+                              return ListView(
+                                children: widgets,
                               );
                             } else if (snapshot.hasError) {
                               return Text('Error: ${snapshot.error}');
@@ -306,7 +358,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                               );
                             }
                           },
-                        ),
+                        ),),
                       )
               ],
             ),
