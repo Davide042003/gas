@@ -274,91 +274,108 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                         ),
                       )
                     : Expanded(
-                        child: Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: StreamBuilder<List<Map<String, dynamic>>>(
-                          stream: friendSystem.combineStreams(_searchQuery),
-                          builder: (context, snapshot) {
-                            if (snapshot.hasData) {
-                              final searchResults = snapshot.data!;
-                              final widgets = <Widget>[];
-                              String type = "";
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 20),
+                          child: StreamBuilder<List<Map<String, dynamic>>>(
+                            stream: friendSystem.combineStreams(_searchQuery),
+                            builder: (context, snapshot) {
+                              if (snapshot.hasData) {
+                                final searchResults = snapshot.data!;
+                                final widgets = <Widget>[];
+                                String type = "";
 
-                              // Build widgets for each result
-                              for (final result in searchResults) {
-                                final userData = result;
-                                final username = userData['username'];
-                                final profilePictureUrl = userData['imageUrl'];
-                                final name = userData['name'];
-                                final id = userData['id'];
+                                // Build widgets for each result
+                                for (final result in searchResults) {
+                                  final userData = result;
+                                  final username = userData['username'];
+                                  final profilePictureUrl =
+                                      userData['imageUrl'];
+                                  final name = userData['name'];
+                                  final id = userData['id'];
+                                  final displayName = userData['displayName'];
 
-                                final title = result['title'] as String?;
+                                  final title = result['title'] as String?;
 
-                                if (result['type'] != null) {
-                                  type = result['type'];
-                                } else if (title != null) {
-                                  // Add title widget
-                                  widgets.add(Text(title,
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold)),
-                                  );
-                                } else if (type == 'friends') {
-                                  widgets.add(FriendWidget(
-                                      profilePictureUrl: profilePictureUrl,
-                                      name: name,
-                                      username: username,
-                                      isLoading: isLoading,
-                                      onDeleteFriend: () {
-                                        setState(() {
-                                          friendToDeleteId = id;
-                                          isLoading = true;
-                                        });
-                                        showDialogWithChoices();
-                                      }));
-                                } else if (type == 'sentRequest') {
-                                  print("added");
-                                  widgets.add(SentRequestWidget(
-                                      profilePictureUrl: profilePictureUrl ??
-                                          '',
-                                      name: name ?? '',
-                                      username: username ?? '',
-                                      onDeleteSentRequest: () async {
-                                        await friendSystem
-                                            .deleteSentRequest(id);
-                                        setState(() {
-                                          //    sentRequests.removeAt(index);
-                                        });
-                                      }));
-                                } else if (type == 'receivedRequest') {
-                                  widgets.add(RequestWidget(
-                                      profilePictureUrl: profilePictureUrl,
-                                      name: name,
-                                      username: username,
-                                      onAcceptFriendRequest: () async {
-                                        await friendSystem
-                                            .acceptFriendRequest(id);
-                                      },
-                                      onDeleteSentRequest: () async {
-                                        // await friendSystem.deleteSentRequest(recipientUserId);
-                                        setState(() {
-                                          // sentRequests.removeAt(index);
-                                        });
-                                      }));
-                                } else if (type == 'contact') {
-
+                                  if (result['type'] != null) {
+                                    type = result['type'];
+                                  } else if (title != null) {
+                                    // Add title widget
+                                    widgets.add(Text(title,
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold)));
+                                  } else if (type == 'friends') {
+                                    widgets.add(FriendWidget(
+                                        profilePictureUrl: profilePictureUrl,
+                                        name: name,
+                                        username: username,
+                                        isLoading: isLoading,
+                                        onDeleteFriend: () {
+                                          setState(() {
+                                            friendToDeleteId = id;
+                                            isLoading = true;
+                                          });
+                                          showDialogWithChoices();
+                                        }));
+                                  } else if (type == 'sentRequest') {
+                                    widgets.add(SentRequestWidget(
+                                        profilePictureUrl:
+                                            profilePictureUrl ?? '',
+                                        name: name ?? '',
+                                        username: username ?? '',
+                                        onDeleteSentRequest: () async {
+                                          await friendSystem
+                                              .deleteSentRequest(id);
+                                          setState(() {
+                                            //    sentRequests.removeAt(index);
+                                          });
+                                        }));
+                                  } else if (type == 'receivedRequest') {
+                                    widgets.add(RequestWidget(
+                                        profilePictureUrl: profilePictureUrl,
+                                        name: name,
+                                        username: username,
+                                        onAcceptFriendRequest: () async {
+                                          await friendSystem
+                                              .acceptFriendRequest(id);
+                                        },
+                                        onDeleteSentRequest: () async {
+                                          // await friendSystem.deleteSentRequest(recipientUserId);
+                                          setState(() {
+                                            // sentRequests.removeAt(index);
+                                          });
+                                        }));
+                                  } else if (type == 'contact') {
+                                    widgets.add(ContactWidget(
+                                        profilePicture: profilePictureUrl,
+                                        name: name,
+                                        username: username,
+                                        nameContact: displayName,
+                                        onTap: () async {
+                                          final recipientUserId = id;
+                                          if (id != null) {
+                                            await sendFriendRequest(
+                                                id);
+                                            setState(() {
+                                       //       registeredContacts.removeAt(index);
+                                            });
+                                          }
+                                        }));
+                                  }
                                 }
-                              }
 
-                              return ListView(
-                                children: widgets,
-                              );
-                            } else if (snapshot.hasError) {
-                              return Text('Error: ${snapshot.error}');
-                            } else {
-                              return Center(
-                                child: CircularProgressIndicator(),
-                              );
-                            }
-                          },
-                        ),),
+                                return ListView(
+                                  children: widgets,
+                                );
+                              } else if (snapshot.hasError) {
+                                return Text('Error: ${snapshot.error}');
+                              } else {
+                                return Center(
+                                  child: CircularProgressIndicator(),
+                                );
+                              }
+                            },
+                          ),
+                        ),
                       )
               ],
             ),
@@ -455,12 +472,12 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                     ),
                   ),
                 ),
-                AnimatedList(
+                ListView.builder(
                   shrinkWrap: true,
                   physics: NeverScrollableScrollPhysics(),
                   // Disable list scrolling
-                  initialItemCount: registeredContacts.length,
-                  itemBuilder: (context, index, animation) {
+                  itemCount: registeredContacts.length,
+                  itemBuilder: (context, index) {
                     final contact = registeredContacts[index];
                     final phoneNumber = contact.phones?.firstOrNull?.value;
 
@@ -482,7 +499,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                             final profilePicture = userData['imageUrl'];
 
                             return ContactWidget(
-                                animation: animation,
                                 profilePicture: profilePicture,
                                 name: name,
                                 username: username,

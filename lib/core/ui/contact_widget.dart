@@ -3,7 +3,6 @@ import 'package:gas/styles/styles_provider.dart';
 import 'package:gas/styles/colors.dart';
 
 class ContactWidget extends StatelessWidget {
-  final Animation<double> animation;
   final String profilePicture;
   final String name;
   final String username;
@@ -11,7 +10,6 @@ class ContactWidget extends StatelessWidget {
   final Function() onTap;
 
   ContactWidget({
-    required this.animation,
     required this.profilePicture,
     required this.name,
     required this.username,
@@ -30,9 +28,7 @@ class ContactWidget extends StatelessWidget {
         .size
         .height;
 
-    return SizeTransition(
-      sizeFactor: animation,
-      child: Container(
+    return Container(
         padding: EdgeInsets.only(left: 20, right: 20, top: 13, bottom: 13),
         child: Row(
           children: <Widget>[
@@ -112,7 +108,6 @@ class ContactWidget extends StatelessWidget {
               ),
             ),
           ],
-        ),
       ),
     );
   }

@@ -367,17 +367,11 @@ class FriendSystem {
           final userExists = await checkUserExistsByPhoneNumber(phoneNumber);
           if (userExists) {
             final userId = await getUserIdFromPhoneNumber(phoneNumber);
-            final userSnapshot = await FirebaseFirestore.instance.collection(
-                'users').doc(userId).get();
-            final username = userSnapshot.data()?['username']
-                ?.toString()
-                ?.toLowerCase();
-            final name = userSnapshot.data()?['name']
-                ?.toString()
-                ?.toLowerCase();
+            final userSnapshot = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+            final username = userSnapshot.data()?['username']?.toString()?.toLowerCase();
+            final name = userSnapshot.data()?['name']?.toString()?.toLowerCase();
 
-            if ((username?.contains(queryText) ?? false) ||
-                (name?.contains(queryText) ?? false)) {
+            if ((username?.contains(queryText) ?? false) || (name?.contains(queryText) ?? false)) {
               filteredDocs.add(userSnapshot);
             }
           }
@@ -401,12 +395,10 @@ class FriendSystem {
       searchReceivedRequestsStream,
       searchSentRequestsStream,
       searchContactsStream,
-          (
-          List<DocumentSnapshot<Map<String, dynamic>>> friends,
+          (List<DocumentSnapshot<Map<String, dynamic>>> friends,
           List<DocumentSnapshot<Map<String, dynamic>>> receivedRequests,
           List<DocumentSnapshot<Map<String, dynamic>>> sentRequests,
-          List<DocumentSnapshot<Map<String, dynamic>>> contacts,
-          ) {
+          List<DocumentSnapshot<Map<String, dynamic>>> contacts,) async {
         List<Map<String, dynamic>> combinedResults = [];
 
         // Add friends with title
@@ -434,13 +426,47 @@ class FriendSystem {
         if (contacts.isNotEmpty) {
           combinedResults.add({'title': 'Contacts'});
           combinedResults.add({'type': 'contact'});
-          combinedResults.addAll(contacts.map((doc) => doc.data()!));
+          combinedResults.addAll(
+            await Future.wait(
+              contacts.map(
+                    (DocumentSnapshot<Map<String, dynamic>> doc) async {
+                  final contactData = doc.data()!;
+                  final phoneNumber = contactData['phoneNumber'];
+
+                  // Assuming you have a ContactService that fetches the display name based on the phone number
+                  final displayName = await getDisplayNameByPhoneNumber(
+                      phoneNumber);
+
+                  contactData['displayName'] =
+                      displayName; // Add the 'displayName' field
+                  return contactData;
+                },
+              ),
+            ),
+          );
         }
 
         return combinedResults;
       },
-    );
+    ).asyncMap((
+        value) => value); // Convert the Future<List<Map<String, dynamic>>> to List<Map<String, dynamic>>
 
     return combinedStream;
+  }
+
+  Future<String> getDisplayNameByPhoneNumber(String phoneNumber) async {
+    // Query the contacts with the given phone number
+    final Iterable<Contact> contacts = await ContactsService.getContactsForPhone(phoneNumber);
+
+    if (contacts.isNotEmpty) {
+      // Get the first contact that matches the phone number
+      final Contact contact = contacts.first;
+
+      print(contact.displayName);
+      // Retrieve the display name
+      return contact.displayName ?? '';
+    }
+
+    return '';
   }
 }
