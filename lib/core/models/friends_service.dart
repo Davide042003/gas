@@ -241,10 +241,7 @@ class FriendSystem {
     await recipientAcceptedRef.delete();
   }
 
-  Stream<List<QueryDocumentSnapshot<Map<String, dynamic>>>> searchUsers(
-      String searchText,
-      String currentUserId,
-      ) {
+  Stream<List<DocumentSnapshot<Map<String, dynamic>>>> searchUsers(String searchText,) {
     final queryText = searchText.toLowerCase();
 
     final stream = FirebaseFirestore.instance
@@ -255,9 +252,136 @@ class FriendSystem {
     return stream.map((snapshot) {
       final filteredDocs = snapshot.docs.where((doc) {
         final username = doc.data()['username'].toString().toLowerCase();
-        final userId = doc.id;
-        return username.contains(queryText) && userId != currentUserId;
+        final name = doc.data()['name'].toString().toLowerCase();
+        final userIdDoc = doc.id;
+        return (username.contains(queryText) || name.contains(queryText)) &&
+            userIdDoc != userId;
       }).toList();
+
+      return filteredDocs;
+    });
+  }
+
+  Stream<List<DocumentSnapshot<Map<String, dynamic>>>> searchFriends(String searchText,) {
+    final queryText = searchText.toLowerCase();
+
+    final stream = FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .collection('friends')
+        .doc('accepted_friends')
+        .collection('friends')
+        .snapshots();
+
+    return stream.map((snapshot) {
+      final filteredDocs = snapshot.docs.where((doc) {
+        final username = doc.data()['username'].toString().toLowerCase();
+        final name = doc.data()['name'].toString().toLowerCase();
+        final userId = doc.id;
+        return (username.contains(queryText) || name.contains(queryText)) &&
+            userId != userId;
+      }).toList();
+
+      return filteredDocs;
+    });
+  }
+
+  Stream<List<DocumentSnapshot<Map<String, dynamic>>>> searchSentRequests(String searchText,) {
+    final queryText = searchText.toLowerCase();
+
+    final sentRequestsStream = FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .collection('friends')
+        .doc('sent_requests')
+        .collection('requests')
+        .snapshots();
+
+    return sentRequestsStream.asyncMap((snapshot) async {
+      final filteredDocs = <DocumentSnapshot<Map<String, dynamic>>>[];
+
+      for (final doc in snapshot.docs) {
+        final recipientUserId = doc['recipientUserId'].toString();
+
+        final userSnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(recipientUserId)
+            .get();
+
+        final username = userSnapshot.data()?['username']?.toString()?.toLowerCase();
+        final name = userSnapshot.data()?['name']?.toString()?.toLowerCase();
+
+        if ((username?.contains(queryText) ?? false) || (name?.contains(queryText) ?? false)) {
+          filteredDocs.add(userSnapshot);
+        }
+      }
+
+      return filteredDocs;
+    });
+  }
+
+  Stream<List<DocumentSnapshot<Map<String, dynamic>>>> searchReceivedRequests(String searchText,) {
+    final queryText = searchText.toLowerCase();
+
+    final sentRequestsStream = FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .collection('friends')
+        .doc('received_requests')
+        .collection('requests')
+        .snapshots();
+
+    return sentRequestsStream.asyncMap((snapshot) async {
+      final filteredDocs = <DocumentSnapshot<Map<String, dynamic>>>[];
+
+      for (final doc in snapshot.docs) {
+        final senderUserId = doc['senderUserId'].toString();
+
+        final userSnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(senderUserId)
+            .get();
+
+        final username = userSnapshot.data()?['username']?.toString()?.toLowerCase();
+        final name = userSnapshot.data()?['name']?.toString()?.toLowerCase();
+
+        if ((username?.contains(queryText) ?? false) || (name?.contains(queryText) ?? false)) {
+          filteredDocs.add(userSnapshot);
+        }
+      }
+
+      return filteredDocs;
+    });
+  }
+
+  Stream<List<DocumentSnapshot<Map<String, dynamic>>>> searchContactsByUsername(String searchText) {
+    final queryText = searchText.toLowerCase();
+
+    return Stream.fromFuture(getNonFriendsContacts()).asyncMap((nonFriends) async {
+      final filteredDocs = <DocumentSnapshot<Map<String, dynamic>>>[];
+
+      for (final contact in nonFriends) {
+        final phoneNumber = contact.phones?.first.value;
+        if (phoneNumber != null) {
+          final userExists = await checkUserExistsByPhoneNumber(phoneNumber);
+          if (userExists) {
+            final userId = await getUserIdFromPhoneNumber(phoneNumber);
+            final userSnapshot = await FirebaseFirestore.instance.collection(
+                'users').doc(userId).get();
+            final username = userSnapshot.data()?['username']
+                ?.toString()
+                ?.toLowerCase();
+            final name = userSnapshot.data()?['name']
+                ?.toString()
+                ?.toLowerCase();
+
+            if ((username?.contains(queryText) ?? false) ||
+                (name?.contains(queryText) ?? false)) {
+              filteredDocs.add(userSnapshot);
+            }
+          }
+        }
+      }
 
       return filteredDocs;
     });

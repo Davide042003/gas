@@ -24,7 +24,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
   bool _searchBoxFocused = false;
   final TextEditingController _searchController = TextEditingController();
   late AnimationController _animationController;
-  String id = FirebaseAuth.instance.currentUser?.uid ?? '';
   final FriendSystem friendSystem =
       FriendSystem(userId: FirebaseAuth.instance.currentUser?.uid ?? '');
 
@@ -276,18 +275,21 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                       )
                     : Expanded(
                         child: StreamBuilder<
-                            List<QueryDocumentSnapshot<Map<String, dynamic>>>>(
-                          stream: friendSystem.searchUsers(_searchQuery, id),
+                            List<DocumentSnapshot<Map<String, dynamic>>>>(
+                          stream: friendSystem.searchContactsByUsername(_searchQuery),
                           builder: (context, snapshot) {
                             if (snapshot.hasData) {
                               final users = snapshot.data!;
                               return ListView.builder(
                                 itemCount: users.length,
                                 itemBuilder: (context, index) {
-                                  final userData = users[index].data();
+                                  final doc = users[index];
+                                  final userData = doc.data();
+                                  final username = userData?['username'] ?? 'No username';
+                                  final name = userData?['name'] ?? 'No name';
                                   return ListTile(
-                                    title: Text(userData['username']),
-                                    subtitle: Text(userData['name']),
+                                    title: Text(username),
+                                    subtitle: Text(name),
                                     // Add any other user information you want to display
                                     onTap: () {
                                       // Handle tapping on a user
