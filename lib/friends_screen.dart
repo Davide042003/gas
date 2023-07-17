@@ -301,8 +301,8 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                   } else if (title != null) {
                                     // Add title widget
                                     widgets.add(Text(title,
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold)));
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.bold)));
                                   } else if (type == 'friends') {
                                     widgets.add(FriendWidget(
                                         profilePictureUrl: profilePictureUrl,
@@ -350,13 +350,13 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                         name: name,
                                         username: username,
                                         nameContact: displayName,
+                                        id: id,
                                         onTap: () async {
                                           final recipientUserId = id;
                                           if (id != null) {
-                                            await sendFriendRequest(
-                                                id);
+                                            await sendFriendRequest(id);
                                             setState(() {
-                                       //       registeredContacts.removeAt(index);
+                                              //       registeredContacts.removeAt(index);
                                             });
                                           }
                                         }));
@@ -497,12 +497,14 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                             final name = userData['name'];
                             final username = userData['username'];
                             final profilePicture = userData['imageUrl'];
+                            final id = userData['id'];
 
                             return ContactWidget(
                                 profilePicture: profilePicture,
                                 name: name,
                                 username: username,
                                 nameContact: contact.displayName ?? '',
+                                id: id,
                                 onTap: () async {
                                   final recipientUserId = userSnapshot.data?.id;
                                   if (recipientUserId != null) {
@@ -866,6 +868,61 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                 ),
               ),
             );
+          },
+        );
+      },
+    );
+  }
+
+  void _showOtherProfileBottomSheet(BuildContext context) {
+    double screenHeight = MediaQuery.of(context).size.height;
+    double screenWidth = MediaQuery.of(context).size.width;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.backgroundDefault,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16.0)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Container(
+                padding: EdgeInsets.all(16.0),
+                height: MediaQuery.of(context).size.height * 0.9,
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            Icon(Icons.arrow_downward),
+                            SizedBox(
+                              width: 100,
+                            ),
+                            Text('ProfileName'),
+                          ],
+                        ),
+                      ),
+                      SizedBox(
+                        height: 10,
+                      ),
+                      Stack(children: [
+                        Container(
+                          color: AppColors.whiteShadow,
+                          height: screenHeight / 600,
+                        ),
+                        Center(
+                            child: Container(
+                          color: AppColors.white,
+                          height: screenHeight / 400,
+                          width: screenWidth / 2.5,
+                        ))
+                      ]),
+                    ]));
           },
         );
       },

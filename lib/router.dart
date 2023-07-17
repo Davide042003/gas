@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'profile_screen.dart';
 import 'profile_edit_screen.dart';
 import 'friends_screen.dart';
+import 'package:gas/other_profile.dart';
 
 final GoRouter router = GoRouter(
   routes: <GoRoute>[

@@ -8,6 +8,32 @@ import 'package:path/path.dart' as path;
 
 class UserInfoService {
 
+  Stream<UserModel?> fetchOtherProfileData(String idOther) {
+    try {
+      // Create a document reference for the user
+      DocumentReference userRef = FirebaseFirestore.instance.collection('users')
+          .doc(idOther);
+
+      // Return the snapshot changes as a stream
+      return userRef.snapshots().map((snapshot) {
+        if (snapshot.exists) {
+          // Convert the document data to a UserModel object
+          UserModel user = UserModel.fromData(
+              snapshot.data() as Map<String, dynamic>);
+          print('FETCHED other user profile data');
+          return user;
+        } else {
+          // Document doesn't exist
+          return null;
+        }
+      });
+    } catch (e) {
+      // Error handling
+      print('Error fetching other user profile data: $e');
+      return Stream.error('Error fetching other user profile data');
+    }
+  }
+
   Stream<UserModel?> fetchProfileData() {
     try {
       // Get the current user's UID4
