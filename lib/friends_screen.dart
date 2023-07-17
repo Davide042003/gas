@@ -322,6 +322,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                             profilePictureUrl ?? '',
                                         name: name ?? '',
                                         username: username ?? '',
+                                        id: id,
                                         onDeleteSentRequest: () async {
                                           await friendSystem
                                               .deleteSentRequest(id);
@@ -837,12 +838,15 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                       final profilePictureUrl =
                                           user['imageUrl'] as String;
                                       final name = user['name'] as String;
+                                      final id = user['id'];
+
                                       bool isDismissed = true;
 
                                       return SentRequestWidget(
                                           profilePictureUrl: profilePictureUrl,
                                           name: name,
                                           username: username,
+                                          id: id,
                                           onDeleteSentRequest: () async {
                                             await friendSystem
                                                 .deleteSentRequest(
