@@ -475,6 +475,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                   ),
                 ),
                 ListView.builder(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
                   shrinkWrap: true,
                   physics: NeverScrollableScrollPhysics(),
                   // Disable list scrolling

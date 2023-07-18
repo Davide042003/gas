@@ -30,7 +30,7 @@ class ContactWidget extends StatelessWidget {
           BottomSheetProfile.showOtherProfileBottomSheet(context, id);
         },
         child: Container(
-          padding: EdgeInsets.only(left: 20, right: 20, top: 13, bottom: 13),
+          padding: EdgeInsets.symmetric(vertical: 13),
           child: Row(
             children: <Widget>[
               Expanded(
