@@ -91,7 +91,7 @@ class BottomSheetProfile {
     }
 
     // Method to show the received request widget
-    Widget _buildReceivedRequestWidget(String username) {
+    Widget _buildReceivedRequestWidget(String username, Function() accept, Function() decline) {
       return Container(
         decoration: BoxDecoration(
           color:AppColors.a,
@@ -114,19 +114,18 @@ class BottomSheetProfile {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ElevatedButton.icon(
-                  onPressed: () {
-                    // Implement the action when the button is pressed
-                  },
+                  onPressed: accept,
                   style: ElevatedButton.styleFrom(
                     elevation: 0,
                     primary: AppColors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10), // Adjust the button padding
                   ),
                   icon: Icon(
                     Icons.person_add_rounded,
-                    color: Colors.white,
+                    color: AppColors.brown,
                   ),
                   label: Text(
                     'Accept',
@@ -134,25 +133,25 @@ class BottomSheetProfile {
                       fontFamily: 'Helvetica',
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
-                      color: AppColors.brownShadow,
+                      color: AppColors.brown,
                     ),
                   ),
                 ),
                 SizedBox(width: 5,),
                 ElevatedButton.icon(
-                  onPressed: () {
-                    // Implement the action when the button is pressed
-                  },
+                  onPressed: decline,
                   style: ElevatedButton.styleFrom(
                     elevation: 0,
-                    primary: AppColors.white,
+                    primary: Colors.transparent,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: AppColors.brown, width: 2), // Add a border
                     ),
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10), // Adjust the button padding
                   ),
                   icon: Icon(
                     Icons.person_off_rounded,
-                    color: Colors.white,
+                    color: AppColors.brown,
                   ),
                   label: Text(
                     'Decline',
@@ -160,7 +159,7 @@ class BottomSheetProfile {
                       fontFamily: 'Helvetica',
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
-                      color: AppColors.brownShadow,
+                      color: AppColors.brown,
                     ),
                   ),
                 ),
@@ -464,7 +463,15 @@ class BottomSheetProfile {
                                                               "senderUserId"] ==
                                                           userId);
                                               if (isInReceivedRequests) {
-                                                return _buildReceivedRequestWidget(userProfile.name! ?? '');
+                                                return _buildReceivedRequestWidget(userProfile.name! ?? '',  () async {
+                                                  await friendSystem
+                                                      .acceptFriendRequest(userId);
+                                                }, () async {
+                                                  await friendSystem.declineFriendRequest(userId);
+                                                  setState(() {
+                                            //        receivedRequests.removeAt(index);
+                                                  });
+                                                } );
                                               } else {
                                                 return StreamBuilder<
                                                     QuerySnapshot<
