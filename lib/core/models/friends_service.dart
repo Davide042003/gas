@@ -469,4 +469,35 @@ class FriendSystem {
 
     return '';
   }
+
+  Future<void> declineFriendRequest(String senderUserId) async {
+    final senderReceivedRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .collection('friends')
+        .doc('received_requests')
+        .collection('requests')
+        .where('senderUserId', isEqualTo: senderUserId);
+
+    final senderReceivedSnapshot = await senderReceivedRef.get();
+    if (senderReceivedSnapshot.size > 0) {
+      final senderRequestDoc = senderReceivedSnapshot.docs.first;
+      await senderRequestDoc.reference.delete();
+
+      // Delete the corresponding request in the sender's "sent_requests" collection
+      final recipientRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(senderUserId)
+          .collection('friends')
+          .doc('sent_requests')
+          .collection('requests')
+          .where('recipientUserId', isEqualTo: userId);
+
+      final recipientSnapshot = await recipientRef.get();
+      if (recipientSnapshot.size > 0) {
+        final recipientRequestDoc = recipientSnapshot.docs.first;
+        await recipientRequestDoc.reference.delete();
+      }
+    }
+  }
 }

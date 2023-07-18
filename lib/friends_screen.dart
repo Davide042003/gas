@@ -335,14 +335,15 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                         profilePictureUrl: profilePictureUrl,
                                         name: name,
                                         username: username,
+                                        id: id,
                                         onAcceptFriendRequest: () async {
                                           await friendSystem
                                               .acceptFriendRequest(id);
                                         },
                                         onDeleteSentRequest: () async {
-                                          // await friendSystem.deleteSentRequest(recipientUserId);
+                                          await friendSystem.declineFriendRequest(id);
                                           setState(() {
-                                            // sentRequests.removeAt(index);
+                                     //       receivedRequests.removeAt(index);
                                           });
                                         }));
                                   } else if (type == 'contact') {
@@ -725,19 +726,21 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                             final profilePictureUrl =
                                 user['imageUrl'] as String;
                             final name = user['name'] as String;
+                            final id = user['id'];
 
                             return RequestWidget(
                                 profilePictureUrl: profilePictureUrl,
                                 name: name,
                                 username: username,
+                                id: id,
                                 onAcceptFriendRequest: () async {
                                   await friendSystem
                                       .acceptFriendRequest(senderUserId);
                                 },
                                 onDeleteSentRequest: () async {
-                                  // await friendSystem.deleteSentRequest(recipientUserId);
+                                  await friendSystem.declineFriendRequest(senderUserId);
                                   setState(() {
-                                    // sentRequests.removeAt(index);
+                                     receivedRequests.removeAt(index);
                                   });
                                 });
                           }

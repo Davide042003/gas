@@ -91,9 +91,84 @@ class BottomSheetProfile {
     }
 
     // Method to show the received request widget
-    Widget _buildReceivedRequestWidget() {
-      // You can return the widget for received request status here
-      return Text('Accept or Decline Request');
+    Widget _buildReceivedRequestWidget(String username) {
+      return Container(
+        decoration: BoxDecoration(
+          color:AppColors.a,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        padding: EdgeInsets.symmetric(vertical:25),
+        child: Column(
+          children: [
+            Text(
+              '$username has invited you as a friend', // Replace 'Username' with the actual username
+              style: TextStyle(
+                fontFamily: 'Helvetica',
+                fontWeight: FontWeight.bold,
+                fontSize: 17,
+                color: AppColors.white,
+              ),
+            ),
+            SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () {
+                    // Implement the action when the button is pressed
+                  },
+                  style: ElevatedButton.styleFrom(
+                    elevation: 0,
+                    primary: AppColors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  icon: Icon(
+                    Icons.person_add_rounded,
+                    color: Colors.white,
+                  ),
+                  label: Text(
+                    'Accept',
+                    style: TextStyle(
+                      fontFamily: 'Helvetica',
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: AppColors.brownShadow,
+                    ),
+                  ),
+                ),
+                SizedBox(width: 5,),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    // Implement the action when the button is pressed
+                  },
+                  style: ElevatedButton.styleFrom(
+                    elevation: 0,
+                    primary: AppColors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  icon: Icon(
+                    Icons.person_off_rounded,
+                    color: Colors.white,
+                  ),
+                  label: Text(
+                    'Decline',
+                    style: TextStyle(
+                      fontFamily: 'Helvetica',
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: AppColors.brownShadow,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
     }
 
     double screenHeight = MediaQuery.of(context).size.height;
@@ -389,7 +464,7 @@ class BottomSheetProfile {
                                                               "senderUserId"] ==
                                                           userId);
                                               if (isInReceivedRequests) {
-                                                return _buildReceivedRequestWidget();
+                                                return _buildReceivedRequestWidget(userProfile.name! ?? '');
                                               } else {
                                                 return StreamBuilder<
                                                     QuerySnapshot<
