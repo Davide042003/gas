@@ -18,6 +18,7 @@ class PublishPostPage extends ConsumerStatefulWidget {
 class _PublishPostPageState extends ConsumerState<PublishPostPage> {
   bool myFriends = true;
   bool isPics = true;
+  bool isAnonymous = false;
 
   @override
   void didChangeDependencies() {
@@ -103,7 +104,7 @@ class _PublishPostPageState extends ConsumerState<PublishPostPage> {
                   ],
                 )),
                     SizedBox(
-                      height: screenHeight/9,
+                      height: screenHeight/12,
                     ),
                     Padding(
                   padding: EdgeInsets.symmetric(horizontal: 20),
@@ -179,6 +180,38 @@ class _PublishPostPageState extends ConsumerState<PublishPostPage> {
                         // Add your content for the single container here when isPics is false
                       ),
                     ),
+                    SizedBox(height: 115,),
+                    Padding(padding: EdgeInsets.symmetric(horizontal: 20),
+                        child: Row(
+                      children: [
+                        SizedBox(width: 45,),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            setState(() {
+                              if (isAnonymous == true){
+                                isAnonymous = false;
+                              }else {
+                                isAnonymous = true;
+                              }
+                            });
+                          },
+                          icon: Icon(
+                            isAnonymous ? Ionicons.eye_off : Ionicons.eye,
+                            size: 40,
+                            color: AppColors.white,
+                          ),
+                          label: Text(
+                            isAnonymous ? "ANONYMOUS" : "VISIBLE",
+                            style: ref.watch(stylesProvider).text.invite.copyWith(fontSize: 17),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            elevation: 0,
+                            padding: EdgeInsets.zero,
+                            backgroundColor: Colors.transparent
+                          ),
+                        ),
+                      ],
+                    )),
                 Spacer(),
                 Padding(
                     padding: EdgeInsets.symmetric(horizontal: 20),
