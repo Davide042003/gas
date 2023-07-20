@@ -190,6 +190,8 @@ class _PublishPostPageState extends ConsumerState<PublishPostPage> {
     setState(() {
       isPublishing = false;
     });
+    widget.goToInitialPage();
+
   }
 
   @override
