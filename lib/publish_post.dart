@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:gas/styles/styles_provider.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:flutter/cupertino.dart';
 
 class PublishPostPage extends ConsumerStatefulWidget {
   final VoidCallback goToInitialPage;
@@ -19,10 +21,115 @@ class _PublishPostPageState extends ConsumerState<PublishPostPage> {
   bool myFriends = true;
   bool isPics = true;
   bool isAnonymous = false;
+  bool extraText = false;
+
+  XFile? _selectedImage_1;
+  XFile? _selectedImage_2;
+
+  TextEditingController questionController = TextEditingController();
+
+  List<TextEditingController> controllers = [
+    TextEditingController(),
+    TextEditingController(),
+    TextEditingController(),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    controllers[0].text = "Si";
+    controllers[1].text = "No";
+  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+  }
+
+  void _showImagePicker(BuildContext context, bool containerLeft) {
+    print("open action sheet photo profile");
+    showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) {
+        return CupertinoActionSheet(
+          title: Text('Select Photo'),
+          actions: [
+            CupertinoActionSheetAction(
+              onPressed: () {
+                context.pop();
+                _pickImage(ImageSource.gallery, containerLeft);
+              },
+              child: Text('Choose from Gallery'),
+            ),
+            CupertinoActionSheetAction(
+              onPressed: () {
+                context.pop();
+                _pickImage(ImageSource.camera, containerLeft);
+              },
+              child: Text('Take a Photo'),
+            ),
+          ],
+          cancelButton: CupertinoActionSheetAction(
+            onPressed: () {
+              context.pop();
+            },
+            child: Text('Cancel'),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source, bool containerLeft) async {
+    final picker = ImagePicker();
+
+    final XFile? pickedFile = await picker.pickImage(source: source, preferredCameraDevice: CameraDevice.front, imageQuality: 2);
+
+    if (pickedFile != null) {
+      print("got image");
+      // Handle the selected image file
+      //**-- delete profile
+ //     imageUrl != "" ? userInfoService.deleteImageProfile(imageUrl!) : null;
+
+      //UpdateProfilePic(File(pickedFile.path));
+
+      if (containerLeft) {
+        setState(() {
+          _selectedImage_1 = pickedFile;
+          print("image 1 got");
+        });
+      } else {
+        setState(() {
+          _selectedImage_2 = pickedFile;
+        });
+      }
+
+      // You can pass the imageFile to the next step or store it in a variable or state
+    } else {
+      // User canceled the image selection
+      print("no image");
+    }
+  }
+
+  bool checkIfCanPublish(){
+    if(questionController.text.isNotEmpty) {
+      if (isPics) {
+        if (_selectedImage_1 != null && _selectedImage_2 != null) {
+          return true;
+        }
+      } else {
+        if (extraText == false) {
+          if(controllers[0].text.isNotEmpty && controllers[1].text.isNotEmpty){
+            return true;
+          }
+        }else{
+          if(controllers[0].text.isNotEmpty && controllers[1].text.isNotEmpty && controllers[2].text.isNotEmpty){
+            return true;
+          }
+        }
+      }
+    }
+    return false;
   }
 
   @override
@@ -103,10 +210,10 @@ class _PublishPostPageState extends ConsumerState<PublishPostPage> {
                             .copyWith(color: AppColors.white)),
                   ],
                 )),
-                    SizedBox(
-                      height: screenHeight/12,
-                    ),
-                    Padding(
+                SizedBox(
+                  height: screenHeight / 12,
+                ),
+                Padding(
                   padding: EdgeInsets.symmetric(horizontal: 20),
                   child: Container(
                     margin: EdgeInsets.symmetric(vertical: 8),
@@ -116,81 +223,253 @@ class _PublishPostPageState extends ConsumerState<PublishPostPage> {
                       borderRadius: BorderRadius.circular(25),
                     ),
                     child: TextField(
-                      maxLines: 2,
-                      textAlign: TextAlign.center,
-                      textAlignVertical: TextAlignVertical.bottom,
-                      decoration: InputDecoration.collapsed(
-                        hintText: 'Scrivi la tua domanda...',
-                        hintStyle: TextStyle(
+                        maxLines: 2,
+                        controller: questionController,
+                        onChanged: (_) => setState(() {}),
+                        textAlign: TextAlign.center,
+                        textAlignVertical: TextAlignVertical.bottom,
+                        decoration: InputDecoration.collapsed(
+                          hintText: 'Scrivi la tua domanda...',
+                          hintStyle: TextStyle(
+                              fontFamily: 'Helvetica',
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.whiteShadow55,
+                              fontSize: 24),
+                        ),
+                        style: TextStyle(
                             fontFamily: 'Helvetica',
                             fontWeight: FontWeight.bold,
-                            color: AppColors.whiteShadow55,
-                            fontSize: 24),
-                      ),
-                      style: TextStyle(
-                          fontFamily: 'Helvetica',
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.white,
-                          fontSize: 24)
-                    ),
+                            color: AppColors.white,
+                            fontSize: 24)),
                   ),
                 ),
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      transitionBuilder: (Widget child, Animation<double> animation) {
-                        final Offset initialOffset =
-                        isPics ? const Offset(-1.0, 0.0) : const Offset(1.0, 0.0);
-                        return SlideTransition(
-                          position: Tween<Offset>(begin: initialOffset, end: Offset.zero)
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  transitionBuilder:
+                      (Widget child, Animation<double> animation) {
+                    final Offset initialOffset = isPics
+                        ? const Offset(-1.0, 0.0)
+                        : const Offset(1.0, 0.0);
+                    return SlideTransition(
+                      position:
+                          Tween<Offset>(begin: initialOffset, end: Offset.zero)
                               .animate(animation),
-                          child: child,
-                        );
-                      },
-                      child: isPics
-                          ? Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Container(
-                            width: screenWidth / 2.3,
-                            height: screenHeight / 4,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
+                      child: child,
+                    );
+                  },
+                  child: isPics
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            GestureDetector(
+                            child: Container(
+                              width: screenWidth / 2.3,
+                              height: screenHeight / 4,
+                              decoration: BoxDecoration(
+                                image: _selectedImage_1 != null ? DecorationImage(
+                                    image: AssetImage(_selectedImage_1!.path),
+                                    fit: BoxFit.cover) : null,
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              // Add your content for the first white container here
+                            ), behavior: HitTestBehavior.translucent,
+                              onTap:  () {_showImagePicker(context, true);},
                             ),
-                            // Add your content for the first white container here
-                          ),
-                          Container(
-                            width: screenWidth / 2.3,
-                            height: screenHeight / 4,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
+                            GestureDetector(
+                              child: Container(
+                                width: screenWidth / 2.3,
+                                height: screenHeight / 4,
+                                decoration: BoxDecoration(
+                                  image: _selectedImage_2 != null ? DecorationImage(
+                                      image: AssetImage(_selectedImage_2!.path),
+                                      fit: BoxFit.cover) : null,
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                // Add your content for the first white container here
+                              ), behavior: HitTestBehavior.translucent,
+                              onTap:  () {_showImagePicker(context, false);},
                             ),
-                            // Add your content for the second white container here
+                          ],
+                        )
+                      : Container(
+                          width: screenWidth,
+                          height: screenHeight / 4,
+                          margin: EdgeInsets.symmetric(horizontal: 30),
+                          child: Column(
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    width: screenWidth / 8,
+                                    height: screenWidth / 8,
+                                    decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.all(
+                                            Radius.circular(12))),
+                                  ),
+                                  SizedBox(
+                                    width: 20,
+                                  ),
+                                  Container(
+                                    width: screenWidth / 1.5,
+                                    height: screenHeight / 40,
+                                    child: TextField(
+                                        maxLines: 1,
+                                        textAlign: TextAlign.left,
+                                        textAlignVertical:
+                                            TextAlignVertical.bottom,
+                                        controller: controllers[0],
+                                        onChanged: (_) => setState(() {}),
+                                        decoration: InputDecoration.collapsed(
+                                          hintText: 'Scrivi la tua risposta...',
+                                          hintStyle: TextStyle(
+                                              fontFamily: 'Helvetica',
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.whiteShadow55,
+                                              fontSize: 20),
+                                        ),
+                                        style: TextStyle(
+                                            fontFamily: 'Helvetica',
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.white,
+                                            fontSize: 20)),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(
+                                height: 30,
+                              ),
+                              Row(
+                                children: [
+                                  Container(
+                                    width: screenWidth / 8,
+                                    height: screenWidth / 8,
+                                    decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.all(
+                                            Radius.circular(12))),
+                                  ),
+                                  SizedBox(
+                                    width: 20,
+                                  ),
+                                  Container(
+                                    width: screenWidth / 1.5,
+                                    height: screenHeight / 40,
+                                    child: TextField(
+                                        maxLines: 1,
+                                        textAlign: TextAlign.left,
+                                        textAlignVertical:
+                                            TextAlignVertical.bottom,
+                                        controller: controllers[1],
+                                        onChanged: (_) => setState(() {}),
+                                        decoration: InputDecoration.collapsed(
+                                          hintText: 'Scrivi la tua risposta...',
+                                          hintStyle: TextStyle(
+                                              fontFamily: 'Helvetica',
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.whiteShadow55,
+                                              fontSize: 20),
+                                        ),
+                                        style: TextStyle(
+                                            fontFamily: 'Helvetica',
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.white,
+                                            fontSize: 20)),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(
+                                height: 30,
+                              ),
+                              extraText
+                                  ? Row(
+                                      children: [
+                                        Container(
+                                          width: screenWidth / 8,
+                                          height: screenWidth / 8,
+                                          decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius: BorderRadius.all(
+                                                  Radius.circular(12))),
+                                        ),
+                                        SizedBox(
+                                          width: 20,
+                                        ),
+                                        Container(
+                                          width: screenWidth / 1.5,
+                                          height: screenHeight / 40,
+                                          child: TextField(
+                                              maxLines: 1,
+                                              textAlign: TextAlign.left,
+                                              textAlignVertical:
+                                                  TextAlignVertical.bottom,
+                                              controller: controllers[2],
+                                              onChanged: (_) => setState(() {}),
+                                              decoration:
+                                                  InputDecoration.collapsed(
+                                                hintText:
+                                                    'Scrivi la tua risposta...',
+                                                hintStyle: TextStyle(
+                                                    fontFamily: 'Helvetica',
+                                                    fontWeight: FontWeight.bold,
+                                                    color:
+                                                        AppColors.whiteShadow55,
+                                                    fontSize: 20),
+                                              ),
+                                              style: TextStyle(
+                                                  fontFamily: 'Helvetica',
+                                                  fontWeight: FontWeight.bold,
+                                                  color: AppColors.white,
+                                                  fontSize: 20)),
+                                        ),
+                                      ],
+                                    )
+                                  : Row(children: [
+                                      InkWell(
+                                          onTap: () {
+                                            setState(() {
+                                              extraText = true;
+                                            });
+                                          },
+                                          child: Container(
+                                            width: screenWidth / 8,
+                                            height: screenWidth / 8,
+                                            decoration: BoxDecoration(
+                                                color: Colors.white,
+                                                borderRadius: BorderRadius.all(
+                                                    Radius.circular(12))),
+                                            child: Center(
+                                                child: Text(
+                                              "+",
+                                              style: TextStyle(
+                                                  fontFamily: 'Helvetica',
+                                                  fontSize: 33,
+                                                  fontWeight: FontWeight.bold),
+                                            )),
+                                          ))
+                                    ]),
+                            ],
                           ),
-                        ],
-                      )
-                          : Container(
-                        width: screenWidth, // Adjust the width as needed
-                        height: screenHeight / 4, // Adjust the height as needed
-                        decoration: BoxDecoration(
-                          color: Colors.grey, // Change the color to your desired background color
-                          borderRadius: BorderRadius.circular(20),
                         ),
-                        // Add your content for the single container here when isPics is false
-                      ),
-                    ),
-                    SizedBox(height: 115,),
-                    Padding(padding: EdgeInsets.symmetric(horizontal: 20),
-                        child: Row(
+                ),
+                SizedBox(
+                  height: 115,
+                ),
+                Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
                       children: [
-                        SizedBox(width: 45,),
+                        SizedBox(
+                          width: 45,
+                        ),
                         ElevatedButton.icon(
                           onPressed: () {
                             setState(() {
-                              if (isAnonymous == true){
+                              if (isAnonymous == true) {
                                 isAnonymous = false;
-                              }else {
+                              } else {
                                 isAnonymous = true;
                               }
                             });
@@ -202,13 +481,16 @@ class _PublishPostPageState extends ConsumerState<PublishPostPage> {
                           ),
                           label: Text(
                             isAnonymous ? "ANONYMOUS" : "VISIBLE",
-                            style: ref.watch(stylesProvider).text.invite.copyWith(fontSize: 17),
+                            style: ref
+                                .watch(stylesProvider)
+                                .text
+                                .invite
+                                .copyWith(fontSize: 17),
                           ),
                           style: ElevatedButton.styleFrom(
-                            elevation: 0,
-                            padding: EdgeInsets.zero,
-                            backgroundColor: Colors.transparent
-                          ),
+                              elevation: 0,
+                              padding: EdgeInsets.zero,
+                              backgroundColor: Colors.transparent),
                         ),
                       ],
                     )),
@@ -295,7 +577,7 @@ class _PublishPostPageState extends ConsumerState<PublishPostPage> {
                           ),
                         ),
                         Spacer(),
-                        InkWell(
+                        checkIfCanPublish() ? InkWell(
                           onTap: () {
                             print("publish post");
                           },
@@ -312,7 +594,7 @@ class _PublishPostPageState extends ConsumerState<PublishPostPage> {
                               size: 35,
                             ),
                           ),
-                        ),
+                        ) : SizedBox(),
                       ],
                     ))),
               ])),
