@@ -1,36 +1,54 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'post_model.dart';
+import 'package:path/path.dart' as path;
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:io';
 
 class PostService {
   final String userId;
 
-  PostService(this.userId);
+  PostService({required this.userId});
 
-  Future<void> publishPost({
-    required String question,
-    List<String>? images,
-    List<String>? answersList,
-    required bool isAnonymous,
-    required bool isMyFriends,
-  }) async {
-    final post = FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .collection('posts')
-        .doc('published_posts')
-        .collection('posts')
-        .doc();
+  Future<String> saveImage(File imageFile) async {
+    try {
+      // Generate a unique file name
+      String fileName = path.basename(imageFile.path);
 
-    final postData = {
-      'question': question,
-      'images': images ?? [],
-      'answersList': answersList ?? [],
-      'isAnonymous': isAnonymous,
-      'isMyFriends': isMyFriends,
-      'timestamp': FieldValue.serverTimestamp(),
-    };
+      // Upload the image file to Firebase Storage
+      Reference storageRef =
+          FirebaseStorage.instance.ref().child('user_images/$fileName');
+      UploadTask uploadTask = storageRef.putFile(imageFile);
+      TaskSnapshot taskSnapshot = await uploadTask.whenComplete(() => null);
 
-    await post.set(postData);
+      // Get the download URL of the uploaded image
+      String imageUrl = await taskSnapshot.ref.getDownloadURL();
+
+      print('Image saved successfully: $imageUrl');
+      return imageUrl;
+    } catch (error) {
+      // Handle any errors that occur during the process
+      print('Error saving image: $error');
+      throw Exception('Error saving image');
+    }
+  }
+
+  Future<void> publishPost(PostModel post) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('posts')
+          .doc('published_posts')
+          .collection('posts')
+          .doc()
+          .set(
+            post.toJson(), // Convert the PostModel object to a JSON representation
+          );
+      print('Post stored successfully!');
+    } catch (error) {
+      // Handle any errors that occur during the process
+      print('Error storing post information: $error');
+    }
   }
 
   Future<List<PostModel>> getFriendsPosts() async {

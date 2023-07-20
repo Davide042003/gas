@@ -7,6 +7,7 @@ class PostModel {
   final List<String>? answersList;
   final bool? isAnonymous;
   final bool? isMyFriends;
+  final List<int>? answersTap;
   final Timestamp? timestamp;
 
   PostModel({
@@ -16,6 +17,7 @@ class PostModel {
     this.answersList,
     this.isAnonymous,
     this.isMyFriends,
+    this.answersTap,
     this.timestamp,
   });
 
@@ -26,6 +28,7 @@ class PostModel {
         answersList = List<String>.from(data['answersList'] ?? []),
         isAnonymous = data['isAnonymous'],
         isMyFriends = data['isMyFriends'],
+        answersTap = data['answersTap'],
         timestamp = data['timestamp'];
 
   Map<String, dynamic> toJson() {
@@ -36,6 +39,7 @@ class PostModel {
       'answersList': answersList,
       'isAnonymous': isAnonymous,
       'isMyFriends': isMyFriends,
+      'answersTap' : answersTap,
       'timestamp': timestamp,
     };
   }

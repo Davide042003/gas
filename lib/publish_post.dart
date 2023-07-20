@@ -7,6 +7,12 @@ import 'package:ionicons/ionicons.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/cupertino.dart';
+import 'core/models/post_service.dart';
+import 'core/models/post_model.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 
 class PublishPostPage extends ConsumerStatefulWidget {
   final VoidCallback goToInitialPage;
@@ -18,6 +24,9 @@ class PublishPostPage extends ConsumerStatefulWidget {
 }
 
 class _PublishPostPageState extends ConsumerState<PublishPostPage> {
+  final PostService postService =
+      PostService(userId: FirebaseAuth.instance.currentUser?.uid ?? '');
+
   bool myFriends = true;
   bool isPics = true;
   bool isAnonymous = false;
@@ -27,6 +36,8 @@ class _PublishPostPageState extends ConsumerState<PublishPostPage> {
   XFile? _selectedImage_2;
 
   TextEditingController questionController = TextEditingController();
+
+  bool isPublishing = false;
 
   List<TextEditingController> controllers = [
     TextEditingController(),
@@ -83,15 +94,13 @@ class _PublishPostPageState extends ConsumerState<PublishPostPage> {
   Future<void> _pickImage(ImageSource source, bool containerLeft) async {
     final picker = ImagePicker();
 
-    final XFile? pickedFile = await picker.pickImage(source: source, preferredCameraDevice: CameraDevice.front, imageQuality: 2);
+    final XFile? pickedFile = await picker.pickImage(
+        source: source,
+        preferredCameraDevice: CameraDevice.front,
+        imageQuality: 2);
 
     if (pickedFile != null) {
       print("got image");
-      // Handle the selected image file
-      //**-- delete profile
- //     imageUrl != "" ? userInfoService.deleteImageProfile(imageUrl!) : null;
-
-      //UpdateProfilePic(File(pickedFile.path));
 
       if (containerLeft) {
         setState(() {
@@ -111,19 +120,22 @@ class _PublishPostPageState extends ConsumerState<PublishPostPage> {
     }
   }
 
-  bool checkIfCanPublish(){
-    if(questionController.text.isNotEmpty) {
+  bool checkIfCanPublish() {
+    if (questionController.text.isNotEmpty) {
       if (isPics) {
         if (_selectedImage_1 != null && _selectedImage_2 != null) {
           return true;
         }
       } else {
         if (extraText == false) {
-          if(controllers[0].text.isNotEmpty && controllers[1].text.isNotEmpty){
+          if (controllers[0].text.isNotEmpty &&
+              controllers[1].text.isNotEmpty) {
             return true;
           }
-        }else{
-          if(controllers[0].text.isNotEmpty && controllers[1].text.isNotEmpty && controllers[2].text.isNotEmpty){
+        } else {
+          if (controllers[0].text.isNotEmpty &&
+              controllers[1].text.isNotEmpty &&
+              controllers[2].text.isNotEmpty) {
             return true;
           }
         }
@@ -132,14 +144,62 @@ class _PublishPostPageState extends ConsumerState<PublishPostPage> {
     return false;
   }
 
+  Future<void> publishPost() async {
+
+    setState(() {
+      isPublishing = true;
+    });
+
+    List<int> tapsAnswers = [0, 0];
+
+    if (isPics) {
+      List<String> imagesList = [];
+      imagesList.add(await postService.saveImage(File(_selectedImage_1!.path)));
+      imagesList.add(await postService.saveImage(File(_selectedImage_2!.path)));
+
+      await postService.publishPost(PostModel(
+        question: questionController.text,
+        images: imagesList,
+        answersList: [],
+        isAnonymous: isAnonymous,
+        isMyFriends: myFriends,
+        answersTap: tapsAnswers,
+        timestamp: Timestamp.now(),
+      ));
+    } else {
+      List<String> answersList = [];
+      answersList.add(controllers[0].text);
+      answersList.add(controllers[1].text);
+
+      if (extraText) {
+        answersList.add(controllers[2].text);
+        tapsAnswers.add(0);
+      }
+
+      await postService.publishPost(PostModel(
+        question: questionController.text,
+        images: [],
+        answersList: answersList,
+        isAnonymous: isAnonymous,
+        isMyFriends: myFriends,
+        answersTap: tapsAnswers,
+        timestamp: Timestamp.now(),
+      ));
+    }
+
+    setState(() {
+      isPublishing = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
     double screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
-        backgroundColor: AppColors.white,
-        body: Column(
+        backgroundColor: isPublishing ? AppColors.backgroundDefault : AppColors.white,
+        body: isPublishing ? Center(child:CircularProgressIndicator()) : Column(
           children: [
             Container(
               height: screenHeight * 0.91,
@@ -262,34 +322,46 @@ class _PublishPostPageState extends ConsumerState<PublishPostPage> {
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
                             GestureDetector(
-                            child: Container(
-                              width: screenWidth / 2.3,
-                              height: screenHeight / 4,
-                              decoration: BoxDecoration(
-                                image: _selectedImage_1 != null ? DecorationImage(
-                                    image: AssetImage(_selectedImage_1!.path),
-                                    fit: BoxFit.cover) : null,
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(20),
+                              child: Container(
+                                width: screenWidth / 2.3,
+                                height: screenHeight / 4,
+                                decoration: BoxDecoration(
+                                  image: _selectedImage_1 != null
+                                      ? DecorationImage(
+                                          image: AssetImage(
+                                              _selectedImage_1!.path),
+                                          fit: BoxFit.cover)
+                                      : null,
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                // Add your content for the first white container here
                               ),
-                              // Add your content for the first white container here
-                            ), behavior: HitTestBehavior.translucent,
-                              onTap:  () {_showImagePicker(context, true);},
+                              behavior: HitTestBehavior.translucent,
+                              onTap: () {
+                                _showImagePicker(context, true);
+                              },
                             ),
                             GestureDetector(
                               child: Container(
                                 width: screenWidth / 2.3,
                                 height: screenHeight / 4,
                                 decoration: BoxDecoration(
-                                  image: _selectedImage_2 != null ? DecorationImage(
-                                      image: AssetImage(_selectedImage_2!.path),
-                                      fit: BoxFit.cover) : null,
+                                  image: _selectedImage_2 != null
+                                      ? DecorationImage(
+                                          image: AssetImage(
+                                              _selectedImage_2!.path),
+                                          fit: BoxFit.cover)
+                                      : null,
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 // Add your content for the first white container here
-                              ), behavior: HitTestBehavior.translucent,
-                              onTap:  () {_showImagePicker(context, false);},
+                              ),
+                              behavior: HitTestBehavior.translucent,
+                              onTap: () {
+                                _showImagePicker(context, false);
+                              },
                             ),
                           ],
                         )
@@ -577,24 +649,26 @@ class _PublishPostPageState extends ConsumerState<PublishPostPage> {
                           ),
                         ),
                         Spacer(),
-                        checkIfCanPublish() ? InkWell(
-                          onTap: () {
-                            print("publish post");
-                          },
-                          child: Container(
-                            width: 55,
-                            height: screenHeight / 16,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.white,
-                            ),
-                            child: Icon(
-                              Ionicons.arrow_forward,
-                              color: AppColors.brown,
-                              size: 35,
-                            ),
-                          ),
-                        ) : SizedBox(),
+                        checkIfCanPublish()
+                            ? InkWell(
+                                onTap: () async {
+                                  publishPost();
+                                },
+                                child: Container(
+                                  width: 55,
+                                  height: screenHeight / 16,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: AppColors.white,
+                                  ),
+                                  child: Icon(
+                                    Ionicons.arrow_forward,
+                                    color: AppColors.brown,
+                                    size: 35,
+                                  ),
+                                ),
+                              )
+                            : SizedBox(),
                       ],
                     ))),
               ])),
