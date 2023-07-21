@@ -9,6 +9,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'core/models/post_service.dart';
 import 'core/models/post_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:math';
 
 class HomeScreen extends ConsumerStatefulWidget {
   @override
@@ -47,118 +48,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     double screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
-      backgroundColor: color,
-      body: SafeArea(
-        child: Column(
+        backgroundColor: color,
+        body: Stack(
           children: [
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextButton(
-                    onPressed: () {},
-                    child: Text(
-                      "Chat",
-                      style: ref.watch(stylesProvider).text.appBarHome,
-                    ),
-                  ),
-                  Container(
-                    margin: EdgeInsets.only(left: 25),
-                    child: Image.asset('assets/img/logo.png', height: 40),
-                    width: 100,
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      context.push('/profile');
-                    },
-                    child: Text(
-                      "Profile",
-                      style: ref.watch(stylesProvider).text.appBarHome,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Stack(
-              children: [
-                Container(
-                  color: AppColors.whiteShadow,
-                  height: screenHeight / 600,
-                ),
-                Center(
-                  child: Container(
-                    color: AppColors.white,
-                    height: screenHeight / 400,
-                    width: screenWidth / 3,
-                  ),
-                ),
-              ],
-            ),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12),
-              child: Container(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    InkWell(
-                      child: Icon(
-                        Icons.people_rounded,
-                        size: 32,
-                        color: AppColors.white,
-                      ),
-                      onTap: () {
-                        context.push("/contact");
-                      },
-                    ),
-                    SizedBox(
-                      width: screenWidth / 7,
-                    ),
-                    TextButton(
-                      onPressed: () {},
-                      child: Text(
-                        "My Friends",
-                        style: ref
-                            .watch(stylesProvider)
-                            .text
-                            .numberContactOnBoarding
-                            .copyWith(color: AppColors.white),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () {},
-                      child: Text(
-                        "Global",
-                        style: ref
-                            .watch(stylesProvider)
-                            .text
-                            .numberContactOnBoarding,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Expanded(
-              child: Container(
-                width: screenWidth,
-                child: FutureBuilder<List<PostModel>>(
-                  future: postService.getFriendsPosts(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Center(child: CircularProgressIndicator());
-                    } else if (snapshot.hasError) {
-                      return Center(child: Text('Error: ${snapshot.error}'));
-                    } else if (snapshot.hasData) {
-                      final friendPosts = snapshot.data!;
-                      if (friendPosts.length > 0) {
-                        return PageView(
+            Container(
+              width: screenWidth,
+              height: screenHeight,
+              child: FutureBuilder<List<PostModel>>(
+                future: postService.getFriendsPosts(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  } else if (snapshot.hasData) {
+                    final friendPosts = snapshot.data!;
+                    if (friendPosts.length > 0) {
+                      return PageView(
                           controller: _pageController,
                           scrollDirection: Axis.vertical,
                           physics: ClampingScrollPhysics(),
-                          children:List.generate(friendPosts.length, (index) {
+                          children: List.generate(friendPosts.length, (index) {
                             final post = friendPosts[index];
                             final friendUserId = post.id as String;
 
@@ -170,15 +80,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               builder: (context, snapshot) {
                                 if (snapshot.hasData) {
                                   final user = snapshot.data!.data()
-                                  as Map<String, dynamic>;
+                                      as Map<String, dynamic>;
                                   final username = user['username'] as String;
                                   final profilePictureUrl =
-                                  user['imageUrl'] as String;
+                                      user['imageUrl'] as String;
                                   final name = user['name'] as String;
                                   final timestamp =
-                                  user['timeStamp'] as Timestamp;
+                                      user['timeStamp'] as Timestamp;
                                   final localDateTime =
-                                  post.timestamp!.toDate().toLocal();
+                                      post.timestamp!.toDate().toLocal();
                                   final hour = localDateTime.hour
                                       .toString()
                                       .padLeft(2, '0');
@@ -186,53 +96,59 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       .toString()
                                       .padLeft(2, '0');
 
-                                  return Padding(
-                                    padding:
-                                    EdgeInsets.only(right: 20, left: 20, top: screenHeight/10),
+                                  int randomColor = Random().nextInt(5);
+
+                                  return Container(
+                                    color: index == 0 ? AppColors.backgroundDefault: AppColors.backgroundColors[randomColor],
+                                      child: Padding(
+                                    padding: EdgeInsets.only(
+                                        right: 20,
+                                        left: 20,
+                                        top: screenHeight / 3.75),
                                     child: Column(
                                       children: [
                                         Row(
                                           children: <Widget>[
                                             post.isAnonymous!
                                                 ? CircleAvatar(
-                                              maxRadius: 25,
-                                              backgroundImage: null,
-                                              child:
-                                              Icon(Icons.hide_image),
-                                            )
+                                                    maxRadius: 25,
+                                                    backgroundImage: null,
+                                                    child:
+                                                        Icon(Icons.hide_image),
+                                                  )
                                                 : CircleAvatar(
-                                              maxRadius: 25,
-                                              backgroundImage:
-                                              profilePictureUrl
-                                                  .isEmpty
-                                                  ? null
-                                                  : NetworkImage(
-                                                  profilePictureUrl),
-                                              child: profilePictureUrl
-                                                  .isEmpty
-                                                  ? Text(
-                                                name.isNotEmpty
-                                                    ? name[0]
-                                                    : '',
-                                                style: TextStyle(
-                                                    fontFamily:
-                                                    'Helvetica',
-                                                    fontWeight:
-                                                    FontWeight
-                                                        .bold,
-                                                    fontSize: 20,
-                                                    color: AppColors
-                                                        .white),
-                                              )
-                                                  : SizedBox(),
-                                            ),
+                                                    maxRadius: 25,
+                                                    backgroundImage:
+                                                        profilePictureUrl
+                                                                .isEmpty
+                                                            ? null
+                                                            : NetworkImage(
+                                                                profilePictureUrl),
+                                                    child: profilePictureUrl
+                                                            .isEmpty
+                                                        ? Text(
+                                                            name.isNotEmpty
+                                                                ? name[0]
+                                                                : '',
+                                                            style: TextStyle(
+                                                                fontFamily:
+                                                                    'Helvetica',
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                                fontSize: 20,
+                                                                color: AppColors
+                                                                    .white),
+                                                          )
+                                                        : SizedBox(),
+                                                  ),
                                             SizedBox(width: 16),
                                             Expanded(
                                               child: Container(
                                                 color: Colors.transparent,
                                                 child: Column(
                                                   crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
+                                                      CrossAxisAlignment.start,
                                                   children: <Widget>[
                                                     Text(
                                                       post.isAnonymous!
@@ -241,7 +157,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                       style: TextStyle(
                                                         fontFamily: 'Helvetica',
                                                         fontWeight:
-                                                        FontWeight.w400,
+                                                            FontWeight.w400,
                                                         fontSize: 20,
                                                         color: AppColors.white,
                                                       ),
@@ -252,7 +168,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                       style: TextStyle(
                                                         fontFamily: 'Helvetica',
                                                         fontWeight:
-                                                        FontWeight.w400,
+                                                            FontWeight.w400,
                                                         fontSize: 18,
                                                         color: AppColors
                                                             .whiteShadow,
@@ -289,84 +205,73 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         SizedBox(height: 30),
                                         post.images!.length == 2
                                             ? Row(
-                                          mainAxisAlignment:
-                                          MainAxisAlignment
-                                              .spaceEvenly,
-                                          children: [
-                                            GestureDetector(
-                                              child: Container(
-                                                width: screenWidth / 2.3,
-                                                height: screenHeight / 4,
-                                                decoration: BoxDecoration(
-                                                  image: post.images![
-                                                  0] !=
-                                                      null
-                                                      ? DecorationImage(
-                                                      image: NetworkImage(
-                                                          post.images![
-                                                          0]),
-                                                      fit: BoxFit
-                                                          .cover)
-                                                      : null,
-                                                  color: Colors.white,
-                                                  borderRadius:
-                                                  BorderRadius
-                                                      .circular(20),
-                                                ),
-                                                // Add your content for the first white container here
-                                              ),
-                                              behavior: HitTestBehavior
-                                                  .translucent,
-                                              onTap: () {},
-                                            ),
-                                            GestureDetector(
-                                              child: Container(
-                                                width: screenWidth / 2.3,
-                                                height: screenHeight / 4,
-                                                decoration: BoxDecoration(
-                                                  image: post.images![
-                                                  1] !=
-                                                      null
-                                                      ? DecorationImage(
-                                                      image: NetworkImage(
-                                                          post.images![
-                                                          1]),
-                                                      fit: BoxFit
-                                                          .cover)
-                                                      : null,
-                                                  color: Colors.white,
-                                                  borderRadius:
-                                                  BorderRadius
-                                                      .circular(20),
-                                                ),
-                                                // Add your content for the second white container here
-                                              ),
-                                              behavior: HitTestBehavior
-                                                  .translucent,
-                                              onTap: () {},
-                                            ),
-                                          ],
-                                        )
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceEvenly,
+                                                children: [
+                                                  GestureDetector(
+                                                    child: Container(
+                                                      width: screenWidth / 2.3,
+                                                      height: screenHeight / 4,
+                                                      decoration: BoxDecoration(
+                                                        image: post.images![
+                                                                    0] !=
+                                                                null
+                                                            ? DecorationImage(
+                                                                image: NetworkImage(
+                                                                    post.images![
+                                                                        0]),
+                                                                fit: BoxFit
+                                                                    .cover)
+                                                            : null,
+                                                        color: Colors.white,
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(20),
+                                                      ),
+                                                      // Add your content for the first white container here
+                                                    ),
+                                                    behavior: HitTestBehavior
+                                                        .translucent,
+                                                    onTap: () {},
+                                                  ),
+                                                  GestureDetector(
+                                                    child: Container(
+                                                      width: screenWidth / 2.3,
+                                                      height: screenHeight / 4,
+                                                      decoration: BoxDecoration(
+                                                        image: post.images![
+                                                                    1] !=
+                                                                null
+                                                            ? DecorationImage(
+                                                                image: NetworkImage(
+                                                                    post.images![
+                                                                        1]),
+                                                                fit: BoxFit
+                                                                    .cover)
+                                                            : null,
+                                                        color: Colors.white,
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(20),
+                                                      ),
+                                                      // Add your content for the second white container here
+                                                    ),
+                                                    behavior: HitTestBehavior
+                                                        .translucent,
+                                                    onTap: () {},
+                                                  ),
+                                                ],
+                                              )
                                             : SizedBox(),
                                       ],
                                     ),
-                                  );
+                                  ));
                                 }
                                 return CircularProgressIndicator();
                               },
                             );
-                          }
-                          )
-                        );
-                      } else {
-                        return Align(
-                          alignment: Alignment.topCenter,
-                          child: Padding(
-                            padding: EdgeInsets.only(top: screenHeight / 4.5),
-                            child: Text('No posts available'),
-                          ),
-                        );
-                      }
+                          }));
                     } else {
                       return Align(
                         alignment: Alignment.topCenter,
@@ -376,63 +281,168 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                       );
                     }
-                  },
-                ),
+                  } else {
+                    return Align(
+                      alignment: Alignment.topCenter,
+                      child: Padding(
+                        padding: EdgeInsets.only(top: screenHeight / 4.5),
+                        child: Text('No posts available'),
+                      ),
+                    );
+                  }
+                },
               ),
             ),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20),
-              child: Container(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Column(
+            SafeArea(
+              child: Column(
+                children: [
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        InkWell(
-                          child: Icon(
-                            Icons.remove_red_eye,
-                            size: 35,
-                            color: AppColors.white,
+                        TextButton(
+                          onPressed: () {},
+                          child: Text(
+                            "Chat",
+                            style: ref.watch(stylesProvider).text.appBarHome,
                           ),
-                          onTap: () {
-                            context.pop();
+                        ),
+                        Container(
+                          margin: EdgeInsets.only(left: 25),
+                          child: Image.asset('assets/img/logo.png', height: 40),
+                          width: 100,
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            context.push('/profile');
                           },
-                        ),
-                        SizedBox(
-                          height: screenHeight / 200,
-                        ),
-                        Text(
-                          "ANONYMOUS",
-                          style: ref.watch(stylesProvider).text.invite,
+                          child: Text(
+                            "Profile",
+                            style: ref.watch(stylesProvider).text.appBarHome,
+                          ),
                         ),
                       ],
                     ),
-                    Spacer(),
-                    ElevatedButton.icon(
-                      icon: Icon(
-                        Ionicons.play,
-                        color: AppColors.white,
-                        size: 28,
+                  ),
+                  Stack(
+                    children: [
+                      Container(
+                        color: AppColors.whiteShadow,
+                        height: screenHeight / 600,
                       ),
-                      onPressed: () {},
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        foregroundColor: Colors.transparent,
-                        elevation: 0,
+                      Center(
+                        child: Container(
+                          color: AppColors.white,
+                          height: screenHeight / 400,
+                          width: screenWidth / 3,
+                        ),
                       ),
-                      label: Text(
-                        "Skip",
-                        style: ref.watch(stylesProvider).text.skipHome,
+                    ],
+                  ),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12),
+                    child: Container(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          InkWell(
+                            child: Icon(
+                              Icons.people_rounded,
+                              size: 32,
+                              color: AppColors.white,
+                            ),
+                            onTap: () {
+                              context.push("/contact");
+                            },
+                          ),
+                          SizedBox(
+                            width: screenWidth / 7,
+                          ),
+                          TextButton(
+                            onPressed: () {},
+                            child: Text(
+                              "My Friends",
+                              style: ref
+                                  .watch(stylesProvider)
+                                  .text
+                                  .numberContactOnBoarding
+                                  .copyWith(color: AppColors.white),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {},
+                            child: Text(
+                              "Global",
+                              style: ref
+                                  .watch(stylesProvider)
+                                  .text
+                                  .numberContactOnBoarding,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  SizedBox(
+                    height: screenHeight / 1.45,
+                  ),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    child: Container(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Column(
+                            children: [
+                              InkWell(
+                                child: Icon(
+                                  Icons.remove_red_eye,
+                                  size: 35,
+                                  color: AppColors.white,
+                                ),
+                                onTap: () {
+                                  context.pop();
+                                },
+                              ),
+                              SizedBox(
+                                height: screenHeight / 200,
+                              ),
+                              Text(
+                                "ANONYMOUS",
+                                style: ref.watch(stylesProvider).text.invite,
+                              ),
+                            ],
+                          ),
+                          Spacer(),
+                          ElevatedButton.icon(
+                            icon: Icon(
+                              Ionicons.play,
+                              color: AppColors.white,
+                              size: 28,
+                            ),
+                            onPressed: () {},
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              foregroundColor: Colors.transparent,
+                              elevation: 0,
+                            ),
+                            label: Text(
+                              "Skip",
+                              style: ref.watch(stylesProvider).text.skipHome,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
-        ),
-      ),
-    );
+        ));
   }
 }
