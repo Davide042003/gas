@@ -22,6 +22,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       PostService(userId: FirebaseAuth.instance.currentUser!.uid);
 
   late PageController _pageController;
+  int totalPosts = 0;
 
   @override
   void initState() {
@@ -40,6 +41,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.didChangeDependencies();
     // Reset the background color every time the page is displayed
     color = AppColors.backgroundDefault; // Set the initial background color
+  }
+
+  void goToNextPage() {
+    int nextPage = _pageController.page!.toInt() + 1;
+    if (nextPage < totalPosts) {
+      _pageController.animateToPage(nextPage,
+          duration: Duration(milliseconds: 300), curve: Curves.easeInOut);
+    }
   }
 
   @override
@@ -63,11 +72,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     return Center(child: Text('Error: ${snapshot.error}'));
                   } else if (snapshot.hasData) {
                     final friendPosts = snapshot.data!;
+                    totalPosts = friendPosts.length;
                     if (friendPosts.length > 0) {
                       return PageView(
                           controller: _pageController,
                           scrollDirection: Axis.vertical,
-                          physics: ClampingScrollPhysics(),
+                          physics: NeverScrollableScrollPhysics(),
                           children: List.generate(friendPosts.length, (index) {
                             final post = friendPosts[index];
                             final friendUserId = post.id as String;
@@ -424,7 +434,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               color: AppColors.white,
                               size: 28,
                             ),
-                            onPressed: () {},
+                            onPressed: goToNextPage,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.transparent,
                               foregroundColor: Colors.transparent,
