@@ -274,17 +274,26 @@ class FriendSystem {
         .collection('friends')
         .snapshots();
 
-    return stream.map((snapshot) {
-      final filteredDocs = snapshot.docs.where((doc) {
-        final username = doc.data()['username'].toString().toLowerCase();
-        final name = doc.data()['name'].toString().toLowerCase();
-        final userId = doc.id;
-        return (username.contains(queryText) || name.contains(queryText)) &&
-            userId != userId;
-      }).toList();
+    return stream.asyncMap((snapshot) async {
+      final filteredDocs = <DocumentSnapshot<Map<String, dynamic>>>[];
+
+      for (final doc in snapshot.docs) {
+        final userSnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(doc.id)
+            .get();
+
+        final username = userSnapshot.data()?['username']?.toString()?.toLowerCase();
+        final name = userSnapshot.data()?['name']?.toString()?.toLowerCase();
+
+        if ((username?.contains(queryText) ?? false) || (name?.contains(queryText) ?? false)) {
+          filteredDocs.add(userSnapshot);
+        }
+      }
 
       return filteredDocs;
     });
+
   }
 
   Stream<List<DocumentSnapshot<Map<String, dynamic>>>> searchSentRequests(String searchText,) {

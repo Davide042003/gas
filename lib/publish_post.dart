@@ -13,7 +13,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-
 class PublishPostPage extends ConsumerStatefulWidget {
   final VoidCallback goToInitialPage;
 
@@ -24,6 +23,7 @@ class PublishPostPage extends ConsumerStatefulWidget {
 }
 
 class _PublishPostPageState extends ConsumerState<PublishPostPage> {
+  final String? userId = FirebaseAuth.instance.currentUser?.uid;
   final PostService postService =
       PostService(userId: FirebaseAuth.instance.currentUser?.uid ?? '');
 
@@ -150,7 +150,7 @@ class _PublishPostPageState extends ConsumerState<PublishPostPage> {
       isPublishing = true;
     });
 
-    List<int> tapsAnswers = [0, 0];
+    List<List<String>> tapsAnswers = [[], []];
 
     if (isPics) {
       List<String> imagesList = [];
@@ -158,6 +158,7 @@ class _PublishPostPageState extends ConsumerState<PublishPostPage> {
       imagesList.add(await postService.saveImage(File(_selectedImage_2!.path)));
 
       await postService.publishPost(PostModel(
+        id: userId,
         question: questionController.text,
         images: imagesList,
         answersList: [],
@@ -173,10 +174,11 @@ class _PublishPostPageState extends ConsumerState<PublishPostPage> {
 
       if (extraText) {
         answersList.add(controllers[2].text);
-        tapsAnswers.add(0);
+        tapsAnswers.add([]);
       }
 
       await postService.publishPost(PostModel(
+        id: userId,
         question: questionController.text,
         images: [],
         answersList: answersList,

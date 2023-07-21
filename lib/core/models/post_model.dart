@@ -7,7 +7,7 @@ class PostModel {
   final List<String>? answersList;
   final bool? isAnonymous;
   final bool? isMyFriends;
-  final List<int>? answersTap;
+  final List<List<String>>? answersTap;
   final Timestamp? timestamp;
 
   PostModel({
