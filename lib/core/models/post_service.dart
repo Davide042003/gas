@@ -69,28 +69,28 @@ class PostService {
       final postData = postDoc.data();
 
       if (postData != null) {
-        // Convert the 'answersTap' data to a list of lists of AnswerPostModel objects
-        final List<dynamic>? answersData = postData['answersTap'];
-        List<List<AnswerPostModel>> answersList = [];
+        // Convert the 'answersTap' data to a map of int keys to lists of AnswerPostModel objects
+        final Map<String, dynamic>? answersData = postData['answersTap'];
+        Map<int, List<AnswerPostModel>> answersMap = {};
         if (answersData != null) {
-          answersList = (answersData as List<dynamic>).map((dynamic innerListData) {
-            return (innerListData as List<dynamic>)
+          answersMap = (answersData as Map<String, dynamic>).map(
+                (key, value) => MapEntry(int.parse(key), (value as List<dynamic>)
                 .map((answerData) => AnswerPostModel.fromData(answerData))
-                .toList();
-          }).toList();
+                .toList()),
+          );
         }
 
         // Add the new answer to the appropriate inner list
-        if (innerListIndex < 0 || innerListIndex >= answersList.length) {
-          print('Invalid inner list index: $innerListIndex');
-          return;
+        if (answersMap.containsKey(innerListIndex)) {
+          answersMap[innerListIndex]!.add(answer);
+        } else {
+          answersMap[innerListIndex] = [answer];
         }
-        answersList[innerListIndex].add(answer);
 
         // Update the 'answersTap' field in the post data
-        postData['answersTap'] = answersList
-            .map((answersList) => answersList.map((answer) => answer.toJson()).toList())
-            .toList();
+        postData['answersTap'] = answersMap.map(
+              (key, value) => MapEntry(key.toString(), value.map((answer) => answer.toJson()).toList()),
+        );
 
         // Save the updated post data back to Firestore
         await postRef.update(postData);
