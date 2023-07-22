@@ -25,6 +25,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   late PageController _pageController;
   int totalPosts = 0;
+  String postId = "";
 
   @override
   void initState() {
@@ -45,7 +46,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     color = AppColors.backgroundDefault; // Set the initial background color
   }
 
-  void goToNextPage() {
+  Future<void> goToNextPage() async {
+    await postService.markPostAsSeen(postId);
+
     int nextPage = _pageController.page!.toInt() + 1;
     if (nextPage < totalPosts) {
       _pageController.animateToPage(nextPage,
@@ -60,7 +63,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       timestamp: Timestamp.now(),
     ), idUserPost, indexAnswer);
 
-    print("answered");
+    await postService.markPostAsSeen(postId);
   }
 
   @override
@@ -101,6 +104,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   .get(),
                               builder: (context, snapshot) {
                                 if (snapshot.hasData) {
+                                  postId = post.postId!;
+                                  print("post now $postId");
+
                                   final user = snapshot.data!.data()
                                       as Map<String, dynamic>;
                                   final username = user['username'] as String;
@@ -450,7 +456,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               color: AppColors.white,
                               size: 28,
                             ),
-                            onPressed: goToNextPage,
+                            onPressed: () async {
+                              await goToNextPage();
+                            },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.transparent,
                               foregroundColor: Colors.transparent,
