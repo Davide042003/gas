@@ -10,6 +10,7 @@ import 'core/models/post_service.dart';
 import 'core/models/post_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
+import 'core/models/answer_post_model.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   @override
@@ -18,6 +19,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   Color color = AppColors.backgroundDefault;
+  final String? userId = FirebaseAuth.instance.currentUser!.uid;
   final PostService postService =
       PostService(userId: FirebaseAuth.instance.currentUser!.uid);
 
@@ -49,6 +51,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _pageController.animateToPage(nextPage,
           duration: Duration(milliseconds: 300), curve: Curves.easeInOut);
     }
+  }
+
+  Future<void> clickAnswer(int indexAnswer, String postId, String idUserPost, bool isAnonymous) async {
+    await postService.addAnswerToPost(postId, AnswerPostModel(
+      id: userId,
+      isAnonymous: isAnonymous,
+      timestamp: Timestamp.now(),
+    ), idUserPost, indexAnswer);
+
+    print("answered");
   }
 
   @override
@@ -97,6 +109,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   final name = user['name'] as String;
                                   final timestamp =
                                       user['timeStamp'] as Timestamp;
+                                  final id =
+                                  user['id'] as String;
                                   final localDateTime =
                                       post.timestamp!.toDate().toLocal();
                                   final hour = localDateTime.hour
@@ -243,7 +257,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                     ),
                                                     behavior: HitTestBehavior
                                                         .translucent,
-                                                    onTap: () {},
+                                                    onTap: () async {
+                                                      await clickAnswer(0, post.postId!, friendUserId, false);
+                                                    },
                                                   ),
                                                   GestureDetector(
                                                     child: Container(

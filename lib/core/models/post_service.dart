@@ -4,6 +4,7 @@ import 'package:path/path.dart' as path;
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
 import 'friends_service.dart';
+import 'answer_post_model.dart';
 
 class PostService {
   final String userId;
@@ -49,6 +50,58 @@ class PostService {
     } catch (error) {
       // Handle any errors that occur during the process
       print('Error storing post information: $error');
+    }
+  }
+
+  Future<void> addAnswerToPost(String postId, AnswerPostModel answer, String idUserPost, int innerListIndex) async {
+    try {
+      // Get the reference to the post document in Firestore
+      final postRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(idUserPost)
+          .collection('posts')
+          .doc('published_posts')
+          .collection('posts')
+          .doc(postId);
+
+      // Fetch the post data from Firestore
+      final postDoc = await postRef.get();
+      final postData = postDoc.data();
+
+      if (postData != null) {
+        // Convert the 'answersTap' data to a list of lists of AnswerPostModel objects
+        final List<dynamic>? answersData = postData['answersTap'];
+        List<List<AnswerPostModel>> answersList = [];
+        if (answersData != null) {
+          answersList = (answersData as List<dynamic>).map((dynamic innerListData) {
+            return (innerListData as List<dynamic>)
+                .map((answerData) => AnswerPostModel.fromData(answerData))
+                .toList();
+          }).toList();
+        }
+
+        // Add the new answer to the appropriate inner list
+        if (innerListIndex < 0 || innerListIndex >= answersList.length) {
+          print('Invalid inner list index: $innerListIndex');
+          return;
+        }
+        answersList[innerListIndex].add(answer);
+
+        // Update the 'answersTap' field in the post data
+        postData['answersTap'] = answersList
+            .map((answersList) => answersList.map((answer) => answer.toJson()).toList())
+            .toList();
+
+        // Save the updated post data back to Firestore
+        await postRef.update(postData);
+
+        print('Answer added successfully to post with ID: $postId');
+      } else {
+        print('Post with ID: $postId does not exist.');
+      }
+    } catch (error) {
+      // Handle any errors that occur during the process
+      print('Error adding answer to post: $error');
     }
   }
 
@@ -99,6 +152,8 @@ class PostService {
       for (final postDoc in friendPostsSnapshot.docs) {
         final postId = postDoc.id;
         final post = PostModel.fromData(postDoc.data());
+        print(postDoc.id);
+        post.postId = postId;
 
         if(post.isMyFriends!) {
           if (!await _hasUserSeenPost(postId)) {

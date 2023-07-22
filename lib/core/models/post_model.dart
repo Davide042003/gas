@@ -1,13 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:gas/core/models/answer_post_model.dart';
 
 class PostModel {
   final String? id;
+  String? postId;
   final String? question;
   final List<String>? images;
   final List<String>? answersList;
   final bool? isAnonymous;
   final bool? isMyFriends;
-  final List<List<String>>? answersTap;
+  final Map<int, List<AnswerPostModel>>? answersTap; // Map of int keys to lists of AnswerPostModel
   final Timestamp? timestamp;
 
   PostModel({
@@ -28,7 +30,14 @@ class PostModel {
         answersList = List<String>.from(data['answersList'] ?? []),
         isAnonymous = data['isAnonymous'],
         isMyFriends = data['isMyFriends'],
-        answersTap = data['answersTap'],
+        answersTap = (data['answersTap'] as Map<String, dynamic>?)?.map(
+              (key, value) => MapEntry(
+            int.parse(key),
+            (value as List<dynamic>)
+                .map((answerData) => AnswerPostModel.fromData(answerData))
+                .toList(),
+          ),
+        ),
         timestamp = data['timestamp'];
 
   Map<String, dynamic> toJson() {
@@ -39,7 +48,7 @@ class PostModel {
       'answersList': answersList,
       'isAnonymous': isAnonymous,
       'isMyFriends': isMyFriends,
-      'answersTap' : answersTap,
+      'answersTap': answersTap?.map((key, value) => MapEntry(key.toString(), value.map((answer) => answer.toJson()).toList())),
       'timestamp': timestamp,
     };
   }

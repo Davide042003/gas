@@ -12,6 +12,7 @@ import 'core/models/post_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'core/models/answer_post_model.dart';
 
 class PublishPostPage extends ConsumerStatefulWidget {
   final VoidCallback goToInitialPage;
@@ -150,7 +151,9 @@ class _PublishPostPageState extends ConsumerState<PublishPostPage> {
       isPublishing = true;
     });
 
-    List<List<String>> tapsAnswers = [[], []];
+    Map<int, List<AnswerPostModel>> tapsAnswers = {};
+    tapsAnswers[0] = [];
+    tapsAnswers[1] = [];
 
     if (isPics) {
       List<String> imagesList = [];
@@ -174,7 +177,8 @@ class _PublishPostPageState extends ConsumerState<PublishPostPage> {
 
       if (extraText) {
         answersList.add(controllers[2].text);
-        tapsAnswers.add([]);
+        tapsAnswers[2] = [];
+
       }
 
       await postService.publishPost(PostModel(
