@@ -7,7 +7,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'core/models/user_model.dart';
 import 'core/models/user_info_service.dart';
 import 'package:flutter/cupertino.dart';
-import 'core/models/user_info_service.dart';
 
 class OtherProfileScreen extends ConsumerStatefulWidget {
   final String userId;

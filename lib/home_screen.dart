@@ -23,9 +23,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   final PostService postService =
       PostService(userId: FirebaseAuth.instance.currentUser!.uid);
 
+  bool hasVoted = false;
   late PageController _pageController;
   int totalPosts = 0;
   String postId = "";
+  List<dynamic> answersCount = [];
+  int totalAnswers = 0;
 
   @override
   void initState() {
@@ -54,16 +57,61 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _pageController.animateToPage(nextPage,
           duration: Duration(milliseconds: 300), curve: Curves.easeInOut);
     }
+
   }
 
-  Future<void> clickAnswer(int indexAnswer, String postId, String idUserPost, bool isAnonymous) async {
-    await postService.addAnswerToPost(postId, AnswerPostModel(
-      id: userId,
-      isAnonymous: isAnonymous,
-      timestamp: Timestamp.now(),
-    ), idUserPost, indexAnswer);
+  void goToNextPageTapToContinue() {
+    int nextPage = _pageController.page!.toInt() + 1;
+    if (nextPage < totalPosts) {
+      _pageController.animateToPage(nextPage,
+          duration: Duration(milliseconds: 300), curve: Curves.easeInOut);
+    }
 
-    await postService.markPostAsSeen(postId);
+    setState(() {
+      hasVoted = false;
+    });
+  }
+
+  Future<void> clickAnswer(int indexAnswer, String postId, String idUserPost,
+      bool isAnonymous, bool answers2) async {
+    await postService.addAnswerToPost(
+        postId,
+        AnswerPostModel(
+          id: userId,
+          isAnonymous: isAnonymous,
+          timestamp: Timestamp.now(),
+        ),
+        idUserPost,
+        indexAnswer);
+
+  //  await postService.markPostAsSeen(postId);
+
+    if (answers2 == true) {
+      await fetchAnswersCounts(postService, postId, idUserPost, 2);
+      totalAnswers = answersCount.reduce((a,b)=>a+b);
+
+      answersCount = answersCount.map((element) => element / totalAnswers).toList();
+      print(answersCount);
+    }
+
+    setState(() {
+      hasVoted = true;
+    });
+  }
+
+  Future<void> fetchAnswersCounts(PostService postService, String postId, String idUserPost, int maxInnerListIndex) async {
+    final Map<int, int> answersCountsMap = {};
+
+    for (int i = 0; i < maxInnerListIndex; i++) {
+      int count = await postService.getAnswersLengthByIndex(postId, idUserPost, i);
+      answersCountsMap[i] = count;
+    }
+
+    answersCount.clear();
+    for (int i = 0; i < maxInnerListIndex; i++) {
+      int count = answersCountsMap[i] ?? 0;
+      answersCount.add(count);
+    }
   }
 
   @override
@@ -105,7 +153,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               builder: (context, snapshot) {
                                 if (snapshot.hasData) {
                                   postId = post.postId!;
-                                  print("post now $postId");
 
                                   final user = snapshot.data!.data()
                                       as Map<String, dynamic>;
@@ -115,8 +162,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   final name = user['name'] as String;
                                   final timestamp =
                                       user['timeStamp'] as Timestamp;
-                                  final id =
-                                  user['id'] as String;
+                                  final id = user['id'] as String;
                                   final localDateTime =
                                       post.timestamp!.toDate().toLocal();
                                   final hour = localDateTime.hour
@@ -129,176 +175,227 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   int randomColor = Random().nextInt(5);
 
                                   return Container(
-                                    color: index == 0 ? AppColors.backgroundDefault: AppColors.backgroundColors[randomColor],
+                                      color: index == 0
+                                          ? AppColors.backgroundDefault
+                                          : AppColors
+                                              .backgroundColors[randomColor],
                                       child: Padding(
-                                    padding: EdgeInsets.only(
-                                        right: 20,
-                                        left: 20,
-                                        top: screenHeight / 3.75),
-                                    child: Column(
-                                      children: [
-                                        Row(
-                                          children: <Widget>[
-                                            post.isAnonymous!
-                                                ? CircleAvatar(
-                                                    maxRadius: 25,
-                                                    backgroundImage: null,
-                                                    child:
-                                                        Icon(Icons.hide_image),
-                                                  )
-                                                : CircleAvatar(
-                                                    maxRadius: 25,
-                                                    backgroundImage:
-                                                        profilePictureUrl
+                                        padding: EdgeInsets.only(
+                                            right: 20,
+                                            left: 20,
+                                            top: screenHeight / 3.75),
+                                        child: Column(
+                                          children: [
+                                            Row(
+                                              children: <Widget>[
+                                                post.isAnonymous!
+                                                    ? CircleAvatar(
+                                                        maxRadius: 25,
+                                                        backgroundImage: null,
+                                                        child: Icon(
+                                                            Icons.hide_image),
+                                                      )
+                                                    : CircleAvatar(
+                                                        maxRadius: 25,
+                                                        backgroundImage:
+                                                            profilePictureUrl
+                                                                    .isEmpty
+                                                                ? null
+                                                                : NetworkImage(
+                                                                    profilePictureUrl),
+                                                        child: profilePictureUrl
                                                                 .isEmpty
-                                                            ? null
-                                                            : NetworkImage(
-                                                                profilePictureUrl),
-                                                    child: profilePictureUrl
-                                                            .isEmpty
-                                                        ? Text(
-                                                            name.isNotEmpty
-                                                                ? name[0]
-                                                                : '',
-                                                            style: TextStyle(
-                                                                fontFamily:
-                                                                    'Helvetica',
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold,
-                                                                fontSize: 20,
-                                                                color: AppColors
-                                                                    .white),
-                                                          )
-                                                        : SizedBox(),
+                                                            ? Text(
+                                                                name.isNotEmpty
+                                                                    ? name[0]
+                                                                    : '',
+                                                                style: TextStyle(
+                                                                    fontFamily:
+                                                                        'Helvetica',
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                    fontSize:
+                                                                        20,
+                                                                    color: AppColors
+                                                                        .white),
+                                                              )
+                                                            : SizedBox(),
+                                                      ),
+                                                SizedBox(width: 16),
+                                                Expanded(
+                                                  child: Container(
+                                                    color: Colors.transparent,
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: <Widget>[
+                                                        Text(
+                                                          post.isAnonymous!
+                                                              ? "? ? ? ? ? ? "
+                                                              : username ?? '',
+                                                          style: TextStyle(
+                                                            fontFamily:
+                                                                'Helvetica',
+                                                            fontWeight:
+                                                                FontWeight.w400,
+                                                            fontSize: 20,
+                                                            color:
+                                                                AppColors.white,
+                                                          ),
+                                                        ),
+                                                        SizedBox(height: 2),
+                                                        Text(
+                                                          "$hour:$minute",
+                                                          style: TextStyle(
+                                                            fontFamily:
+                                                                'Helvetica',
+                                                            fontWeight:
+                                                                FontWeight.w400,
+                                                            fontSize: 18,
+                                                            color: AppColors
+                                                                .whiteShadow,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
                                                   ),
-                                            SizedBox(width: 16),
-                                            Expanded(
-                                              child: Container(
-                                                color: Colors.transparent,
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: <Widget>[
-                                                    Text(
-                                                      post.isAnonymous!
-                                                          ? "? ? ? ? ? ? "
-                                                          : username ?? '',
-                                                      style: TextStyle(
-                                                        fontFamily: 'Helvetica',
-                                                        fontWeight:
-                                                            FontWeight.w400,
-                                                        fontSize: 20,
-                                                        color: AppColors.white,
-                                                      ),
-                                                    ),
-                                                    SizedBox(height: 2),
-                                                    Text(
-                                                      "$hour:$minute",
-                                                      style: TextStyle(
-                                                        fontFamily: 'Helvetica',
-                                                        fontWeight:
-                                                            FontWeight.w400,
-                                                        fontSize: 18,
-                                                        color: AppColors
-                                                            .whiteShadow,
-                                                      ),
-                                                    ),
-                                                  ],
                                                 ),
-                                              ),
+                                                Container(
+                                                  width: 45,
+                                                  height: 45,
+                                                  decoration: BoxDecoration(
+                                                    shape: BoxShape.circle,
+                                                    color:
+                                                        AppColors.whiteShadow55,
+                                                  ),
+                                                  child: Icon(
+                                                    Ionicons.chatbubble,
+                                                    color: AppColors.white,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
-                                            Container(
-                                              width: 45,
-                                              height: 45,
-                                              decoration: BoxDecoration(
-                                                shape: BoxShape.circle,
-                                                color: AppColors.whiteShadow55,
-                                              ),
-                                              child: Icon(
-                                                Ionicons.chatbubble,
+                                            SizedBox(height: 40),
+                                            Text(
+                                              post.question!,
+                                              style: TextStyle(
+                                                fontFamily: 'Helvetica',
+                                                fontWeight: FontWeight.bold,
                                                 color: AppColors.white,
+                                                fontSize: 24,
                                               ),
                                             ),
+                                            SizedBox(height: 30),
+                                            post.images!.length == 2
+                                                ? Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .spaceEvenly,
+                                                    children: [
+                                                      Column(
+                                                        children: [
+                                                          GestureDetector(
+                                                            child: Container(
+                                                              width:
+                                                              screenWidth / 2.3,
+                                                              height:
+                                                              screenHeight / 4,
+                                                              decoration:
+                                                              BoxDecoration(
+                                                                image: post.images![
+                                                                0] !=
+                                                                    null
+                                                                    ? DecorationImage(
+                                                                    image: NetworkImage(
+                                                                        post.images![
+                                                                        0]),
+                                                                    fit: BoxFit
+                                                                        .cover)
+                                                                    : null,
+                                                                color: Colors.white,
+                                                                borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                    20),
+                                                              ),
+                                                            ),
+                                                            behavior:
+                                                            HitTestBehavior
+                                                                .translucent,
+                                                            onTap: () async {
+                                                              await clickAnswer(
+                                                                  0,
+                                                                  post.postId!,
+                                                                  friendUserId,
+                                                                  false,
+                                                              true);
+                                                            },
+                                                          ),
+                                                          SizedBox(height: screenHeight/50,),
+                                                          hasVoted ? Text("${(answersCount[0] * 100).round()}%", style: TextStyle(
+                                                            fontFamily: 'Helvetica',
+                                                            fontWeight: FontWeight.bold,
+                                                            fontSize: 20,
+                                                            color: AppColors.white
+                                                          ),) : SizedBox()
+                                                        ],
+                                                      ),
+                                                      Column(
+                                                        children: [
+                                                          GestureDetector(
+                                                            child: Container(
+                                                              width:
+                                                              screenWidth / 2.3,
+                                                              height:
+                                                              screenHeight / 4,
+                                                              decoration:
+                                                              BoxDecoration(
+                                                                image: post.images![
+                                                                0] !=
+                                                                    null
+                                                                    ? DecorationImage(
+                                                                    image: NetworkImage(
+                                                                        post.images![
+                                                                        0]),
+                                                                    fit: BoxFit
+                                                                        .cover)
+                                                                    : null,
+                                                                color: Colors.white,
+                                                                borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                    20),
+                                                              ),
+                                                            ),
+                                                            behavior:
+                                                            HitTestBehavior
+                                                                .translucent,
+                                                            onTap: () async {
+                                                              await clickAnswer(
+                                                                  1,
+                                                                  post.postId!,
+                                                                  friendUserId,
+                                                                  false,
+                                                                  true);
+                                                            },
+                                                          ),
+                                                          SizedBox(height: screenHeight/50,),
+                                                          hasVoted ? Text("${(answersCount[1] * 100).round()}%", style: TextStyle(
+                                                              fontFamily: 'Helvetica',
+                                                              fontWeight: FontWeight.bold,
+                                                              fontSize: 20,
+                                                              color: AppColors.white
+                                                          ),) : SizedBox()
+                                                        ],
+                                                      ),
+                                                    ],
+                                                  )
+                                                : SizedBox(),
                                           ],
                                         ),
-                                        SizedBox(height: 40),
-                                        Text(
-                                          post.question!,
-                                          style: TextStyle(
-                                            fontFamily: 'Helvetica',
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.white,
-                                            fontSize: 24,
-                                          ),
-                                        ),
-                                        SizedBox(height: 30),
-                                        post.images!.length == 2
-                                            ? Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment
-                                                        .spaceEvenly,
-                                                children: [
-                                                  GestureDetector(
-                                                    child: Container(
-                                                      width: screenWidth / 2.3,
-                                                      height: screenHeight / 4,
-                                                      decoration: BoxDecoration(
-                                                        image: post.images![
-                                                                    0] !=
-                                                                null
-                                                            ? DecorationImage(
-                                                                image: NetworkImage(
-                                                                    post.images![
-                                                                        0]),
-                                                                fit: BoxFit
-                                                                    .cover)
-                                                            : null,
-                                                        color: Colors.white,
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(20),
-                                                      ),
-                                                      // Add your content for the first white container here
-                                                    ),
-                                                    behavior: HitTestBehavior
-                                                        .translucent,
-                                                    onTap: () async {
-                                                      await clickAnswer(0, post.postId!, friendUserId, false);
-                                                    },
-                                                  ),
-                                                  GestureDetector(
-                                                    child: Container(
-                                                      width: screenWidth / 2.3,
-                                                      height: screenHeight / 4,
-                                                      decoration: BoxDecoration(
-                                                        image: post.images![
-                                                                    1] !=
-                                                                null
-                                                            ? DecorationImage(
-                                                                image: NetworkImage(
-                                                                    post.images![
-                                                                        1]),
-                                                                fit: BoxFit
-                                                                    .cover)
-                                                            : null,
-                                                        color: Colors.white,
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(20),
-                                                      ),
-                                                      // Add your content for the second white container here
-                                                    ),
-                                                    behavior: HitTestBehavior
-                                                        .translucent,
-                                                    onTap: () {},
-                                                  ),
-                                                ],
-                                              )
-                                            : SizedBox(),
-                                      ],
-                                    ),
-                                  ));
+                                      ));
                                 }
                                 return CircularProgressIndicator();
                               },
@@ -419,60 +516,72 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
                   SizedBox(
-                    height: screenHeight / 1.45,
+                    height: hasVoted ? screenHeight / 1.8 : screenHeight / 1.45,
                   ),
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 20),
-                    child: Container(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Column(
-                            children: [
-                              InkWell(
-                                child: Icon(
-                                  Icons.remove_red_eye,
-                                  size: 35,
-                                  color: AppColors.white,
+                  hasVoted
+                      ? Expanded(
+                          child: GestureDetector(
+                          child: Container(
+                            width: screenWidth,
+                            child: Center(child: Text("Tap To Continue", style: TextStyle(fontFamily: "Helvetica", fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.white.withOpacity(0.7)),)),
+                          ),
+                          behavior: HitTestBehavior.translucent,
+                          onTap: goToNextPageTapToContinue,
+                        ))
+                      : Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 20),
+                          child: Container(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Column(
+                                  children: [
+                                    InkWell(
+                                      child: Icon(
+                                        Icons.remove_red_eye,
+                                        size: 35,
+                                        color: AppColors.white,
+                                      ),
+                                      onTap: () {
+                                        context.pop();
+                                      },
+                                    ),
+                                    SizedBox(
+                                      height: screenHeight / 200,
+                                    ),
+                                    Text(
+                                      "ANONYMOUS",
+                                      style:
+                                          ref.watch(stylesProvider).text.invite,
+                                    ),
+                                  ],
                                 ),
-                                onTap: () {
-                                  context.pop();
-                                },
-                              ),
-                              SizedBox(
-                                height: screenHeight / 200,
-                              ),
-                              Text(
-                                "ANONYMOUS",
-                                style: ref.watch(stylesProvider).text.invite,
-                              ),
-                            ],
-                          ),
-                          Spacer(),
-                          ElevatedButton.icon(
-                            icon: Icon(
-                              Ionicons.play,
-                              color: AppColors.white,
-                              size: 28,
-                            ),
-                            onPressed: () async {
-                              await goToNextPage();
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              foregroundColor: Colors.transparent,
-                              elevation: 0,
-                            ),
-                            label: Text(
-                              "Skip",
-                              style: ref.watch(stylesProvider).text.skipHome,
+                                Spacer(),
+                                ElevatedButton.icon(
+                                  icon: Icon(
+                                    Ionicons.play,
+                                    color: AppColors.white,
+                                    size: 28,
+                                  ),
+                                  onPressed: () async {
+                                    await goToNextPage();
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.transparent,
+                                    foregroundColor: Colors.transparent,
+                                    elevation: 0,
+                                  ),
+                                  label: Text(
+                                    "Skip",
+                                    style:
+                                        ref.watch(stylesProvider).text.skipHome,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                  ),
+                        ),
                 ],
               ),
             ),

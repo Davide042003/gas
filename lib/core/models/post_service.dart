@@ -168,4 +168,50 @@ class PostService {
 
     return friendPosts;
   }
+
+  Future<int> getAnswersLengthByIndex(String postId, String userId, int innerListIndex) async {
+    try {
+      // Get the reference to the post document in Firestore
+      final postRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('posts')
+          .doc('published_posts')
+          .collection('posts')
+          .doc(postId);
+
+      // Fetch the post data from Firestore
+      final postDoc = await postRef.get();
+      final postData = postDoc.data();
+
+      if (postData != null) {
+        // Convert the 'answersTap' data to a map of int keys to lists of AnswerPostModel objects
+        final Map<String, dynamic>? answersData = postData['answersTap'];
+        Map<int, List<AnswerPostModel>> answersMap = {};
+        if (answersData != null) {
+          answersMap = (answersData as Map<String, dynamic>).map(
+                (key, value) => MapEntry(int.parse(key), (value as List<dynamic>)
+                .map((answerData) => AnswerPostModel.fromData(answerData))
+                .toList()),
+          );
+        }
+
+        // Check if the answersMap contains the specified innerListIndex
+        if (answersMap.containsKey(innerListIndex)) {
+          // Return the length of the array at the specified index
+          return answersMap[innerListIndex]!.length;
+        } else {
+          // If the innerListIndex doesn't exist, return 0
+          return 0;
+        }
+      } else {
+        print('Post with ID: $postId does not exist.');
+        return 0;
+      }
+    } catch (error) {
+      // Handle any errors that occur during the process
+      print('Error retrieving answers length: $error');
+      return 0;
+    }
+  }
 }
