@@ -9,6 +9,8 @@ class AppColors {
   static const Color brownShadow = Color(0xffA56A68);
   static const Color brown = Color(0xff862E14);
   static const Color a = Color(0xffE79A7F);
+  static const Color fadeImageAnswer = Color(0xffF2E2E1);
+
 
   static const Color backgroundBlue = Color(0xff007AF6);
   static const Color backgroundRed = Color(0xffD91012);

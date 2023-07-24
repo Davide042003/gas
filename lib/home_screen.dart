@@ -11,6 +11,7 @@ import 'core/models/post_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
 import 'core/models/answer_post_model.dart';
+import 'post_notifier.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   @override
@@ -57,7 +58,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _pageController.animateToPage(nextPage,
           duration: Duration(milliseconds: 300), curve: Curves.easeInOut);
     }
-
   }
 
   void goToNextPageTapToContinue() {
@@ -84,13 +84,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         idUserPost,
         indexAnswer);
 
-  //  await postService.markPostAsSeen(postId);
+    //  await postService.markPostAsSeen(postId);
 
     if (answers2 == true) {
       await fetchAnswersCounts(postService, postId, idUserPost, 2);
-      totalAnswers = answersCount.reduce((a,b)=>a+b);
+      totalAnswers = answersCount.reduce((a, b) => a + b);
 
-      answersCount = answersCount.map((element) => element / totalAnswers).toList();
+      answersCount =
+          answersCount.map((element) => element / totalAnswers).toList();
       print(answersCount);
     }
 
@@ -99,11 +100,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
   }
 
-  Future<void> fetchAnswersCounts(PostService postService, String postId, String idUserPost, int maxInnerListIndex) async {
+  Future<void> fetchAnswersCounts(PostService postService, String postId,
+      String idUserPost, int maxInnerListIndex) async {
     final Map<int, int> answersCountsMap = {};
 
     for (int i = 0; i < maxInnerListIndex; i++) {
-      int count = await postService.getAnswersLengthByIndex(postId, idUserPost, i);
+      int count =
+          await postService.getAnswersLengthByIndex(postId, idUserPost, i);
       answersCountsMap[i] = count;
     }
 
@@ -126,299 +129,340 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Container(
               width: screenWidth,
               height: screenHeight,
-              child: FutureBuilder<List<PostModel>>(
-                future: postService.getFriendsPosts(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Center(child: CircularProgressIndicator());
-                  } else if (snapshot.hasError) {
-                    return Center(child: Text('Error: ${snapshot.error}'));
-                  } else if (snapshot.hasData) {
-                    final friendPosts = snapshot.data!;
-                    totalPosts = friendPosts.length;
-                    if (friendPosts.length > 0) {
-                      return PageView(
-                          controller: _pageController,
-                          scrollDirection: Axis.vertical,
-                          physics: NeverScrollableScrollPhysics(),
-                          children: List.generate(friendPosts.length, (index) {
-                            final post = friendPosts[index];
-                            final friendUserId = post.id as String;
+              child: Consumer(
+                builder: (context, watch, _) {
+                  final friendPostsAsync = ref.watch(friendPostsProvider);
+                  return friendPostsAsync.when(
+                    data: (friendPosts) {
+                      if (friendPosts.isNotEmpty) {
+                        totalPosts = friendPosts.length;
+                        return PageView(
+                            controller: _pageController,
+                            scrollDirection: Axis.vertical,
+                            physics: NeverScrollableScrollPhysics(),
+                            children: List.generate(friendPosts.length, (index) {
+                              final post = friendPosts[index];
+                              final friendUserId = post.id as String;
 
-                            return FutureBuilder<DocumentSnapshot>(
-                              future: FirebaseFirestore.instance
-                                  .collection('users')
-                                  .doc(friendUserId)
-                                  .get(),
-                              builder: (context, snapshot) {
-                                if (snapshot.hasData) {
-                                  postId = post.postId!;
+                              return FutureBuilder<DocumentSnapshot>(
+                                future: FirebaseFirestore.instance
+                                    .collection('users')
+                                    .doc(friendUserId)
+                                    .get(),
+                                builder: (context, snapshot) {
+                                  if (snapshot.hasData) {
+                                    postId = post.postId!;
 
-                                  final user = snapshot.data!.data()
-                                      as Map<String, dynamic>;
-                                  final username = user['username'] as String;
-                                  final profilePictureUrl =
-                                      user['imageUrl'] as String;
-                                  final name = user['name'] as String;
-                                  final timestamp =
-                                      user['timeStamp'] as Timestamp;
-                                  final id = user['id'] as String;
-                                  final localDateTime =
-                                      post.timestamp!.toDate().toLocal();
-                                  final hour = localDateTime.hour
-                                      .toString()
-                                      .padLeft(2, '0');
-                                  final minute = localDateTime.minute
-                                      .toString()
-                                      .padLeft(2, '0');
+                                    final user = snapshot.data!.data()
+                                    as Map<String, dynamic>;
+                                    final username = user['username'] as String;
+                                    final profilePictureUrl =
+                                    user['imageUrl'] as String;
+                                    final name = user['name'] as String;
+                                    final timestamp =
+                                    user['timeStamp'] as Timestamp;
+                                    final id = user['id'] as String;
+                                    final localDateTime =
+                                    post.timestamp!.toDate().toLocal();
+                                    final hour = localDateTime.hour
+                                        .toString()
+                                        .padLeft(2, '0');
+                                    final minute = localDateTime.minute
+                                        .toString()
+                                        .padLeft(2, '0');
 
-                                  int randomColor = Random().nextInt(5);
+                                    int randomColor = Random().nextInt(5);
 
-                                  return Container(
-                                      color: index == 0
-                                          ? AppColors.backgroundDefault
-                                          : AppColors
-                                              .backgroundColors[randomColor],
-                                      child: Padding(
-                                        padding: EdgeInsets.only(
-                                            right: 20,
-                                            left: 20,
-                                            top: screenHeight / 3.75),
-                                        child: Column(
-                                          children: [
-                                            Row(
-                                              children: <Widget>[
-                                                post.isAnonymous!
-                                                    ? CircleAvatar(
-                                                        maxRadius: 25,
-                                                        backgroundImage: null,
-                                                        child: Icon(
-                                                            Icons.hide_image),
-                                                      )
-                                                    : CircleAvatar(
-                                                        maxRadius: 25,
-                                                        backgroundImage:
-                                                            profilePictureUrl
-                                                                    .isEmpty
-                                                                ? null
-                                                                : NetworkImage(
-                                                                    profilePictureUrl),
-                                                        child: profilePictureUrl
-                                                                .isEmpty
-                                                            ? Text(
-                                                                name.isNotEmpty
-                                                                    ? name[0]
-                                                                    : '',
-                                                                style: TextStyle(
-                                                                    fontFamily:
-                                                                        'Helvetica',
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .bold,
-                                                                    fontSize:
-                                                                        20,
-                                                                    color: AppColors
-                                                                        .white),
-                                                              )
-                                                            : SizedBox(),
+                                    return Container(
+                                        color: index == 0
+                                            ? AppColors.backgroundDefault
+                                            : AppColors
+                                            .backgroundColors[randomColor],
+                                        child: Padding(
+                                          padding: EdgeInsets.only(
+                                              right: 20,
+                                              left: 20,
+                                              top: screenHeight / 3.75),
+                                          child: Column(
+                                            children: [
+                                              Row(
+                                                children: <Widget>[
+                                                  post.isAnonymous!
+                                                      ? CircleAvatar(
+                                                    maxRadius: 25,
+                                                    backgroundImage: null,
+                                                    child: Icon(
+                                                        Icons.hide_image),
+                                                  )
+                                                      : CircleAvatar(
+                                                    maxRadius: 25,
+                                                    backgroundImage:
+                                                    profilePictureUrl
+                                                        .isEmpty
+                                                        ? null
+                                                        : NetworkImage(
+                                                        profilePictureUrl),
+                                                    child: profilePictureUrl
+                                                        .isEmpty
+                                                        ? Text(
+                                                      name.isNotEmpty
+                                                          ? name[0]
+                                                          : '',
+                                                      style: TextStyle(
+                                                          fontFamily:
+                                                          'Helvetica',
+                                                          fontWeight:
+                                                          FontWeight
+                                                              .bold,
+                                                          fontSize:
+                                                          20,
+                                                          color: AppColors
+                                                              .white),
+                                                    )
+                                                        : SizedBox(),
+                                                  ),
+                                                  SizedBox(width: 16),
+                                                  Expanded(
+                                                    child: Container(
+                                                      color: Colors.transparent,
+                                                      child: Column(
+                                                        crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                        children: <Widget>[
+                                                          Text(
+                                                            post.isAnonymous!
+                                                                ? "? ? ? ? ? ? "
+                                                                : username ?? '',
+                                                            style: TextStyle(
+                                                              fontFamily:
+                                                              'Helvetica',
+                                                              fontWeight:
+                                                              FontWeight.w400,
+                                                              fontSize: 20,
+                                                              color:
+                                                              AppColors.white,
+                                                            ),
+                                                          ),
+                                                          SizedBox(height: 2),
+                                                          Text(
+                                                            "$hour:$minute",
+                                                            style: TextStyle(
+                                                              fontFamily:
+                                                              'Helvetica',
+                                                              fontWeight:
+                                                              FontWeight.w400,
+                                                              fontSize: 18,
+                                                              color: AppColors
+                                                                  .whiteShadow,
+                                                            ),
+                                                          ),
+                                                        ],
                                                       ),
-                                                SizedBox(width: 16),
-                                                Expanded(
-                                                  child: Container(
-                                                    color: Colors.transparent,
-                                                    child: Column(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .start,
-                                                      children: <Widget>[
-                                                        Text(
-                                                          post.isAnonymous!
-                                                              ? "? ? ? ? ? ? "
-                                                              : username ?? '',
-                                                          style: TextStyle(
-                                                            fontFamily:
-                                                                'Helvetica',
-                                                            fontWeight:
-                                                                FontWeight.w400,
-                                                            fontSize: 20,
-                                                            color:
-                                                                AppColors.white,
-                                                          ),
-                                                        ),
-                                                        SizedBox(height: 2),
-                                                        Text(
-                                                          "$hour:$minute",
-                                                          style: TextStyle(
-                                                            fontFamily:
-                                                                'Helvetica',
-                                                            fontWeight:
-                                                                FontWeight.w400,
-                                                            fontSize: 18,
-                                                            color: AppColors
-                                                                .whiteShadow,
-                                                          ),
-                                                        ),
-                                                      ],
                                                     ),
                                                   ),
-                                                ),
-                                                Container(
-                                                  width: 45,
-                                                  height: 45,
-                                                  decoration: BoxDecoration(
-                                                    shape: BoxShape.circle,
-                                                    color:
-                                                        AppColors.whiteShadow55,
+                                                  Container(
+                                                    width: 45,
+                                                    height: 45,
+                                                    decoration: BoxDecoration(
+                                                      shape: BoxShape.circle,
+                                                      color:
+                                                      AppColors.whiteShadow55,
+                                                    ),
+                                                    child: Icon(
+                                                      Ionicons.chatbubble,
+                                                      color: AppColors.white,
+                                                    ),
                                                   ),
-                                                  child: Icon(
-                                                    Ionicons.chatbubble,
-                                                    color: AppColors.white,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            SizedBox(height: 40),
-                                            Text(
-                                              post.question!,
-                                              style: TextStyle(
-                                                fontFamily: 'Helvetica',
-                                                fontWeight: FontWeight.bold,
-                                                color: AppColors.white,
-                                                fontSize: 24,
+                                                ],
                                               ),
-                                            ),
-                                            SizedBox(height: 30),
-                                            post.images!.length == 2
-                                                ? Row(
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment
-                                                            .spaceEvenly,
+                                              SizedBox(height: 40),
+                                              Text(
+                                                post.question!,
+                                                style: TextStyle(
+                                                  fontFamily: 'Helvetica',
+                                                  fontWeight: FontWeight.bold,
+                                                  color: AppColors.white,
+                                                  fontSize: 24,
+                                                ),
+                                              ),
+                                              SizedBox(height: 30),
+                                              post.images!.length == 2
+                                                  ? Row(
+                                                mainAxisAlignment:
+                                                MainAxisAlignment
+                                                    .spaceEvenly,
+                                                children: [
+                                                  Column(
                                                     children: [
-                                                      Column(
-                                                        children: [
-                                                          GestureDetector(
-                                                            child: Container(
-                                                              width:
-                                                              screenWidth / 2.3,
-                                                              height:
-                                                              screenHeight / 4,
-                                                              decoration:
-                                                              BoxDecoration(
-                                                                image: post.images![
-                                                                0] !=
-                                                                    null
-                                                                    ? DecorationImage(
-                                                                    image: NetworkImage(
-                                                                        post.images![
-                                                                        0]),
-                                                                    fit: BoxFit
-                                                                        .cover)
-                                                                    : null,
-                                                                color: Colors.white,
-                                                                borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                    20),
+                                                      GestureDetector(
+                                                        child: Stack(
+                                                            alignment: Alignment.bottomCenter,
+                                                            children: [
+                                                              Container(
+                                                                width:
+                                                                screenWidth /
+                                                                    2.3,
+                                                                height:
+                                                                screenHeight /
+                                                                    4,
+                                                                decoration:
+                                                                BoxDecoration(
+                                                                  image: post.images![0] !=
+                                                                      null
+                                                                      ? DecorationImage(
+                                                                      image: NetworkImage(post.images![0]),
+                                                                      fit: BoxFit.cover)
+                                                                      : null,
+                                                                  color: Colors
+                                                                      .white,
+                                                                  borderRadius:
+                                                                  BorderRadius.circular(
+                                                                      20),
+                                                                ),
                                                               ),
-                                                            ),
-                                                            behavior:
-                                                            HitTestBehavior
-                                                                .translucent,
-                                                            onTap: () async {
-                                                              await clickAnswer(
-                                                                  0,
-                                                                  post.postId!,
-                                                                  friendUserId,
-                                                                  false,
+                                                              AnimatedContainer(
+                                                                duration: Duration(seconds: 1),
+                                                                curve: Curves.easeInOut,
+                                                                width: screenWidth / 2.3,
+                                                                height: hasVoted ? (screenHeight / 4) * answersCount[0] : 0,
+                                                                decoration: BoxDecoration(
+                                                                  color: AppColors.fadeImageAnswer.withOpacity(.61),
+                                                                  borderRadius: BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20)),
+                                                                ),
+                                                              ),
+                                                            ]),
+                                                        behavior:
+                                                        HitTestBehavior
+                                                            .translucent,
+                                                        onTap: () async {
+                                                          await clickAnswer(
+                                                              0,
+                                                              post.postId!,
+                                                              friendUserId,
+                                                              false,
                                                               true);
-                                                            },
-                                                          ),
-                                                          SizedBox(height: screenHeight/50,),
-                                                          hasVoted ? Text("${(answersCount[0] * 100).round()}%", style: TextStyle(
-                                                            fontFamily: 'Helvetica',
-                                                            fontWeight: FontWeight.bold,
-                                                            fontSize: 20,
-                                                            color: AppColors.white
-                                                          ),) : SizedBox()
-                                                        ],
+                                                        },
                                                       ),
-                                                      Column(
-                                                        children: [
-                                                          GestureDetector(
-                                                            child: Container(
-                                                              width:
-                                                              screenWidth / 2.3,
-                                                              height:
-                                                              screenHeight / 4,
-                                                              decoration:
-                                                              BoxDecoration(
-                                                                image: post.images![
-                                                                0] !=
-                                                                    null
-                                                                    ? DecorationImage(
-                                                                    image: NetworkImage(
-                                                                        post.images![
-                                                                        0]),
-                                                                    fit: BoxFit
-                                                                        .cover)
-                                                                    : null,
-                                                                color: Colors.white,
-                                                                borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                    20),
+                                                      SizedBox(
+                                                        height:
+                                                        screenHeight /
+                                                            50,
+                                                      ),
+                                                      hasVoted
+                                                          ? Text(
+                                                        "${(answersCount[0] * 100).round()}%",
+                                                        style: TextStyle(
+                                                            fontFamily:
+                                                            'Helvetica',
+                                                            fontWeight:
+                                                            FontWeight
+                                                                .bold,
+                                                            fontSize:
+                                                            20,
+                                                            color: AppColors
+                                                                .white),
+                                                      )
+                                                          : SizedBox()
+                                                    ],
+                                                  ),
+                                                  Column(
+                                                    children: [
+                                                      GestureDetector(
+                                                        child: Stack(
+                                                            alignment: Alignment.bottomCenter,
+                                                            children: [
+                                                              Container(
+                                                                width:
+                                                                screenWidth /
+                                                                    2.3,
+                                                                height:
+                                                                screenHeight /
+                                                                    4,
+                                                                decoration:
+                                                                BoxDecoration(
+                                                                  image: post.images![0] !=
+                                                                      null
+                                                                      ? DecorationImage(
+                                                                      image: NetworkImage(post.images![0]),
+                                                                      fit: BoxFit.cover)
+                                                                      : null,
+                                                                  color: Colors
+                                                                      .white,
+                                                                  borderRadius:
+                                                                  BorderRadius.circular(
+                                                                      20),
+                                                                ),
                                                               ),
-                                                            ),
-                                                            behavior:
-                                                            HitTestBehavior
-                                                                .translucent,
-                                                            onTap: () async {
-                                                              await clickAnswer(
-                                                                  1,
-                                                                  post.postId!,
-                                                                  friendUserId,
-                                                                  false,
-                                                                  true);
-                                                            },
-                                                          ),
-                                                          SizedBox(height: screenHeight/50,),
-                                                          hasVoted ? Text("${(answersCount[1] * 100).round()}%", style: TextStyle(
-                                                              fontFamily: 'Helvetica',
-                                                              fontWeight: FontWeight.bold,
-                                                              fontSize: 20,
-                                                              color: AppColors.white
-                                                          ),) : SizedBox()
-                                                        ],
+                                                              AnimatedContainer(
+                                                                duration: Duration(seconds: 1),
+                                                                curve: Curves.easeInOut,
+                                                                width: screenWidth / 2.3,
+                                                                height: hasVoted ? (screenHeight / 4) * answersCount[1] : 0,
+                                                                decoration: BoxDecoration(
+                                                                  color: AppColors.fadeImageAnswer.withOpacity(.61),
+                                                                  borderRadius: BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20)),
+                                                                ),
+                                                              ),
+                                                            ]),
+                                                        behavior:
+                                                        HitTestBehavior
+                                                            .translucent,
+                                                        onTap: () async {
+                                                          await clickAnswer(
+                                                              1,
+                                                              post.postId!,
+                                                              friendUserId,
+                                                              false,
+                                                              true);
+                                                        },
                                                       ),
+                                                      SizedBox(
+                                                        height:
+                                                        screenHeight /
+                                                            50,
+                                                      ),
+                                                      hasVoted
+                                                          ? Text(
+                                                        "${(answersCount[1] * 100).round()}%",
+                                                        style: TextStyle(
+                                                            fontFamily:
+                                                            'Helvetica',
+                                                            fontWeight:
+                                                            FontWeight
+                                                                .bold,
+                                                            fontSize:
+                                                            20,
+                                                            color: AppColors
+                                                                .white),
+                                                      )
+                                                          : SizedBox()
                                                     ],
                                                   )
-                                                : SizedBox(),
-                                          ],
-                                        ),
-                                      ));
-                                }
-                                return CircularProgressIndicator();
-                              },
-                            );
-                          }));
-                    } else {
-                      return Align(
-                        alignment: Alignment.topCenter,
-                        child: Padding(
-                          padding: EdgeInsets.only(top: screenHeight / 4.5),
-                          child: Text('No posts available'),
-                        ),
-                      );
-                    }
-                  } else {
-                    return Align(
-                      alignment: Alignment.topCenter,
-                      child: Padding(
-                        padding: EdgeInsets.only(top: screenHeight / 4.5),
-                        child: Text('No posts available'),
-                      ),
-                    );
-                  }
+                                                ],
+                                              )
+                                                  : SizedBox(),
+                                            ],
+                                          ),
+                                        ));
+                                  }
+                                  return CircularProgressIndicator();
+                                },
+                              );
+                            }));
+                      } else {
+                        return Align(
+                          alignment: Alignment.topCenter,
+                          child: Padding(
+                            padding: EdgeInsets.only(top: screenHeight / 4.5),
+                            child: Text('No posts available'),
+                          ),
+                        );
+                      }
+                    },
+                    loading: () => Center(child: CircularProgressIndicator()),
+                    error: (error, stackTrace) => Center(child: Text('Error: $error')),
+                  );
                 },
               ),
             ),
@@ -523,7 +567,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           child: GestureDetector(
                           child: Container(
                             width: screenWidth,
-                            child: Center(child: Text("Tap To Continue", style: TextStyle(fontFamily: "Helvetica", fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.white.withOpacity(0.7)),)),
+                            child: Center(
+                                child: Text(
+                              "Tap To Continue",
+                              style: TextStyle(
+                                  fontFamily: "Helvetica",
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.white.withOpacity(0.7)),
+                            )),
                           ),
                           behavior: HitTestBehavior.translucent,
                           onTap: goToNextPageTapToContinue,
