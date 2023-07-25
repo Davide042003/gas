@@ -84,7 +84,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         idUserPost,
         indexAnswer);
 
-    //  await postService.markPostAsSeen(postId);
+ //   await postService.markPostAsSeen(postId);
 
     if (answers2 == true) {
       await fetchAnswersCounts(postService, postId, idUserPost, 2);
@@ -92,6 +92,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
       answersCount =
           answersCount.map((element) => element / totalAnswers).toList();
+      print(answersCount);
+    }else{
+      await fetchAnswersCounts(postService, postId, idUserPost, 3);
+      totalAnswers = answersCount.reduce((a, b) => a + b);
+
+      answersCount =
+          answersCount.map((element) => element / totalAnswers).toList();
+
       print(answersCount);
     }
 
@@ -276,7 +284,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                   ),
                                                 ],
                                               ),
-                                              SizedBox(height: 40),
+                                              SizedBox(height: post.images!.length == 2 ? 40 : post.answersList!.length == 2 ? 120 : 80),
                                               Text(
                                                 post.question!,
                                                 style: TextStyle(
@@ -286,7 +294,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                   fontSize: 24,
                                                 ),
                                               ),
-                                              SizedBox(height: 30),
+                                              SizedBox(height: post.images!.length == 2 ? 30 : post.answersList!.length == 2 ? 70 : 40),
                                               post.images!.length == 2
                                                   ? Row(
                                                 mainAxisAlignment:
@@ -336,7 +344,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                         HitTestBehavior
                                                             .translucent,
                                                         onTap: () async {
-                                                          await clickAnswer(
+                                                          hasVoted ? null : await clickAnswer(
                                                               0,
                                                               post.postId!,
                                                               friendUserId,
@@ -409,7 +417,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                         HitTestBehavior
                                                             .translucent,
                                                         onTap: () async {
-                                                          await clickAnswer(
+                                                          hasVoted ? null : await clickAnswer(
                                                               1,
                                                               post.postId!,
                                                               friendUserId,
@@ -441,7 +449,391 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                   )
                                                 ],
                                               )
-                                                  : SizedBox(),
+                                                  : post.answersList!.length == 2 ? Row(
+                                                mainAxisAlignment:
+                                                MainAxisAlignment
+                                                    .spaceEvenly,
+                                                children: [
+                                                  Column(
+                                                    children: [
+                                                      GestureDetector(
+                                                        child: Stack(
+                                                            alignment: Alignment.centerLeft,
+                                                            children: [
+                                                              Container(
+                                                                width:
+                                                                screenWidth /
+                                                                    3.3,
+                                                                height:
+                                                                screenHeight /
+                                                                    16,
+                                                                decoration:
+                                                                BoxDecoration(
+                                                                  color: Colors
+                                                                      .white,
+                                                                  borderRadius:
+                                                                  BorderRadius.circular(
+                                                                      20),
+                                                                ),
+                                                                child: Center(child : Text(
+                                                                  post.answersList![0], style: TextStyle(
+                                                                  fontFamily: 'Helvetica', fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.brown
+                                                                ),
+                                                                )),
+                                                              ),
+                                                              AnimatedContainer(
+                                                                duration: Duration(seconds: 1),
+                                                                curve: Curves.easeInOut,
+                                                                width: hasVoted ? (screenWidth / 3.3) * answersCount[0] : 0,
+                                                                height: screenHeight / 16,
+                                                                decoration: BoxDecoration(
+                                                                  color: AppColors.fadeImageAnswer.withOpacity(.61),
+                                                                  borderRadius: BorderRadius.only(topLeft: Radius.circular(20), bottomLeft: Radius.circular(20)),
+                                                                ),
+                                                              ),
+                                                            ]),
+                                                        behavior:
+                                                        HitTestBehavior
+                                                            .translucent,
+                                                        onTap: () async {
+                                                          hasVoted ? null : await clickAnswer(
+                                                              0,
+                                                              post.postId!,
+                                                              friendUserId,
+                                                              false,
+                                                              true);
+                                                        },
+                                                      ),
+                                                      SizedBox(
+                                                        height:
+                                                        screenHeight /
+                                                            50,
+                                                      ),
+                                                      hasVoted
+                                                          ? Text(
+                                                        "${(answersCount[0] * 100).round()}%",
+                                                        style: TextStyle(
+                                                            fontFamily:
+                                                            'Helvetica',
+                                                            fontWeight:
+                                                            FontWeight
+                                                                .bold,
+                                                            fontSize:
+                                                            20,
+                                                            color: AppColors
+                                                                .white),
+                                                      )
+                                                          : SizedBox()
+                                                    ],
+                                                  ),
+                                                  Column(
+                                                    children: [
+                                                      GestureDetector(
+                                                        child: Stack(
+                                                            alignment: Alignment.centerLeft,
+                                                            children: [
+                                                              Container(
+                                                                width:
+                                                                screenWidth /
+                                                                    3.3,
+                                                                height:
+                                                                screenHeight /
+                                                                    16,
+                                                                decoration:
+                                                                BoxDecoration(
+                                                                  color: Colors
+                                                                      .white,
+                                                                  borderRadius:
+                                                                  BorderRadius.circular(
+                                                                      20),
+                                                                ),
+                                                                child: Center(child : Text(
+                                                                  post.answersList![1], style: TextStyle(
+                                                                    fontFamily: 'Helvetica', fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.brown
+                                                                ),
+                                                                )),
+                                                              ),
+                                                              AnimatedContainer(
+                                                                duration: Duration(seconds: 1),
+                                                                curve: Curves.easeInOut,
+                                                                width: hasVoted ? (screenWidth / 3.3) * answersCount[1] : 0,
+                                                                height: screenHeight / 16,
+                                                                decoration: BoxDecoration(
+                                                                  color: AppColors.fadeImageAnswer.withOpacity(.61),
+                                                                  borderRadius: BorderRadius.only(topLeft: Radius.circular(20), bottomLeft: Radius.circular(20)),
+                                                                ),
+                                                              ),
+                                                            ]),
+                                                        behavior:
+                                                        HitTestBehavior
+                                                            .translucent,
+                                                        onTap: () async {
+                                                          hasVoted ? null : await clickAnswer(
+                                                              1,
+                                                              post.postId!,
+                                                              friendUserId,
+                                                              false,
+                                                              true);
+                                                        },
+                                                      ),
+                                                      SizedBox(
+                                                        height:
+                                                        screenHeight /
+                                                            50,
+                                                      ),
+                                                      hasVoted
+                                                          ? Text(
+                                                        "${(answersCount[1] * 100).round()}%",
+                                                        style: TextStyle(
+                                                            fontFamily:
+                                                            'Helvetica',
+                                                            fontWeight:
+                                                            FontWeight
+                                                                .bold,
+                                                            fontSize:
+                                                            20,
+                                                            color: AppColors
+                                                                .white),
+                                                      )
+                                                          : SizedBox()
+                                                    ],
+                                                  ),
+                                                ],
+                                              ): Column(
+                                                children: [
+                                                  Row(
+                                                    mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceEvenly,
+                                                    children: [
+                                                      Column(
+                                                        children: [
+                                                          GestureDetector(
+                                                            child: Stack(
+                                                                alignment: Alignment.centerLeft,
+                                                                children: [
+                                                                  Container(
+                                                                    width:
+                                                                    screenWidth /
+                                                                        3.3,
+                                                                    height:
+                                                                    screenHeight /
+                                                                        16,
+                                                                    decoration:
+                                                                    BoxDecoration(
+                                                                      color: Colors
+                                                                          .white,
+                                                                      borderRadius:
+                                                                      BorderRadius.circular(
+                                                                          20),
+                                                                    ),
+                                                                    child: Center(child : Text(
+                                                                      post.answersList![0], style: TextStyle(
+                                                                        fontFamily: 'Helvetica', fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.brown
+                                                                    ),
+                                                                    )),
+                                                                  ),
+                                                                  AnimatedContainer(
+                                                                    duration: Duration(seconds: 1),
+                                                                    curve: Curves.easeInOut,
+                                                                    width: hasVoted ? (screenWidth / 3.3) * answersCount[0] : 0,
+                                                                    height: screenHeight / 16,
+                                                                    decoration: BoxDecoration(
+                                                                      color: AppColors.fadeImageAnswer.withOpacity(.61),
+                                                                      borderRadius: BorderRadius.only(topLeft: Radius.circular(20), bottomLeft: Radius.circular(20)),
+                                                                    ),
+                                                                  ),
+                                                                ]),
+                                                            behavior:
+                                                            HitTestBehavior
+                                                                .translucent,
+                                                            onTap: () async {
+                                                              hasVoted ? null : await clickAnswer(
+                                                                  0,
+                                                                  post.postId!,
+                                                                  friendUserId,
+                                                                  false,
+                                                                  false);
+                                                            },
+                                                          ),
+                                                          SizedBox(
+                                                            height:
+                                                            screenHeight /
+                                                                50,
+                                                          ),
+                                                          hasVoted
+                                                              ? Text(
+                                                            "${(answersCount[0] * 100).round()}%",
+                                                            style: TextStyle(
+                                                                fontFamily:
+                                                                'Helvetica',
+                                                                fontWeight:
+                                                                FontWeight
+                                                                    .bold,
+                                                                fontSize:
+                                                                20,
+                                                                color: AppColors
+                                                                    .white),
+                                                          )
+                                                              : SizedBox()
+                                                        ],
+                                                      ),
+                                                      Column(
+                                                        children: [
+                                                          GestureDetector(
+                                                            child: Stack(
+                                                                alignment: Alignment.centerLeft,
+                                                                children: [
+                                                                  Container(
+                                                                    width:
+                                                                    screenWidth /
+                                                                        3.3,
+                                                                    height:
+                                                                    screenHeight /
+                                                                        16,
+                                                                    decoration:
+                                                                    BoxDecoration(
+                                                                      color: Colors
+                                                                          .white,
+                                                                      borderRadius:
+                                                                      BorderRadius.circular(
+                                                                          20),
+                                                                    ),
+                                                                    child: Center(child : Text(
+                                                                      post.answersList![1], style: TextStyle(
+                                                                        fontFamily: 'Helvetica', fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.brown
+                                                                    ),
+                                                                    )),
+                                                                  ),
+                                                                  AnimatedContainer(
+                                                                    duration: Duration(seconds: 1),
+                                                                    curve: Curves.easeInOut,
+                                                                    width: hasVoted ? (screenWidth / 3.3) * answersCount[1] : 0,
+                                                                    height: screenHeight / 16,
+                                                                    decoration: BoxDecoration(
+                                                                      color: AppColors.fadeImageAnswer.withOpacity(.61),
+                                                                      borderRadius: BorderRadius.only(topLeft: Radius.circular(20), bottomLeft: Radius.circular(20)),
+                                                                    ),
+                                                                  ),
+                                                                ]),
+                                                            behavior:
+                                                            HitTestBehavior
+                                                                .translucent,
+                                                            onTap: () async {
+                                                              hasVoted ? null : await clickAnswer(
+                                                                  1,
+                                                                  post.postId!,
+                                                                  friendUserId,
+                                                                  false,
+                                                                  false);
+                                                            },
+                                                          ),
+                                                          SizedBox(
+                                                            height:
+                                                            screenHeight /
+                                                                50,
+                                                          ),
+                                                          hasVoted
+                                                              ? Text(
+                                                            "${(answersCount[1] * 100).round()}%",
+                                                            style: TextStyle(
+                                                                fontFamily:
+                                                                'Helvetica',
+                                                                fontWeight:
+                                                                FontWeight
+                                                                    .bold,
+                                                                fontSize:
+                                                                20,
+                                                                color: AppColors
+                                                                    .white),
+                                                          )
+                                                              : SizedBox()
+                                                        ],
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  SizedBox(height: screenHeight/40,),
+                                                  Row(
+                                                    mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceEvenly,
+                                                    children: [
+                                                      Column(
+                                                        children: [
+                                                          GestureDetector(
+                                                            child: Stack(
+                                                                alignment: Alignment.centerLeft,
+                                                                children: [
+                                                                  Container(
+                                                                    width:
+                                                                    screenWidth /
+                                                                        3.3,
+                                                                    height:
+                                                                    screenHeight /
+                                                                        16,
+                                                                    decoration:
+                                                                    BoxDecoration(
+                                                                      color: Colors
+                                                                          .white,
+                                                                      borderRadius:
+                                                                      BorderRadius.circular(
+                                                                          20),
+                                                                    ),
+                                                                    child: Center(child : Text(
+                                                                      post.answersList![2], style: TextStyle(
+                                                                        fontFamily: 'Helvetica', fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.brown
+                                                                    ),
+                                                                    )),
+                                                                  ),
+                                                                  AnimatedContainer(
+                                                                    duration: Duration(seconds: 1),
+                                                                    curve: Curves.easeInOut,
+                                                                    width: hasVoted ? (screenWidth / 3.3) * answersCount[2] : 0,
+                                                                    height: screenHeight / 16,
+                                                                    decoration: BoxDecoration(
+                                                                      color: AppColors.fadeImageAnswer.withOpacity(.61),
+                                                                      borderRadius: BorderRadius.only(topLeft: Radius.circular(20), bottomLeft: Radius.circular(20)),
+                                                                    ),
+                                                                  ),
+                                                                ]),
+                                                            behavior:
+                                                            HitTestBehavior
+                                                                .translucent,
+                                                            onTap: () async {
+                                                              hasVoted ? null : await clickAnswer(
+                                                                  2,
+                                                                  post.postId!,
+                                                                  friendUserId,
+                                                                  false,
+                                                                  false);
+                                                            },
+                                                          ),
+                                                          SizedBox(
+                                                            height:
+                                                            screenHeight /
+                                                                50,
+                                                          ),
+                                                          hasVoted
+                                                              ? Text(
+                                                            "${(answersCount[2] * 100).round()}%",
+                                                            style: TextStyle(
+                                                                fontFamily:
+                                                                'Helvetica',
+                                                                fontWeight:
+                                                                FontWeight
+                                                                    .bold,
+                                                                fontSize:
+                                                                20,
+                                                                color: AppColors
+                                                                    .white),
+                                                          )
+                                                              : SizedBox()
+                                                        ],
+                                                      ),
+                                                    ],
+                                                  )
+                                                ],
+                                              )
                                             ],
                                           ),
                                         ));
