@@ -3,8 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 class PhoneAuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  Future<void> verifyPhoneNumber(
-      String phoneNumber, Function(String) onCodeSent) async {
+  Future<void> verifyPhoneNumber(String phoneNumber, Function(String) onCodeSent) async {
     await _auth.verifyPhoneNumber(
       phoneNumber: phoneNumber,
 
@@ -27,17 +26,6 @@ class PhoneAuthService {
     );
   }
 
-  Future<UserCredential?> signInWithCredential(
-      AuthCredential credential) async {
-    try {
-      final UserCredential userCredential =
-      await _auth.signInWithCredential(credential);
-      return userCredential;
-    } on FirebaseAuthException catch (e) {
-      // Handle sign-in error
-      return null;
-    }
-  }
 
   Future<void> signOut() async {
     await _auth.signOut();

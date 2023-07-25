@@ -146,6 +146,7 @@ final GoRouter router = GoRouter(
           )
         ]),
     GoRoute(
-        path: '/onboarding', builder: (BuildContext context, GoRouterState state) => const OnboardingScreen(step: 0)),
+        path: '/onboarding', builder: (BuildContext context, GoRouterState state) => const OnboardingScreen(step: 0),
+),
   ],
 );

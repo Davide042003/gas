@@ -2,12 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>NSContactsUsageDescription</key>
-    <string>Let's Connect With Your Friends!</string>
-    <key>NSPhotoLibraryUsageDescription</key>
-    <string>Get photos from the gallery!</string>
-    <key>NSCameraUsageDescription</key>
-    <string>Open camera to shoot a photo!</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
@@ -43,6 +37,12 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Open camera to shoot a photo!</string>
+	<key>NSContactsUsageDescription</key>
+	<string>Let's Connect With Your Friends!</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Get photos from the gallery!</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

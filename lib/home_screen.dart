@@ -125,6 +125,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
+  Future<void> _signOut() async {
+    await FirebaseAuth.instance.signOut();
+    print("sign out");
+  }
+
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;

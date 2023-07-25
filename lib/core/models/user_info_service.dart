@@ -34,6 +34,34 @@ class UserInfoService {
     }
   }
 
+  Future<UserModel?> fetchProfileDataRegistration() async {
+    try {
+      // Get the current user's UID
+      String uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+
+      // Create a document reference for the user
+      DocumentSnapshot snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
+
+      if (snapshot.exists) {
+        // Convert the document data to a UserModel object
+        UserModel user = UserModel.fromData(
+            snapshot.data() as Map<String, dynamic>);
+        print('FETCHED user profile data');
+        return user;
+      } else {
+        // Document doesn't exist
+        return null;
+      }
+    } catch (e) {
+      // Error handling
+      print('Error fetching user profile data: $e');
+      throw Exception('Error fetching user profile data');
+    }
+  }
+  
   Stream<UserModel?> fetchProfileData() {
     try {
       // Get the current user's UID4
@@ -144,4 +172,7 @@ class UserInfoService {
     }
   }
 
+  Future<void> signOut() async {
+    await FirebaseAuth.instance.signOut();
+  }
 }

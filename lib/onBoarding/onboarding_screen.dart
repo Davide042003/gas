@@ -21,6 +21,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:contacts_service/contacts_service.dart';
 import 'package:gas/core/models/user_model.dart';
 
+import 'package:go_router/go_router.dart';
+
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key, required this.step});
 
@@ -95,12 +97,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     PhoneAuthCredential credential = PhoneAuthProvider.credential(
         verificationId: _verificationId, smsCode: otp);
     try {
+      UserCredential userCredential =
       await FirebaseAuth.instance.signInWithCredential(credential);
-      print("logged in");
 
-      titles[step + 1] =
-          titles[step + 1].replaceAll("#name", controllers[0].text);
-      step = step + 1;
+      if (userCredential.user != null) {
+        UserModel? existingUser =
+        await UserInfoService().fetchProfileDataRegistration();
+
+        if (existingUser != null) {
+          context.push("/");
+        } else {
+          // Account does not exist, prompt the user to provide a username
+          titles[step + 1] =
+              titles[step + 1].replaceAll("#name", controllers[0].text);
+          step = step + 1;
+        }
+      }
     } on FirebaseAuthException catch (e) {
       print("invalid OTP");
       // Invalid OTP
@@ -165,7 +177,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Padding(
-          padding: EdgeInsets.only(top: screenHeight / 6, left: 80, right: 80),
+          padding: EdgeInsets.only(top: screenHeight / 6, left: 20, right: 20),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -177,8 +189,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 child: TextField(
                   autocorrect: false,
                   controller: controllers[step],
-                  keyboardType: TextInputType.name,
-                  maxLength: 10,
+       //           keyboardType: TextInputType.,
+                  maxLength: 25,
                   textAlign: TextAlign.center,
                   decoration: InputDecoration(
                     counterText: "",
@@ -370,31 +382,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     double screenWidth = MediaQuery.of(context).size.width;
     double screenHeight = MediaQuery.of(context).size.height;
 
-    /*  ref.listen<PhoneVerificationState>(phoneVerificationProvider,
-            (PhoneVerificationState? oldValue, PhoneVerificationState newValue) {
-          if (newValue.isValid) {
-            const storage = FlutterSecureStorage();
-            storage
-                .write(
-                key: 'user',
-                value: UserModel(name: controllers[0].text, birthdate: controllers[1].text, phone: controllers[2].text)
-                    .toJson()
-                    .toString())
-                .then((_) => context.go('/'));
-          } else if (newValue.hasError) {
-            controllers[step].clear();
-            Fluttertoast.showToast(
-                msg: "Bad verification code, please retry.",
-                toastLength: Toast.LENGTH_SHORT,
-                gravity: ToastGravity.CENTER,
-                timeInSecForIosWeb: 1,
-                backgroundColor: Colors.red,
-                textColor: Colors.white,
-                fontSize: 16.0);
-            ref.refresh(phoneVerificationProvider);
-          }
-        });*/
-
     return Column(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -434,8 +421,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
         ),
         Padding(
-            padding: EdgeInsets.symmetric(
-                vertical: 20, horizontal: screenWidth / 20),
+            padding: EdgeInsets.only(
+                bottom: 20, left: screenWidth / 20, right: screenWidth / 20),
             child: Column(
               children: [
                 TextButton(
@@ -558,51 +545,76 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       children: [
         Padding(padding: EdgeInsets.only(top: screenHeight / 14, bottom: screenHeight / 30),
           child: ListView.builder(
+            padding: EdgeInsets.only(bottom: screenHeight/15),
             itemCount: _contacts.length,
             itemBuilder: (context, index) {
               Contact contact = _contacts[index];
-              return Container(
-                padding: EdgeInsets.only(
-                    left: 20, right: 20, top: 13, bottom: 13),
-                child: Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: Row(
-                        children: <Widget>[
-                          CircleAvatar(
-                            maxRadius: 38,
-                          ),
-                          SizedBox(width: 16,),
-                          Expanded(
-                            child: Container(
-                              color: Colors.transparent,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: <Widget>[
-                                  Text(contact.displayName ?? '', style: ref
-                                      .watch(stylesProvider)
-                                      .text
-                                      .contactOnBoarding,),
-                                  SizedBox(height: 6,),
-                                  Text(contact.phones![0].value.toString(),
-                                    style: ref
-                                        .watch(stylesProvider)
-                                        .text
-                                        .numberContactOnBoarding,),
-                                ],
+              if (contact.phones != null &&
+              contact.phones!.isNotEmpty &&
+              contact.displayName != null &&
+              contact.displayName!.isNotEmpty) {
+
+                String? initials = "";
+                if (contact.familyName != null && contact.familyName!.isNotEmpty){
+                  initials = contact.displayName![0].toUpperCase() + contact.familyName![0].toUpperCase();
+                }else {
+                  initials = contact.displayName![0].toUpperCase() + contact.displayName![1].toUpperCase();
+                }
+
+                return Container(
+                  padding: EdgeInsets.only(
+                      left: 20, right: 20, top: 13, bottom: 13),
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Row(
+                          children: <Widget>[
+                            CircleAvatar(
+                              maxRadius: 38,
+                              child: Text(
+                                  initials,
+                                  style: TextStyle(
+                                      fontFamily: 'Helvetica',
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 20,
+                                      color: AppColors.white)
                               ),
                             ),
-                          ),
-                        ],
+                            SizedBox(width: 16,),
+                            Expanded(
+                              child: Container(
+                                color: Colors.transparent,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: <Widget>[
+                                    Text(contact.displayName ?? '', style: ref
+                                        .watch(stylesProvider)
+                                        .text
+                                        .contactOnBoarding,),
+                                    SizedBox(height: 6,),
+                                    Text(contact.phones![0].value.toString(),
+                                      style: ref
+                                          .watch(stylesProvider)
+                                          .text
+                                          .numberContactOnBoarding,),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    Container(height: screenHeight/30 ,child: ElevatedButton(onPressed: () {}, style: ref
-                        .watch(stylesProvider)
-                        .button
-                        .buttonInvite, child: const Text("INVITE"),))
-                  ],
-                ),
-              );
+                      Container(height: screenHeight / 30,
+                          child: ElevatedButton(onPressed: () {}, style: ref
+                              .watch(stylesProvider)
+                              .button
+                              .buttonInvite, child: const Text("INVITE"),))
+                    ],
+                  ),
+                );
+              }else{
+                return SizedBox();
+              }
             },
           ),),
         Align(alignment: Alignment.bottomCenter,
@@ -631,7 +643,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       .watch(stylesProvider)
                       .button
                       .buttonOnBoarding,
-                  onPressed: () {},
+                  onPressed: () {
+                    context.push("/");
+                  },
                   child: const Text('Continue'))),
         ),
         Container(height: screenHeight / 18,

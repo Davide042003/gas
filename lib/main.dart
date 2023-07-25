@@ -11,7 +11,6 @@ Future<void> main() async{
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
   await Firebase.initializeApp();
-
   runApp(const ProviderScope(child: MyApp()));
 }
 
