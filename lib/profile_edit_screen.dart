@@ -157,7 +157,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
                     firstOpen = false;
                   }
-                  
+
                   return Column(
                       children: [
                         Padding(padding: EdgeInsets.symmetric(horizontal: 12),
@@ -207,173 +207,177 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                             height: screenHeight / 400,
                             width: screenWidth / 2.5,))
                         ],),
-                        SizedBox(height: 30),
-                        Stack(
-                          alignment: Alignment.topCenter,
-                          children: [
-                            Column(
+                        Expanded(child: ListView(
+                          children:[
+                            SizedBox(height: 30),
+                            Stack(
+                              alignment: Alignment.topCenter,
                               children: [
-                                Stack(children: [
-                                  CircleAvatar(
-                                    radius: 70,
-                                    backgroundImage: userProfile?.imageUrl !=
-                                        ""
-                                        ? NetworkImage(userProfile!.imageUrl!)
-                                        : null,
-                                    child: userProfile?.imageUrl == ""
-                                        ? Text(userProfile?.name != null
-                                        ? userProfile!.name![0]
-                                        : '', style: ref
-                                        .watch(stylesProvider)
-                                        .text
-                                        .titleOnBoarding
-                                        .copyWith(fontSize: 50),)
-                                        : null,
-                                  ),
-                                  Container(margin: EdgeInsets.only(
-                                      top: 105, left: 100),
-                                      width: 30,
-                                      height: 30,
-                                      child: Icon(Icons.add_a_photo_rounded, size: 30, color: AppColors.white,)),
-                                ],),
-                                SizedBox(height: 40),
-                                Container(
-                                  margin: EdgeInsets.only(left: 35),
-                                  color: AppColors.whiteShadow,
-                                  height: screenHeight / 600,),
-                                SizedBox(height: 25),
-                                Padding(padding: EdgeInsets.only(left: 35), child: Row(
+                                Column(
                                   children: [
-                                    Text(
-                                      "Name",
-                                      style: ref
-                                          .watch(stylesProvider)
-                                          .text
-                                          .titleOnBoarding
-                                          .copyWith(fontSize: 20),
-                                    ),
-                                    SizedBox(width: 90),
-                                    Container(width: 200, child: TextField(
-                                      autocorrect: false,
-                                      controller: controllers[0],
-                                      keyboardType: TextInputType.name,
-                                      maxLength: 15,
-                                      textAlign: TextAlign.left,
-                                      decoration: InputDecoration(
-                                        hintText: "Write your name...",
-                                        hintStyle: ref
+                                    Stack(children: [
+                                      CircleAvatar(
+                                        radius: 70,
+                                        backgroundImage: userProfile?.imageUrl !=
+                                            ""
+                                            ? NetworkImage(userProfile!.imageUrl!)
+                                            : null,
+                                        child: userProfile?.imageUrl == ""
+                                            ? Text(userProfile?.name != null
+                                            ? userProfile!.name![0]
+                                            : '', style: ref
                                             .watch(stylesProvider)
                                             .text
-                                            .editProfile.copyWith(color: AppColors.whiteShadow55),
-                                        counterText: "",
-                                        border: InputBorder.none,
-                                        errorText: hasError[0] ? 'Value can\'t be empty' : null,
+                                            .titleOnBoarding
+                                            .copyWith(fontSize: 50),)
+                                            : null,
                                       ),
-                                      style: ref
-                                          .watch(stylesProvider)
-                                          .text
-                                          .editProfile,
-                                      cursorColor: AppColors.white,
-                                    )),
+                                      Container(margin: EdgeInsets.only(
+                                          top: 105, left: 100),
+                                          width: 30,
+                                          height: 30,
+                                          child: Icon(Icons.add_a_photo_rounded, size: 30, color: AppColors.white,)),
+                                    ],),
+                                    SizedBox(height: 40),
+                                    Container(
+                                      margin: EdgeInsets.only(left: 35),
+                                      color: AppColors.whiteShadow,
+                                      height: screenHeight / 600,),
+                                    SizedBox(height: 25),
+                                    Padding(padding: EdgeInsets.only(left: 35), child: Row(
+                                      children: [
+                                        Text(
+                                          "Name",
+                                          style: ref
+                                              .watch(stylesProvider)
+                                              .text
+                                              .titleOnBoarding
+                                              .copyWith(fontSize: 20),
+                                        ),
+                                        SizedBox(width: 90),
+                                        Container(width: 200, child: TextField(
+                                          autocorrect: false,
+                                          controller: controllers[0],
+                                          keyboardType: TextInputType.name,
+                                          maxLength: 15,
+                                          textAlign: TextAlign.left,
+                                          decoration: InputDecoration(
+                                            hintText: "Write your name...",
+                                            hintStyle: ref
+                                                .watch(stylesProvider)
+                                                .text
+                                                .editProfile.copyWith(color: AppColors.whiteShadow55),
+                                            counterText: "",
+                                            border: InputBorder.none,
+                                            errorText: hasError[0] ? 'Value can\'t be empty' : null,
+                                          ),
+                                          style: ref
+                                              .watch(stylesProvider)
+                                              .text
+                                              .editProfile,
+                                          cursorColor: AppColors.white,
+                                        )),
+                                      ],
+                                    ),),
+                                    SizedBox(height: 25),
+                                    Container(
+                                      margin: EdgeInsets.only(left: 35),
+                                      color: AppColors.whiteShadow,
+                                      height: screenHeight / 600,),
+                                    SizedBox(height: 25),
+                                    Padding(padding: EdgeInsets.only(left: 35), child: Row(
+                                      children: [
+                                        Text(
+                                          "Username",
+                                          style: ref
+                                              .watch(stylesProvider)
+                                              .text
+                                              .titleOnBoarding
+                                              .copyWith(fontSize: 20),
+                                        ),
+                                        SizedBox(width: 50),
+                                        Container(width: 200 ,child: TextField(
+                                          autocorrect: false,
+                                          controller: controllers[1],
+                                          keyboardType: TextInputType.name,
+                                          maxLength: 15,
+                                          textAlign: TextAlign.left,
+                                          decoration: InputDecoration(
+                                            hintText: "Write your username...",
+                                            hintStyle: ref
+                                                .watch(stylesProvider)
+                                                .text
+                                                .editProfile.copyWith(color: AppColors.whiteShadow55),
+                                            counterText: "",
+                                            border: InputBorder.none,
+                                            errorText: hasError[0] ? 'Value can\'t be empty' : null,
+                                          ),
+                                          style: ref
+                                              .watch(stylesProvider)
+                                              .text
+                                              .editProfile,
+                                          cursorColor: AppColors.white,
+                                        )),
+                                      ],
+                                    ),),
+                                    SizedBox(height: 25),
+                                    Container(
+                                      margin: EdgeInsets.only(left: 35),
+                                      color: AppColors.whiteShadow,
+                                      height: screenHeight / 600,),
+                                    SizedBox(height: 25),
+                                    Padding(padding: EdgeInsets.only(left: 35), child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Padding(padding: EdgeInsets.only(top: 15), child: Text(
+                                          "Bio",
+                                          style: ref
+                                              .watch(stylesProvider)
+                                              .text
+                                              .titleOnBoarding
+                                              .copyWith(fontSize: 20),
+                                        )),
+                                        SizedBox(width: 115),
+                                        Container(width: 200, height: 120, child: TextField(
+                                          autocorrect: false,
+                                          controller: controllers[2],
+                                          keyboardType: TextInputType.multiline,
+                                          minLines: 1,
+                                          maxLines: 3,
+                                          maxLength: 60,
+                                          textAlign: TextAlign.left,
+                                          decoration: InputDecoration(
+                                            counterText: "",
+                                            border: InputBorder.none,
+                                            hintText: "Write your bio...",
+                                            hintStyle: ref
+                                                .watch(stylesProvider)
+                                                .text
+                                                .editProfile.copyWith(color: AppColors.whiteShadow55),
+                                            errorText: hasError[0] ? 'Value can\'t be empty' : null,
+                                          ),
+                                          style: ref
+                                              .watch(stylesProvider)
+                                              .text
+                                              .editProfile.copyWith(height: 1.5),
+                                          cursorColor: AppColors.white,
+                                        )),
+                                      ],
+                                    ),),
                                   ],
-                                ),),
-                                SizedBox(height: 25),
-                                Container(
-                                  margin: EdgeInsets.only(left: 35),
-                                  color: AppColors.whiteShadow,
-                                  height: screenHeight / 600,),
-                                SizedBox(height: 25),
-                                Padding(padding: EdgeInsets.only(left: 35), child: Row(
-                                  children: [
-                                    Text(
-                                      "Username",
-                                      style: ref
-                                          .watch(stylesProvider)
-                                          .text
-                                          .titleOnBoarding
-                                          .copyWith(fontSize: 20),
-                                    ),
-                                    SizedBox(width: 50),
-                                    Container(width: 200 ,child: TextField(
-                                      autocorrect: false,
-                                      controller: controllers[1],
-                                      keyboardType: TextInputType.name,
-                                      maxLength: 15,
-                                      textAlign: TextAlign.left,
-                                      decoration: InputDecoration(
-                                        hintText: "Write your username...",
-                                        hintStyle: ref
-                                            .watch(stylesProvider)
-                                            .text
-                                            .editProfile.copyWith(color: AppColors.whiteShadow55),
-                                        counterText: "",
-                                        border: InputBorder.none,
-                                        errorText: hasError[0] ? 'Value can\'t be empty' : null,
-                                      ),
-                                      style: ref
-                                          .watch(stylesProvider)
-                                          .text
-                                          .editProfile,
-                                      cursorColor: AppColors.white,
-                                    )),
-                                  ],
-                                ),),
-                                SizedBox(height: 25),
-                                Container(
-                                  margin: EdgeInsets.only(left: 35),
-                                  color: AppColors.whiteShadow,
-                                  height: screenHeight / 600,),
-                                SizedBox(height: 25),
-                                Padding(padding: EdgeInsets.only(left: 35), child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Padding(padding: EdgeInsets.only(top: 15), child: Text(
-                                      "Bio",
-                                      style: ref
-                                          .watch(stylesProvider)
-                                          .text
-                                          .titleOnBoarding
-                                          .copyWith(fontSize: 20),
-                                    )),
-                                    SizedBox(width: 115),
-                                    Container(width: 200, height: 120, child: TextField(
-                                      autocorrect: false,
-                                      controller: controllers[2],
-                                      keyboardType: TextInputType.multiline,
-                                      minLines: 1,
-                                      maxLines: 3,
-                                      maxLength: 60,
-                                      textAlign: TextAlign.left,
-                                      decoration: InputDecoration(
-                                        counterText: "",
-                                        border: InputBorder.none,
-                                        hintText: "Write your bio...",
-                                        hintStyle: ref
-                                            .watch(stylesProvider)
-                                            .text
-                                            .editProfile.copyWith(color: AppColors.whiteShadow55),
-                                        errorText: hasError[0] ? 'Value can\'t be empty' : null,
-                                      ),
-                                      style: ref
-                                          .watch(stylesProvider)
-                                          .text
-                                          .editProfile.copyWith(height: 1.5),
-                                      cursorColor: AppColors.white,
-                                    )),
-                                  ],
-                                ),),
+                                ),
+                                GestureDetector(
+                                  behavior: HitTestBehavior.translucent,
+                                  child: Container(
+                                    color: Colors.transparent,
+                                    width: screenWidth / 2,
+                                    height: screenHeight / 5.5,),
+                                  onTap: () {_showImagePicker(context, userProfile?.imageUrl);},),
                               ],
                             ),
-                            GestureDetector(
-                              behavior: HitTestBehavior.translucent,
-                              child: Container(
-                                color: Colors.transparent,
-                                width: screenWidth / 2,
-                                height: screenHeight / 5.5,),
-                              onTap: () {_showImagePicker(context, userProfile?.imageUrl);},),
-                          ],
-                        ),
+                          ]
+                        ))
                       ]
                   );
                 } else {
