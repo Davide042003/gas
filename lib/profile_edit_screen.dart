@@ -11,6 +11,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'user_notifier.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_native_image/flutter_native_image.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   @override
@@ -139,10 +140,18 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
     if (pickedFile != null) {
       imageUrl != "" ? userInfoService.deleteImageProfile(imageUrl!) : null;
-      UpdateProfilePic(File(pickedFile.path));
+
+      File compressedImage = await compressFile(File(pickedFile.path));
+      UpdateProfilePic(compressedImage);
     } else {
       print("no image");
     }
+  }
+
+  Future<File> compressFile(File file) async{
+    File compressedFile = await FlutterNativeImage.compressImage(file.path,
+      quality: 1,);
+    return compressedFile;
   }
 
   @override
