@@ -9,6 +9,8 @@ import 'core/models/user_info_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'user_notifier.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   @override
@@ -17,7 +19,6 @@ class EditProfileScreen extends ConsumerStatefulWidget {
 
 class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   late Stream<UserModel?> userProfileStream;
-  late UserInfoService userInfoService;
   bool showWait = false;
 
   List<TextEditingController> controllers = [
@@ -29,45 +30,46 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   bool firstOpen = true;
 
   List<bool> hasError = [false, false, false];
+  final userInfoService = UserInfoService();
 
   @override
   void initState() {
     super.initState();
-    userInfoService = UserInfoService();
-    userProfileStream = userInfoService.fetchProfileData();
-  }
-
-  void didChangeDependencies() {
-    super.didChangeDependencies();
     userProfileStream = userInfoService.fetchProfileData();
     showWait = false;
     firstOpen = true;
   }
 
   Future<void> UpdateData() async {
-    userInfoService.updateUser(UserModel(name: controllers[0].text,
+    await userInfoService.updateUser(UserModel(name: controllers[0].text,
       username: controllers[1].text,
       bio: controllers[2].text,
     ), () {
           context.pop();
           showWait = false;
         });
+
+    ref.refresh(userProfileFutureProvider);
   }
 
   Future<void> UpdateProfilePic(File? imageGot) async {
-    userInfoService.updateUser(UserModel(
+    await userInfoService.updateUser(UserModel(
       imageUrl: imageGot != null ? await userInfoService.saveImage(
           imageGot!) : null,
     ), () {
     });
+
+    ref.refresh(userProfileFutureProvider);
   }
 
   void DeleteProfilePic() {
-    userInfoService.updateUser(UserModel(
+      userInfoService.updateUser(UserModel(
       imageUrl: "",
     ), () {
       print("changed");
     });
+
+      ref.refresh(userProfileFutureProvider);
   }
 
   void _showImagePicker(BuildContext context, String? imageUrl) {
@@ -155,6 +157,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     controllers[1] = new TextEditingController(text: userProfile?.username ?? '');
                     controllers[2] = new TextEditingController(text: userProfile?.bio ?? '');
 
+                    controllers[0].selection =
+                        TextSelection.collapsed(offset:  controllers[0].text.length);
+                    controllers[1].selection =
+                        TextSelection.collapsed(offset:  controllers[1].text.length);
+                    controllers[2].selection =
+                        TextSelection.collapsed(offset:  controllers[2].text.length);
+
+                    print("ok");
                     firstOpen = false;
                   }
 
@@ -218,19 +228,35 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                     Stack(children: [
                                       CircleAvatar(
                                         radius: 70,
-                                        backgroundImage: userProfile?.imageUrl !=
-                                            ""
-                                            ? NetworkImage(userProfile!.imageUrl!)
-                                            : null,
-                                        child: userProfile?.imageUrl == ""
-                                            ? Text(userProfile?.name != null
-                                            ? userProfile!.name![0]
-                                            : '', style: ref
-                                            .watch(stylesProvider)
-                                            .text
-                                            .titleOnBoarding
-                                            .copyWith(fontSize: 50),)
-                                            : null,
+                                        child: Stack(
+                                          children: [
+                                            // Show CachedNetworkImage if userProfile?.imageUrl is not empty
+                                            if (userProfile?.imageUrl != null && userProfile!.imageUrl != "")
+                                              CachedNetworkImage(
+                                                imageUrl: userProfile!.imageUrl!,
+                                                imageBuilder: (context, imageProvider) => Container(
+                                                  decoration: BoxDecoration(
+                                                    shape: BoxShape.circle,
+                                                    image: DecorationImage(
+                                                      image: imageProvider,
+                                                      fit: BoxFit.cover,
+                                                    ),
+                                                  ),
+                                                ),
+                                                progressIndicatorBuilder: (context, url, downloadProgress) =>
+                                                    Center(child: CircularProgressIndicator(value: downloadProgress.progress)), // Show CircularProgressIndicator while loading
+                                                errorWidget: (context, url, error) => Icon(Icons.error),
+                                              ),
+                                            // Show Text with the first character of the name if userProfile?.imageUrl is empty
+                                            if (userProfile?.imageUrl == null || userProfile!.imageUrl == "")
+                                              Center(
+                                                child: Text(
+                                                  userProfile?.name != null && userProfile!.name != "" ? userProfile!.name![0] : '',
+                                                  style: ref.watch(stylesProvider).text.titleOnBoarding.copyWith(fontSize: 50),
+                                                ),
+                                              ),
+                                          ],
+                                        ),
                                       ),
                                       Container(margin: EdgeInsets.only(
                                           top: 105, left: 100),
@@ -254,12 +280,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                               .titleOnBoarding
                                               .copyWith(fontSize: 20),
                                         ),
-                                        SizedBox(width: 90),
-                                        Container(width: 200, child: TextField(
+                                        SizedBox(width: 80),
+                                        Container(width: 210, child: TextField(
                                           autocorrect: false,
                                           controller: controllers[0],
                                           keyboardType: TextInputType.name,
-                                          maxLength: 15,
+                                          maxLength: 25,
                                           textAlign: TextAlign.left,
                                           decoration: InputDecoration(
                                             hintText: "Write your name...",
@@ -295,8 +321,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                               .titleOnBoarding
                                               .copyWith(fontSize: 20),
                                         ),
-                                        SizedBox(width: 50),
-                                        Container(width: 200 ,child: TextField(
+                                        SizedBox(width: 40),
+                                        Container(width: 210 ,child: TextField(
                                           autocorrect: false,
                                           controller: controllers[1],
                                           keyboardType: TextInputType.name,
@@ -338,8 +364,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                               .titleOnBoarding
                                               .copyWith(fontSize: 20),
                                         )),
-                                        SizedBox(width: 115),
-                                        Container(width: 200, height: 120, child: TextField(
+                                        SizedBox(width: 105),
+                                        Container(width: 210, height: 120, child: TextField(
                                           autocorrect: false,
                                           controller: controllers[2],
                                           keyboardType: TextInputType.multiline,
