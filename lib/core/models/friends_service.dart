@@ -27,6 +27,16 @@ class FriendSystem {
         .snapshots();
   }
 
+  Future<QuerySnapshot<Map<String, dynamic>>> getReceivedRequestsImm() {
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .collection('friends')
+        .doc('received_requests')
+        .collection('requests')
+        .get();
+  }
+
   Stream<QuerySnapshot<Map<String, dynamic>>> getFriends() {
     return FirebaseFirestore.instance
         .collection('users')

@@ -14,6 +14,7 @@ import 'core/ui/contact_widget.dart';
 import 'core/ui/friend_widget.dart';
 import 'core/ui/request_widget.dart';
 import 'core/ui/sent_request_widget.dart';
+import 'package:gas/friends_notifier.dart';
 
 class FriendsScreen extends ConsumerStatefulWidget {
   @override
@@ -126,7 +127,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
     double screenHeight = MediaQuery.of(context).size.height;
 
     final List<Widget> pages = [
-      pageContactsNoFriend(),
+      tryFriends(),
       tryFriends(),
       requests()
     ];
@@ -446,7 +447,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
     double screenHeight = MediaQuery.of(context).size.height;
 
     final registeredContactsStream =
-    Stream.fromFuture(friendSystem.getNonFriendsContacts());
+        Stream.fromFuture(friendSystem.getNonFriendsContacts());
 
     return StreamBuilder<List<Contact>>(
       stream: registeredContactsStream,
@@ -458,87 +459,86 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
         } else {
           final registeredContacts = snapshot.data ?? [];
 
-          if (registeredContacts.isEmpty) {
-            // If there are no registered contacts, display a message.
-            return Center(
-              child: Text('No non-friends contacts to show.'),
-            );
-          }
-
-          return ListView(
-            children: [
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'ADD YOUR CONTACTS',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+          if (registeredContacts.length > 0) {
+            return ListView(
+              children: [
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'ADD YOUR CONTACTS',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              ListView.builder(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(),
-                // Disable list scrolling
-                itemCount: registeredContacts.length,
-                itemBuilder: (context, index) {
-                  final contact = registeredContacts[index];
-                  final phoneNumber = contact.phones?.firstOrNull?.value;
+                ListView.builder(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  shrinkWrap: true,
+                  physics: NeverScrollableScrollPhysics(),
+                  // Disable list scrolling
+                  itemCount: registeredContacts.length,
+                  itemBuilder: (context, index) {
+                    final contact = registeredContacts[index];
+                    final phoneNumber = contact.phones?.firstOrNull?.value;
 
-                  return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                    future: phoneNumber != null ? getUserData(phoneNumber) : null,
-                    builder: (context, userSnapshot) {
-                      if (userSnapshot.connectionState ==
-                          ConnectionState.waiting) {
-                        return CircularProgressIndicator();
-                      } else if (userSnapshot.hasError) {
-                        return Text('Error: ${userSnapshot.error}');
-                      } else {
-                        final userData = userSnapshot.data?.data();
-                        if (userData != null) {
-                          final name = userData['name'];
-                          final username = userData['username'];
-                          final profilePicture = userData['imageUrl'];
-                          final id = userData['id'];
-
-                          return ContactWidget(
-                            profilePicture: profilePicture,
-                            name: name,
-                            username: username,
-                            nameContact: contact.displayName ?? '',
-                            id: id,
-                            onTap: () async {
-                              final recipientUserId = userSnapshot.data?.id;
-                              if (recipientUserId != null) {
-                                await sendFriendRequest(recipientUserId);
-                                setState(() {
-                                  registeredContacts.removeAt(index);
-                                });
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Recipient user ID not found.'),
-                                    duration: const Duration(seconds: 2),
-                                  ),
-                                );
-                              }
-                            },
-                          );
+                    return FutureBuilder<
+                        DocumentSnapshot<Map<String, dynamic>>>(
+                      future:
+                          phoneNumber != null ? getUserData(phoneNumber) : null,
+                      builder: (context, userSnapshot) {
+                        if (userSnapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return CircularProgressIndicator();
+                        } else if (userSnapshot.hasError) {
+                          return Text('Error: ${userSnapshot.error}');
                         } else {
-                          return Text('User data not found.');
+                          final userData = userSnapshot.data?.data();
+                          if (userData != null) {
+                            final name = userData['name'];
+                            final username = userData['username'];
+                            final profilePicture = userData['imageUrl'];
+                            final id = userData['id'];
+
+                            return ContactWidget(
+                                profilePicture: profilePicture,
+                                name: name,
+                                username: username,
+                                nameContact: contact.displayName ?? '',
+                                id: id,
+                                onTap: () async {
+                                  final recipientUserId = userSnapshot.data?.id;
+                                  if (recipientUserId != null) {
+                                    await sendFriendRequest(recipientUserId);
+                                    setState(() {
+                                      registeredContacts.removeAt(index);
+                                    });
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                            'Recipient user ID not found.'),
+                                        duration: const Duration(seconds: 2),
+                                      ),
+                                    );
+                                  }
+                                });
+                          } else {
+                            return Text('User data not found.');
+                          }
                         }
-                      }
-                    },
-                  );
-                },
-              ),
-            ],
-          );
+                      },
+                    );
+                  },
+                ),
+              ],
+            );
+          } else {
+            return Container();
+          }
         }
       },
     );
@@ -658,122 +658,125 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
   Widget requests() {
     double screenHeight = MediaQuery.of(context).size.height;
     double screenWidth = MediaQuery.of(context).size.width;
+    final receivedRequestsAsyncValue = ref.watch(receivedRequestsProvider);
 
-    return Column(
-      children: [
-        Padding(
-            padding: EdgeInsets.symmetric(horizontal: 15),
+    return CustomScrollView(
+      slivers: [
+        CupertinoSliverRefreshControl(
+          onRefresh: () async {
+            ref.refresh(receivedRequestsProvider);
+          },
+        ),
+        SliverPadding(
+          padding: EdgeInsets.symmetric(horizontal: 15),
+          sliver: SliverToBoxAdapter(
             child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  StreamBuilder<QuerySnapshot>(
-                    stream: friendSystem.getReceivedRequests(),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasData) {
-                        final receivedRequests = snapshot.data!.docs;
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Consumer(
+                  builder: (context, watch, child) {
+                    final receivedRequestsAsyncValue = ref.watch(receivedRequestsProvider);
+
+                    return receivedRequestsAsyncValue.when(
+                      data: (receivedRequests) {
                         final requestCount = receivedRequests.length;
-
                         return Text("FRIEND REQUESTS ($requestCount)");
-                      }
-
-                      return Text(
-                          "FRIEND REQUESTS (0)"); // Default count when data is not available
-                    },
+                      },
+                      loading: () => Text("FRIEND REQUESTS (Loading...)"),
+                      error: (error, stackTrace) => Text("FRIEND REQUESTS (Error)"),
+                    );
+                  },
+                ),
+                ElevatedButton(
+                  onPressed: () => _showSentRequestsBottomSheet(context),
+                  style: ElevatedButton.styleFrom(
+                    primary: Colors.transparent,
+                    padding: EdgeInsets.only(left: 15, top: 5, bottom: 5),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
-                  ElevatedButton(
-                    onPressed: () => _showSentRequestsBottomSheet(context),
-                    style: ElevatedButton.styleFrom(
-                      primary: Colors.transparent, // Remove background color
-                      padding: EdgeInsets.only(
-                          left: 15, top: 5, bottom: 5), // Remove padding
-                      elevation: 0, // Remove elevation
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                            8), // Set your desired border radius
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        const Text("SENT"), // Label
-                        const SizedBox(width: 5),
-                        Icon(Icons.arrow_forward_ios), // Icon
-                      ],
-                    ),
-                  )
-                ])),
-        Expanded(
-          child: StreamBuilder<QuerySnapshot>(
-            stream: friendSystem.getReceivedRequests(),
-            builder: (context, snapshot) {
-              if (snapshot.hasData) {
-                final receivedRequests = snapshot.data!.docs;
+                  child: Row(
+                    children: [
+                      const Text("SENT"),
+                      const SizedBox(width: 5),
+                      Icon(Icons.arrow_forward_ios),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: receivedRequestsAsyncValue.when(
+            data: (receivedRequests) {
+              if (receivedRequests.isNotEmpty) {
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: NeverScrollableScrollPhysics(),
+                  itemCount: receivedRequests.length,
+                  itemBuilder: (context, index) {
+                    final request = receivedRequests[index];
+                    final senderUserId = request['senderUserId'] as String;
 
-                if (receivedRequests.length > 0) {
-                  return ListView.builder(
-                    itemCount: receivedRequests.length,
-                    itemBuilder: (context, index) {
-                      final request = receivedRequests[index];
-                      final senderUserId = request['senderUserId'] as String;
-
-                      return FutureBuilder<DocumentSnapshot>(
-                        future: FirebaseFirestore.instance
-                            .collection('users')
-                            .doc(senderUserId)
-                            .get(),
-                        builder: (context, snapshot) {
-                          if (snapshot.hasData) {
-                            final user =
-                                snapshot.data!.data() as Map<String, dynamic>;
-                            final username = user['username'] as String;
-                            final profilePictureUrl =
-                                user['imageUrl'] as String;
-                            final name = user['name'] as String;
-                            final id = user['id'];
-
-                            return RequestWidget(
-                                profilePictureUrl: profilePictureUrl,
-                                name: name,
-                                username: username,
-                                id: id,
-                                onAcceptFriendRequest: () async {
-                                  await friendSystem
-                                      .acceptFriendRequest(senderUserId);
-                                },
-                                onDeleteSentRequest: () async {
-                                  await friendSystem.declineFriendRequest(senderUserId);
-                                  setState(() {
-                                     receivedRequests.removeAt(index);
-                                  });
-                                });
-                          }
-
+                    return FutureBuilder<DocumentSnapshot>(
+                      future: FirebaseFirestore.instance.collection('users').doc(senderUserId).get(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
                           return CircularProgressIndicator();
-                        },
-                      );
-                    },
-                  );
-                } else {
-                  return Container(
-                      margin: EdgeInsets.only(
-                          top: 25, bottom: 450, left: 25, right: 25),
-                      width: 400,
-                      height: 50,
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.all(Radius.circular(20)),
-                          color: AppColors.a),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text('Nessuna richiesta in attesa'),
-                          SizedBox(height: 20),
-                          Text('Aggiungi nuovi amici!'),
-                        ],
-                      ));
-                }
-              }
+                        }
 
-              return CircularProgressIndicator();
+                        if (snapshot.hasError) {
+                          return Text("Error fetching data.");
+                        }
+
+                        final user = snapshot.data!.data() as Map<String, dynamic>;
+                        final username = user['username'] as String;
+                        final profilePictureUrl = user['imageUrl'] as String;
+                        final name = user['name'] as String;
+                        final id = user['id'];
+
+                        return RequestWidget(
+                          profilePictureUrl: profilePictureUrl,
+                          name: name,
+                          username: username,
+                          id: id,
+                          onAcceptFriendRequest: () async {
+                            await friendSystem.acceptFriendRequest(senderUserId);
+                            ref.refresh(receivedRequestsProvider);
+                          },
+                          onDeleteSentRequest: () async {
+                            await friendSystem.declineFriendRequest(senderUserId);
+                            ref.refresh(receivedRequestsProvider);
+                          },
+                        );
+                      },
+                    );
+                  },
+                );
+              } else {
+                 return Container(
+                  padding: EdgeInsets.symmetric(vertical: 50),
+                  margin: EdgeInsets.symmetric(horizontal: 25),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    color: AppColors.a,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('Nessuna richiesta in attesa'),
+                      SizedBox(height: 20),
+                      Text('Aggiungi nuovi amici!'),
+                    ],
+                  ),
+                );
+              }
             },
+            loading: () => CircularProgressIndicator(),
+            error: (error, stackTrace) => Text("Error fetching data."),
           ),
         ),
       ],

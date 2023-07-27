@@ -3,9 +3,6 @@ import 'package:gas/styles/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:gas/styles/styles_provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'core/models/user_model.dart';
-import 'core/models/user_info_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'user_notifier.dart';
 
