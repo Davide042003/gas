@@ -797,86 +797,99 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
-            return SingleChildScrollView(
-              child: Container(
-                padding: EdgeInsets.all(16.0),
-                height: MediaQuery.of(context).size.height * 0.9,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          Icon(Icons.arrow_downward),
-                          SizedBox(
-                            width: 100,
-                          ),
-                          Text('Sent Requests'),
-                        ],
+            return CupertinoScrollbar(
+              child: SingleChildScrollView(
+                child: Container(
+                  padding: EdgeInsets.all(16.0),
+                  height: MediaQuery.of(context).size.height * 0.9,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            Icon(Icons.arrow_downward),
+                            SizedBox(width: 100),
+                            Text('Sent Requests'),
+                          ],
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 16.0),
-                    Expanded(
-                      child: StreamBuilder<QuerySnapshot>(
-                        stream: friendSystem.getSentRequests(),
-                        builder: (context, snapshot) {
-                          if (snapshot.hasData) {
-                            final sentRequests = snapshot.data!.docs;
+                      SizedBox(height: 16.0),
+                      Expanded(
+                        child: FutureBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                          future: friendSystem.getSentRequestsImm(),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return Center(child: CircularProgressIndicator());
+                            } else if (snapshot.hasError) {
+                              return Center(child: Text('Error: ${snapshot.error}'));
+                            } else if (!snapshot.hasData) {
+                              return Center(child: Text('No data available.'));
+                            } else {
+                              final sentRequests = snapshot.data!.docs;
 
-                            return ListView.builder(
-                              itemCount: sentRequests.length,
-                              itemBuilder: (context, index) {
-                                final request = sentRequests[index];
-                                final recipientUserId =
-                                    request['recipientUserId'] as String;
+                              return CustomScrollView(
+                                slivers: [
+                                  CupertinoSliverRefreshControl(
+                                    onRefresh: () async {
+                                      await Future.delayed(Duration(seconds: 1));
+                                      setState((){});
+                                    },
+                                  ),
+                                  SliverList(
+                                    delegate: SliverChildBuilderDelegate(
+                                          (context, index) {
+                                        final request = sentRequests[index];
+                                        final recipientUserId = request['recipientUserId'] as String;
 
-                                return FutureBuilder<DocumentSnapshot>(
-                                  future: FirebaseFirestore.instance
-                                      .collection('users')
-                                      .doc(recipientUserId)
-                                      .get(),
-                                  builder: (context, snapshot) {
-                                    if (snapshot.hasData) {
-                                      final user = snapshot.data!.data()
-                                          as Map<String, dynamic>;
-                                      final username =
-                                          user['username'] as String;
-                                      final profilePictureUrl =
-                                          user['imageUrl'] as String;
-                                      final name = user['name'] as String;
-                                      final id = user['id'];
+                                        return FutureBuilder<DocumentSnapshot>(
+                                          future: FirebaseFirestore.instance
+                                              .collection('users')
+                                              .doc(recipientUserId)
+                                              .get(),
+                                          builder: (context, snapshot) {
+                                            if (snapshot.connectionState == ConnectionState.waiting) {
+                                              return CupertinoActivityIndicator();
+                                            } else if (snapshot.hasError) {
+                                              return Text('Error: ${snapshot.error}');
+                                            } else if (!snapshot.hasData) {
+                                              return Text('No data available.');
+                                            } else {
+                                              final user = snapshot.data!.data() as Map<String, dynamic>;
+                                              final username = user['username'] as String;
+                                              final profilePictureUrl = user['imageUrl'] as String;
+                                              final name = user['name'] as String;
+                                              final id = user['id'];
 
-                                      bool isDismissed = true;
-
-                                      return SentRequestWidget(
-                                          profilePictureUrl: profilePictureUrl,
-                                          name: name,
-                                          username: username,
-                                          id: id,
-                                          onDeleteSentRequest: () async {
-                                            await friendSystem
-                                                .deleteSentRequest(
-                                                    recipientUserId);
-                                            setState(() {
-                                              sentRequests.removeAt(index);
-                                            });
-                                          });
-                                    }
-
-                                    return CircularProgressIndicator();
-                                  },
-                                );
-                              },
-                            );
-                          }
-
-                          return CircularProgressIndicator();
-                        },
+                                              return SentRequestWidget(
+                                                profilePictureUrl: profilePictureUrl,
+                                                name: name,
+                                                username: username,
+                                                id: id,
+                                                onDeleteSentRequest: () async {
+                                                  await friendSystem.deleteSentRequest(recipientUserId);
+                                                  setState(() {
+                                                    sentRequests.removeAt(index);
+                                                  });
+                                                },
+                                              );
+                                            }
+                                          },
+                                        );
+                                      },
+                                      childCount: sentRequests.length,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }
+                          },
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             );

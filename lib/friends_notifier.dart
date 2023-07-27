@@ -9,3 +9,8 @@ final receivedRequestsProvider = FutureProvider<List<DocumentSnapshot>>((ref) as
   final snapshot = await friendSystem.getReceivedRequestsImm();
   return snapshot.docs;
 });
+
+final sentRequestsProvider = FutureProvider<List<DocumentSnapshot>>((ref) async {
+  final snapshot = await friendSystem.getSentRequestsImm();
+  return snapshot.docs;
+});
