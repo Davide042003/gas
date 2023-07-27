@@ -44,6 +44,7 @@ class FriendSystem {
   }
 
   Future<List<Contact>> getNonFriendsContacts() async {
+
     List<Contact> contacts = await ContactsService.getContacts();
     List<String?> phoneNumbers =
     contacts.map((contact) => contact.phones?.first.value).toList();

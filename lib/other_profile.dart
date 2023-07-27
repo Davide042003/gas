@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'core/models/user_model.dart';
 import 'core/models/user_info_service.dart';
 import 'package:flutter/cupertino.dart';
+import 'user_notifier.dart';
 
 class OtherProfileScreen extends ConsumerStatefulWidget {
   final String userId;
@@ -18,81 +19,89 @@ class OtherProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
-
   @override
   void initState() {
     super.initState();
   }
 
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-  }
-
   @override
   Widget build(BuildContext context) {
-    double screenWidth = MediaQuery
-        .of(context)
-        .size
-        .width;
-    double screenHeight = MediaQuery
-        .of(context)
-        .size
-        .height;
+    double screenWidth = MediaQuery.of(context).size.width;
+    double screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
-        backgroundColor: AppColors.backgroundDefault,
-        body: SafeArea(
-          child: StreamBuilder<UserModel?>(
-              stream:  UserInfoService().fetchOtherProfileData(widget.userId),
-              builder: (context, snapshot) {
-                if (snapshot.hasData) {
-                  UserModel? userProfile = snapshot.data;
+      backgroundColor: AppColors.backgroundDefault,
+      body: SafeArea(
+        child: Consumer(
+          builder: (context, watch, child) {
+            final userProfileFuture = ref.watch(otherUserProfileProvider(widget.userId));
+
+            return userProfileFuture.when(
+              data: (userProfile) {
+                if (userProfile != null) {
                   return Column(
-                      children: [
-                        Padding(padding: EdgeInsets.symmetric(horizontal: 12),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                InkWell(
-                                  child: Icon(
-                                    Icons.arrow_back_rounded,
-                                    size: 35,
-                                    color: AppColors.white,
-                                  ),
-                                  onTap: () {
-                                    context.pop();
-                                  },
-                                ),
-                                Container(
-                                  width: 200,
-                                  child: Text(
-                                    userProfile?.username ?? '', textAlign: TextAlign.center,
-                                    style: ref
-                                        .watch(stylesProvider)
-                                        .text
-                                        .titleOnBoarding
-                                        .copyWith(fontSize: 28),),),
-                              ],)),
-                        SizedBox(height: 10,),
-                        Stack(children: [
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 12),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            InkWell(
+                              child: Icon(
+                                Icons.arrow_back_rounded,
+                                size: 35,
+                                color: AppColors.white,
+                              ),
+                              onTap: () {
+                                context.pop();
+                              },
+                            ),
+                            Container(
+                              width: 200,
+                              child: Text(
+                                userProfile.username ?? '',
+                                textAlign: TextAlign.center,
+                                style: ref.watch(stylesProvider).text.titleOnBoarding.copyWith(fontSize: 28),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 10,),
+                      Stack(
+                        children: [
                           Container(
                             color: AppColors.whiteShadow,
-                            height: screenHeight / 600,),
-                          Center(child: Container(color: AppColors.white,
-                            height: screenHeight / 400,
-                            width: screenWidth / 2.5,))
-                        ],),
-                      ]
+                            height: screenHeight / 600,
+                          ),
+                          Center(
+                            child: Container(
+                              color: AppColors.white,
+                              height: screenHeight / 400,
+                              width: screenWidth / 2.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   );
                 } else {
                   return Center(
                     child: CircularProgressIndicator(),
                   );
                 }
-              }
-          ),
-        )
+              },
+              loading: () => Center(
+                child: CircularProgressIndicator(),
+              ),
+              error: (error, stackTrace) => Center(
+                child: Text('Error fetching data.'),
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 }

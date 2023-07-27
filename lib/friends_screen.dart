@@ -446,7 +446,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
     double screenHeight = MediaQuery.of(context).size.height;
 
     final registeredContactsStream =
-        Stream.fromFuture(friendSystem.getNonFriendsContacts());
+    Stream.fromFuture(friendSystem.getNonFriendsContacts());
 
     return StreamBuilder<List<Contact>>(
       stream: registeredContactsStream,
@@ -458,86 +458,87 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
         } else {
           final registeredContacts = snapshot.data ?? [];
 
-          if (registeredContacts.length > 0) {
-            return ListView(
-              children: [
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 20),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'ADD YOUR CONTACTS',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+          if (registeredContacts.isEmpty) {
+            // If there are no registered contacts, display a message.
+            return Center(
+              child: Text('No non-friends contacts to show.'),
+            );
+          }
+
+          return ListView(
+            children: [
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'ADD YOUR CONTACTS',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
-                ListView.builder(
-                  padding: EdgeInsets.symmetric(horizontal: 20),
-                  shrinkWrap: true,
-                  physics: NeverScrollableScrollPhysics(),
-                  // Disable list scrolling
-                  itemCount: registeredContacts.length,
-                  itemBuilder: (context, index) {
-                    final contact = registeredContacts[index];
-                    final phoneNumber = contact.phones?.firstOrNull?.value;
+              ),
+              ListView.builder(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
+                // Disable list scrolling
+                itemCount: registeredContacts.length,
+                itemBuilder: (context, index) {
+                  final contact = registeredContacts[index];
+                  final phoneNumber = contact.phones?.firstOrNull?.value;
 
-                    return FutureBuilder<
-                        DocumentSnapshot<Map<String, dynamic>>>(
-                      future:
-                          phoneNumber != null ? getUserData(phoneNumber) : null,
-                      builder: (context, userSnapshot) {
-                        if (userSnapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return CircularProgressIndicator();
-                        } else if (userSnapshot.hasError) {
-                          return Text('Error: ${userSnapshot.error}');
-                        } else {
-                          final userData = userSnapshot.data?.data();
-                          if (userData != null) {
-                            final name = userData['name'];
-                            final username = userData['username'];
-                            final profilePicture = userData['imageUrl'];
-                            final id = userData['id'];
+                  return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                    future: phoneNumber != null ? getUserData(phoneNumber) : null,
+                    builder: (context, userSnapshot) {
+                      if (userSnapshot.connectionState ==
+                          ConnectionState.waiting) {
+                        return CircularProgressIndicator();
+                      } else if (userSnapshot.hasError) {
+                        return Text('Error: ${userSnapshot.error}');
+                      } else {
+                        final userData = userSnapshot.data?.data();
+                        if (userData != null) {
+                          final name = userData['name'];
+                          final username = userData['username'];
+                          final profilePicture = userData['imageUrl'];
+                          final id = userData['id'];
 
-                            return ContactWidget(
-                                profilePicture: profilePicture,
-                                name: name,
-                                username: username,
-                                nameContact: contact.displayName ?? '',
-                                id: id,
-                                onTap: () async {
-                                  final recipientUserId = userSnapshot.data?.id;
-                                  if (recipientUserId != null) {
-                                    await sendFriendRequest(recipientUserId);
-                                    setState(() {
-                                      registeredContacts.removeAt(index);
-                                    });
-                                  } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                            'Recipient user ID not found.'),
-                                        duration: const Duration(seconds: 2),
-                                      ),
-                                    );
-                                  }
+                          return ContactWidget(
+                            profilePicture: profilePicture,
+                            name: name,
+                            username: username,
+                            nameContact: contact.displayName ?? '',
+                            id: id,
+                            onTap: () async {
+                              final recipientUserId = userSnapshot.data?.id;
+                              if (recipientUserId != null) {
+                                await sendFriendRequest(recipientUserId);
+                                setState(() {
+                                  registeredContacts.removeAt(index);
                                 });
-                          } else {
-                            return Text('User data not found.');
-                          }
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Recipient user ID not found.'),
+                                    duration: const Duration(seconds: 2),
+                                  ),
+                                );
+                              }
+                            },
+                          );
+                        } else {
+                          return Text('User data not found.');
                         }
-                      },
-                    );
-                  },
-                ),
-              ],
-            );
-          } else {
-            return Container();
-          }
+                      }
+                    },
+                  );
+                },
+              ),
+            ],
+          );
         }
       },
     );

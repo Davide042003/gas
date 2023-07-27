@@ -34,6 +34,31 @@ class UserInfoService {
     }
   }
 
+  Future<UserModel?> fetchOtherProfileDataImm(String idOther) async {
+    try {
+      // Create a document reference for the user
+      DocumentReference userRef = FirebaseFirestore.instance.collection('users').doc(idOther);
+
+      // Get the document snapshot
+      DocumentSnapshot snapshot = await userRef.get();
+
+      if (snapshot.exists) {
+        // Convert the document data to a UserModel object
+        UserModel user = UserModel.fromData(snapshot.data() as Map<String, dynamic>);
+        print('FETCHED other user profile data');
+        return user;
+      } else {
+        // Document doesn't exist
+        return null;
+      }
+    } catch (e) {
+      // Error handling
+      print('Error fetching other user profile data: $e');
+      // You can throw an exception here or return null based on your requirement
+      throw Exception('Error fetching other user profile data');
+    }
+  }
+
   Future<UserModel?> fetchProfileDataRegistration() async {
     try {
       // Get the current user's UID

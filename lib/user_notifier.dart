@@ -8,3 +8,8 @@ final userProfileFutureProvider = FutureProvider.autoDispose<UserModel?>((ref) {
     return null;
   });
 });
+
+final otherUserProfileProvider = FutureProvider.family<UserModel?, String>((ref, userId) async {
+  UserModel? userProfile = await UserInfoService().fetchOtherProfileDataImm(userId);
+  return userProfile;
+});
