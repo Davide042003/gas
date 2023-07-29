@@ -297,6 +297,7 @@ class _PublishPostPageState extends ConsumerState<PublishPostPage> {
                               maxLines: 2,
                               controller: questionController,
                               onChanged: (_) => setState(() {}),
+                              textInputAction: TextInputAction.done,
                               textAlign: TextAlign.center,
                               textAlignVertical: TextAlignVertical.bottom,
                               decoration: InputDecoration.collapsed(

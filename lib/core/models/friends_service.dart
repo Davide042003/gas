@@ -57,6 +57,16 @@ class FriendSystem {
         .snapshots();
   }
 
+  Future<QuerySnapshot<Map<String, dynamic>>> getFriendsImm() {
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .collection('friends')
+        .doc('accepted_friends')
+        .collection('friends')
+        .get();
+  }
+
   Future<List<Contact>> getContacts() async {
     Iterable<Contact>? contacts = await ContactsService.getContacts();
     List<Contact> contactList = contacts?.toList() ?? [];

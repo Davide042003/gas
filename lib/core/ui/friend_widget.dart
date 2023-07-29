@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:gas/styles/styles_provider.dart';
 import 'package:gas/styles/colors.dart';
+import 'package:gas/bottom_sheet_profile.dart';
 
 class FriendWidget extends StatelessWidget {
   final String profilePictureUrl;
   final String name;
   final String username;
+  final String id;
   final bool isLoading;
   final Function() onDeleteFriend;
 
@@ -13,14 +15,17 @@ class FriendWidget extends StatelessWidget {
     required this.profilePictureUrl,
     required this.name,
     required this.username,
+    required this.id,
     required this.isLoading,
     required this.onDeleteFriend,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: 13),
+    return InkWell(onTap: () {
+      BottomSheetProfile.showOtherProfileBottomSheet(context, id);
+    }, child: Container(
+      padding: EdgeInsets.symmetric(horizontal: 20,vertical: 13),
       child: Row(
         children: <Widget>[
           Expanded(
@@ -74,6 +79,6 @@ class FriendWidget extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ));
   }
 }

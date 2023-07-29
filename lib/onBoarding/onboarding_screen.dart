@@ -187,6 +187,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               Padding(
                 padding: EdgeInsets.only(top: screenHeight / 80),
                 child: TextField(
+                  autofocus: true,
                   autocorrect: false,
                   controller: controllers[step],
        //           keyboardType: TextInputType.,
@@ -284,6 +285,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     SizedBox(
                       width: screenWidth / 2.2,
                       child: TextField(
+                        autofocus: true,
                         controller: controllers[step],
                         inputFormatters: [
                           FilteringTextInputFormatter.digitsOnly
@@ -394,6 +396,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   style: ref.watch(stylesProvider).text.titleOnBoarding,
                   textAlign: TextAlign.center),
               TextField(
+                autofocus: true,
                 controller: controllers[step],
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 keyboardType: TextInputType.number,
@@ -475,6 +478,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               Padding(
                 padding: EdgeInsets.only(top: screenHeight / 80),
                 child: TextField(
+                  autofocus: true,
                   autocorrect: false,
                   controller: controllers[step],
                   keyboardType: TextInputType.name,

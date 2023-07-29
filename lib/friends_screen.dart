@@ -127,7 +127,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
     double screenHeight = MediaQuery.of(context).size.height;
 
     final List<Widget> pages = [
-      tryFriends(),
+      requests(),
       tryFriends(),
       requests()
     ];
@@ -309,6 +309,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                         profilePictureUrl: profilePictureUrl,
                                         name: name,
                                         username: username,
+                                        id: id,
                                         isLoading: isLoading,
                                         onDeleteFriend: () {
                                           setState(() {
@@ -545,113 +546,126 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
   }
 
   Widget tryFriends() {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        children: [
-          Align(
-              alignment: Alignment.centerLeft,
-              child: StreamBuilder<QuerySnapshot>(
-                stream: friendSystem.getFriends(),
-                builder: (context, snapshot) {
-                  if (snapshot.hasData) {
-                    final friends = snapshot.data!.docs;
-                    final friendsCount = friends.length;
+    double screenHeight = MediaQuery.of(context).size.height;
+    double screenWidth = MediaQuery.of(context).size.width;
+    final friendsAsyncValue = ref.watch(friendsProvider);
 
-                    if (friends.length <= 50) {
-                      return Text(
-                        "MY FRIENDS ($friendsCount)",
-                      );
-                    } else {
-                      return Text("MY FRIENDS (50+)");
-                    }
-                  }
+    return CustomScrollView(
+      slivers: [
+        CupertinoSliverRefreshControl(
+          onRefresh: () async {
+            ref.refresh(friendsProvider);
+          },
+        ),
+        SliverPadding(
+          padding: EdgeInsets.only(right: 15, left: 15, top: 15, bottom: 16),
+          sliver: SliverToBoxAdapter(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Consumer(
+                  builder: (context, watch, child) {
+                    final friendsAsyncValue = ref.watch(friendsProvider);
 
-                  return Text(
-                      "MY FRIENDS (0)"); // Default count when data is not available
-                },
-              )),
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: friendSystem.getFriends(),
-              builder: (context, snapshot) {
-                if (snapshot.hasData) {
-                  final friends = snapshot.data!.docs;
-
-                  if (friends.length > 0) {
-                    //sort by username in alphabetical order
-                    friends.sort((a, b) {
-                      final friendDataA = (a.data() as Map<String, dynamic>);
-                      final friendDataB = (b.data() as Map<String, dynamic>);
-                      final usernameA = friendDataA['username'] as String;
-                      final usernameB = friendDataB['username'] as String;
-                      return usernameA.compareTo(usernameB);
-                    });
-                    return ListView.builder(
-                      itemCount: friends.length,
-                      itemBuilder: (context, index) {
-                        final friendData = friends[index].data();
-                        final friendId = friends[index].id;
-
-                        return FutureBuilder<DocumentSnapshot>(
-                          future: FirebaseFirestore.instance
-                              .collection('users')
-                              .doc(friendId)
-                              .get(),
-                          builder: (context, snapshot) {
-                            if (snapshot.hasData) {
-                              final user =
-                                  snapshot.data!.data() as Map<String, dynamic>;
-                              final username = user['username'] as String;
-                              final profilePictureUrl =
-                                  user['imageUrl'] as String;
-                              final name = user['name'] as String;
-
-                              return FriendWidget(
-                                  profilePictureUrl: profilePictureUrl,
-                                  name: name,
-                                  username: username,
-                                  isLoading: isLoading,
-                                  onDeleteFriend: () {
-                                    setState(() {
-                                      friendToDeleteId = friendId;
-                                      isLoading = true;
-                                    });
-                                    showDialogWithChoices();
-                                  });
-                            }
-
-                            return CircularProgressIndicator();
-                          },
-                        );
+                    return friendsAsyncValue.when(
+                      data: (friends) {
+                        final friendsCount = friends.length;
+                        if (friends.length <= 50) {
+                          return Text(
+                            "MY FRIENDS ($friendsCount)",
+                          );
+                        } else {
+                          return Text("MY FRIENDS (50+)");
+                        }
                       },
+                      loading: () => Text("MY FRIENDS (0)"), // Default count when data is not available
+                      error: (_, __) => Text("Error loading friends"),
                     );
-                  } else {
-                    return Container(
-                        margin: EdgeInsets.only(
-                            top: 25, bottom: 450, left: 25, right: 25),
-                        width: 400,
-                        height: 50,
-                        decoration: BoxDecoration(
-                            borderRadius: BorderRadius.all(Radius.circular(20)),
-                            color: AppColors.a),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text('Non hai ancora nessun amico!'),
-                            SizedBox(height: 20),
-                            Text('Aggiungi nuovi amici!'),
-                          ],
-                        ));
-                  }
-                }
-
-                return CircularProgressIndicator();
-              },
+                  },
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+        SliverToBoxAdapter(
+          child: friendsAsyncValue.when(
+            data: (friends) {
+              if (friends.isNotEmpty) {
+                // Sort by username in alphabetical order
+                friends.sort((a, b) {
+                  final friendDataA = (a.data() as Map<String, dynamic>);
+                  final friendDataB = (b.data() as Map<String, dynamic>);
+                  final usernameA = friendDataA['username'] as String;
+                  final usernameB = friendDataB['username'] as String;
+                  return usernameA.compareTo(usernameB);
+                });
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: NeverScrollableScrollPhysics(),
+                  itemCount: friends.length,
+                  itemBuilder: (context, index) {
+                    final friendData = friends[index].data();
+                    final friendId = friends[index].id;
+
+                    return FutureBuilder<DocumentSnapshot>(
+                      future: FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(friendId)
+                          .get(),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData) {
+                          final user = snapshot.data!.data() as Map<String, dynamic>;
+                          final username = user['username'] as String;
+                          final profilePictureUrl = user['imageUrl'] as String;
+                          final name = user['name'] as String;
+                          final id = user['id'] as String;
+
+                          return FriendWidget(
+                            profilePictureUrl: profilePictureUrl,
+                            name: name,
+                            username: username,
+                            id: id,
+                            isLoading: isLoading,
+                            onDeleteFriend: () {
+                              setState(() {
+                                friendToDeleteId = friendId;
+                                isLoading = true;
+                                ref.refresh(friendsProvider);
+                              });
+                              showDialogWithChoices();
+                            },
+                          );
+                        }
+
+                        return CircularProgressIndicator();
+                      },
+                    );
+                  },
+                );
+              } else {
+                return Container(
+                  padding: EdgeInsets.symmetric(vertical: 50),
+                  margin: EdgeInsets.symmetric(horizontal: 25),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    color: AppColors.a,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('Non hai ancora nessun amico'),
+                      SizedBox(height: 20),
+                      Text('Aggiungi nuovi amici!'),
+                    ],
+                  ),
+                );
+              }
+            },
+            loading: () => Center(child: CircularProgressIndicator()),
+            error: (_, __) => Text("Error loading friends"),
+          )
+        ),
+      ],
     );
   }
 
@@ -893,61 +907,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                 ),
               ),
             );
-          },
-        );
-      },
-    );
-  }
-
-  void _showOtherProfileBottomSheet(BuildContext context) {
-    double screenHeight = MediaQuery.of(context).size.height;
-    double screenWidth = MediaQuery.of(context).size.width;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.backgroundDefault,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16.0)),
-      ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            return Container(
-                padding: EdgeInsets.all(16.0),
-                height: MediaQuery.of(context).size.height * 0.9,
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            Icon(Icons.arrow_downward),
-                            SizedBox(
-                              width: 100,
-                            ),
-                            Text('ProfileName'),
-                          ],
-                        ),
-                      ),
-                      SizedBox(
-                        height: 10,
-                      ),
-                      Stack(children: [
-                        Container(
-                          color: AppColors.whiteShadow,
-                          height: screenHeight / 600,
-                        ),
-                        Center(
-                            child: Container(
-                          color: AppColors.white,
-                          height: screenHeight / 400,
-                          width: screenWidth / 2.5,
-                        ))
-                      ]),
-                    ]));
           },
         );
       },
