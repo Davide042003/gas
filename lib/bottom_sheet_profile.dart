@@ -7,9 +7,13 @@ import 'core/models/user_model.dart';
 import 'core/models/friends_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:riverpod/riverpod.dart';
+import 'user_notifier.dart';
 
 class BottomSheetProfile {
   static void showOtherProfileBottomSheet(BuildContext context, String userId) {
+    final container = ProviderContainer();
+
     Widget _nonFriends(Function() onTapAction) {
       return ElevatedButton.icon(
         onPressed: onTapAction,
@@ -196,8 +200,8 @@ class BottomSheetProfile {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  StreamBuilder<UserModel?>(
-                    stream: UserInfoService().fetchOtherProfileData(userId),
+                  FutureBuilder<UserModel?>(
+                    future: container.read(otherUserProfileProvider(userId).future), // Use ref here
                     builder: (context, snapshot) {
                       if (snapshot.hasData) {
                         UserModel? userProfile = snapshot.data;

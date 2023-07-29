@@ -45,7 +45,6 @@ class UserInfoService {
       if (snapshot.exists) {
         // Convert the document data to a UserModel object
         UserModel user = UserModel.fromData(snapshot.data() as Map<String, dynamic>);
-        print('FETCHED other user profile data');
         return user;
       } else {
         // Document doesn't exist
@@ -74,7 +73,6 @@ class UserInfoService {
         // Convert the document data to a UserModel object
         UserModel user = UserModel.fromData(
             snapshot.data() as Map<String, dynamic>);
-        print('FETCHED user profile data');
         return user;
       } else {
         // Document doesn't exist

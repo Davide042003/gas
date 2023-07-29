@@ -15,6 +15,8 @@ import 'core/ui/friend_widget.dart';
 import 'core/ui/request_widget.dart';
 import 'core/ui/sent_request_widget.dart';
 import 'package:gas/friends_notifier.dart';
+import 'package:gas/user_notifier.dart';
+import 'core/models/user_model.dart';
 
 class FriendsScreen extends ConsumerStatefulWidget {
   @override
@@ -591,7 +593,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
           child: friendsAsyncValue.when(
             data: (friends) {
               if (friends.isNotEmpty) {
-                // Sort by username in alphabetical order
                 friends.sort((a, b) {
                   final friendDataA = (a.data() as Map<String, dynamic>);
                   final friendDataB = (b.data() as Map<String, dynamic>);
@@ -603,41 +604,43 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                   shrinkWrap: true,
                   physics: NeverScrollableScrollPhysics(),
                   itemCount: friends.length,
+
                   itemBuilder: (context, index) {
                     final friendData = friends[index].data();
                     final friendId = friends[index].id;
 
-                    return FutureBuilder<DocumentSnapshot>(
-                      future: FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(friendId)
-                          .get(),
+                    return FutureBuilder(
+                      future: ref.watch(otherUserProfileProvider(friendId).future),
                       builder: (context, snapshot) {
-                        if (snapshot.hasData) {
-                          final user = snapshot.data!.data() as Map<String, dynamic>;
-                          final username = user['username'] as String;
-                          final profilePictureUrl = user['imageUrl'] as String;
-                          final name = user['name'] as String;
-                          final id = user['id'] as String;
-
-                          return FriendWidget(
-                            profilePictureUrl: profilePictureUrl,
-                            name: name,
-                            username: username,
-                            id: id,
-                            isLoading: isLoading,
-                            onDeleteFriend: () {
-                              setState(() {
-                                friendToDeleteId = friendId;
-                                isLoading = true;
-                                ref.refresh(friendsProvider);
-                              });
-                              showDialogWithChoices();
-                            },
-                          );
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return CircularProgressIndicator();
                         }
 
-                        return CircularProgressIndicator();
+                        if (snapshot.hasError || !snapshot.hasData) {
+                          return Text("Error fetching data.");
+                        }
+
+                        final UserModel? user = snapshot.data!;
+                        final username = user!.username;
+                        final profilePictureUrl = user.imageUrl!;
+                        final name = user.name!;
+                        final id = user.id!;
+
+                        return FriendWidget(
+                          profilePictureUrl: profilePictureUrl,
+                          name: name,
+                          username: username!,
+                          id: id,
+                          isLoading: isLoading,
+                          onDeleteFriend: () {
+                            setState(() {
+                              friendToDeleteId = friendId;
+                              isLoading = true;
+                              ref.refresh(friendsProvider);
+                            });
+                            showDialogWithChoices();
+                          },
+                        );
                       },
                     );
                   },
@@ -735,8 +738,8 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                     final request = receivedRequests[index];
                     final senderUserId = request['senderUserId'] as String;
 
-                    return FutureBuilder<DocumentSnapshot>(
-                      future: FirebaseFirestore.instance.collection('users').doc(senderUserId).get(),
+                    return FutureBuilder(
+                      future: ref.watch(otherUserProfileProvider(senderUserId).future),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.waiting) {
                           return CircularProgressIndicator();
@@ -746,16 +749,16 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                           return Text("Error fetching data.");
                         }
 
-                        final user = snapshot.data!.data() as Map<String, dynamic>;
-                        final username = user['username'] as String;
-                        final profilePictureUrl = user['imageUrl'] as String;
-                        final name = user['name'] as String;
-                        final id = user['id'];
+                        final UserModel? user = snapshot.data!;
+                        final username = user!.username;
+                        final profilePictureUrl = user.imageUrl!;
+                        final name = user.name!;
+                        final id = user.id!;
 
                         return RequestWidget(
                           profilePictureUrl: profilePictureUrl,
                           name: name,
-                          username: username,
+                          username: username!,
                           id: id,
                           onAcceptFriendRequest: () async {
                             await friendSystem.acceptFriendRequest(senderUserId);
@@ -858,11 +861,8 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                         final request = sentRequests[index];
                                         final recipientUserId = request['recipientUserId'] as String;
 
-                                        return FutureBuilder<DocumentSnapshot>(
-                                          future: FirebaseFirestore.instance
-                                              .collection('users')
-                                              .doc(recipientUserId)
-                                              .get(),
+                                        return FutureBuilder(
+                                          future: ref.watch(otherUserProfileProvider(recipientUserId).future),
                                           builder: (context, snapshot) {
                                             if (snapshot.connectionState == ConnectionState.waiting) {
                                               return CupertinoActivityIndicator();
@@ -871,16 +871,16 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                             } else if (!snapshot.hasData) {
                                               return Text('No data available.');
                                             } else {
-                                              final user = snapshot.data!.data() as Map<String, dynamic>;
-                                              final username = user['username'] as String;
-                                              final profilePictureUrl = user['imageUrl'] as String;
-                                              final name = user['name'] as String;
-                                              final id = user['id'];
+                                              final UserModel? user = snapshot.data!;
+                                              final username = user!.username;
+                                              final profilePictureUrl = user.imageUrl!;
+                                              final name = user.name!;
+                                              final id = user.id!;
 
                                               return SentRequestWidget(
                                                 profilePictureUrl: profilePictureUrl,
                                                 name: name,
-                                                username: username,
+                                                username: username!,
                                                 id: id,
                                                 onDeleteSentRequest: () async {
                                                   await friendSystem.deleteSentRequest(recipientUserId);
