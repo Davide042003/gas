@@ -468,7 +468,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
             return ListView(
               children: [
                 Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  padding: EdgeInsets.symmetric(horizontal: 20,vertical: 10),
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
@@ -854,8 +854,10 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                   mainAxisAlignment: MainAxisAlignment.start,
                                   children: [
                                     Icon(Icons.arrow_downward),
-                                    SizedBox(width: 100),
-                                    Text('Sent Requests'),
+                                    SizedBox(width: 105),
+                                    Text('Sent Requests', style: TextStyle(
+                                      fontFamily: 'Helvetica',fontSize: 16, fontWeight: FontWeight.bold
+                                    ),),
                                   ],
                                 ),
                               ),
