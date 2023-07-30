@@ -309,7 +309,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                   } else if (title != null) {
                                     // Add title widget
                                     widgets.add(Text(title,
-                                        style: TextStyle(
+                                        style: TextStyle(fontSize: 16,
                                             fontWeight: FontWeight.bold)));
                                   } else if (type == 'friends') {
                                     widgets.add(FriendWidget(
