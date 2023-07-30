@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gas/styles/styles_provider.dart';
 import 'package:gas/styles/colors.dart';
 import 'package:gas/bottom_sheet_profile.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ContactWidget extends StatelessWidget {
   final String profilePicture;
@@ -37,20 +38,40 @@ class ContactWidget extends StatelessWidget {
                 child: Row(
                   children: <Widget>[
                     CircleAvatar(
-                      maxRadius: 38,
-                      backgroundImage: profilePicture.isNotEmpty
-                          ? NetworkImage(profilePicture)
-                          : null,
-                      child: profilePicture.isEmpty
-                          ? Text(
-                              name.isNotEmpty ? name[0] : '',
-                              style: TextStyle(
-                                  fontFamily: 'Helvetica',
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 20,
-                                  color: AppColors.white),
-                            )
-                          : null,
+                      radius: 38,
+                      child: Stack(
+                        children: [
+                          // Show CachedNetworkImage if userProfile?.imageUrl is not empty
+                          if (profilePicture != null && profilePicture != "")
+                            CachedNetworkImage(
+                              imageUrl: profilePicture,
+                              imageBuilder: (context, imageProvider) => Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  image: DecorationImage(
+                                    image: imageProvider,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                              progressIndicatorBuilder: (context, url, downloadProgress) =>
+                                  Center(child: CircularProgressIndicator(value: downloadProgress.progress)), // Show CircularProgressIndicator while loading
+                              errorWidget: (context, url, error) => Icon(Icons.error),
+                            ),
+
+                          if (profilePicture == null || profilePicture == "")
+                            Center(
+                              child: Text(
+                                name != null && name != "" ? name![0] : '',
+                                style: TextStyle(
+                                    fontFamily: 'Helvetica',
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 26,
+                                    color: AppColors.white),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                     SizedBox(width: 16),
                     Expanded(

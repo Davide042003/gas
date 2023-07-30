@@ -10,6 +10,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'user_notifier.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'friends_notifier.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class BottomSheetProfile {
   static void showOtherProfileBottomSheet(BuildContext context, String userId) {
@@ -240,16 +241,20 @@ class BottomSheetProfile {
                                     height: screenHeight / 2.35,
                                     child: Stack(
                                       children: [
-                                        ClipRRect(
-                                          child: Container(
-                                            width: screenWidth,
-                                            height: screenHeight / 2.35,
-                                            child: Image.network(
-                                              userProfile!.imageUrl ?? '',
-                                              fit: BoxFit.cover,
-                                            ),
+                                      CachedNetworkImage(
+                                      imageUrl: userProfile!.imageUrl!,
+                                      imageBuilder: (context, imageProvider) => Container(
+                                        decoration: BoxDecoration(
+                                          image: DecorationImage(
+                                            image: imageProvider,
+                                            fit: BoxFit.cover,
                                           ),
                                         ),
+                                      ),
+                                      progressIndicatorBuilder: (context, url, downloadProgress) =>
+                                          Center(child: CircularProgressIndicator(value: downloadProgress.progress)), // Show CircularProgressIndicator while loading
+                                      errorWidget: (context, url, error) => Icon(Icons.error),
+                                    ),
                                         Positioned.fill(
                                           child: ClipRect(
                                             child: Align(
