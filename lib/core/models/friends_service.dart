@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:contacts_service/contacts_service.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:gas/friends_notifier.dart';
+import 'package:riverpod/riverpod.dart';
 
 class FriendSystem {
   final String userId;
@@ -76,8 +78,12 @@ class FriendSystem {
   Future<List<Contact>> getNonFriendsContacts() async {
 
     List<Contact> contacts = await ContactsService.getContacts();
-    List<String?> phoneNumbers =
-    contacts.map((contact) => contact.phones?.first.value).toList();
+
+    List<String?> phoneNumbers = contacts
+        .where((contact) => contact.phones?.isNotEmpty == true)
+        .map((contact) => contact.phones!.first.value)
+        .toList();
+
 
     QuerySnapshot<Map<String, dynamic>> sentRequestsSnapshot =
     await getSentRequests().first;
@@ -105,15 +111,17 @@ class FriendSystem {
         String phoneNumber = contact.phones!.first.value!;
 
         // Check if user exists by phone number
-        bool userExists = await checkUserExistsByPhoneNumber(phoneNumber);
+        PhoneNumberCheckResult userExists = await checkUserExistsByPhoneNumber(phoneNumber);
 
-        if (userExists) {
-          String receiverUserId = await getUserIdFromPhoneNumber(phoneNumber);
+        if (userExists.userExists) {
+          String receiverUserId = await getUserIdFromPhoneNumber(userExists.matchedPhoneNumber);
 
-          if (!sentRequests.contains(receiverUserId) &&
-              !receivedRequests.contains(receiverUserId) &&
-              !friends.contains(receiverUserId)) {
-            nonFriends.add(contact);
+          if (receiverUserId != userId) {
+            if (!sentRequests.contains(receiverUserId) &&
+                !receivedRequests.contains(receiverUserId) &&
+                !friends.contains(receiverUserId)) {
+              nonFriends.add(contact);
+            }
           }
         }
       }
@@ -122,14 +130,24 @@ class FriendSystem {
     return nonFriends;
   }
 
-  Future<bool> checkUserExistsByPhoneNumber(String phoneNumber) async {
-
+  Future<PhoneNumberCheckResult> checkUserExistsByPhoneNumber(String phoneNumber) async {
     QuerySnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore.instance
         .collection('users')
-        .where('phoneNumber', isEqualTo: phoneNumber)
         .get();
 
-    return snapshot.docs.isNotEmpty;
+    String phoneNumberEdited =  phoneNumber.replaceAll(RegExp(r'[^0-9]'), '');
+
+    for (var doc in snapshot.docs) {
+      String userPhoneNumber = doc['phoneNumber'];
+      if (userPhoneNumber != null) {
+        String userPhoneNumberEdited =  userPhoneNumber.replaceAll(RegExp(r'[^0-9]'), '');
+        if (userPhoneNumberEdited.contains(phoneNumberEdited)) {
+          return PhoneNumberCheckResult(userExists: true, matchedPhoneNumber: userPhoneNumber);
+        }
+      }
+    }
+
+    return PhoneNumberCheckResult(userExists: false, matchedPhoneNumber: '');
   }
 
   Future<String> getUserIdFromPhoneNumber(String phoneNumber) async {
@@ -405,8 +423,8 @@ class FriendSystem {
         final phoneNumber = contact.phones?.first.value;
         if (phoneNumber != null) {
           final userExists = await checkUserExistsByPhoneNumber(phoneNumber);
-          if (userExists) {
-            final userId = await getUserIdFromPhoneNumber(phoneNumber);
+          if (userExists.userExists) {
+            final userId = await getUserIdFromPhoneNumber(userExists.matchedPhoneNumber);
             final userSnapshot = await FirebaseFirestore.instance.collection('users').doc(userId).get();
             final username = userSnapshot.data()?['username']?.toString()?.toLowerCase();
             final name = userSnapshot.data()?['name']?.toString()?.toLowerCase();
@@ -540,4 +558,11 @@ class FriendSystem {
       }
     }
   }
+}
+
+class PhoneNumberCheckResult {
+  final bool userExists;
+  final String matchedPhoneNumber;
+
+  PhoneNumberCheckResult({required this.userExists, required this.matchedPhoneNumber});
 }

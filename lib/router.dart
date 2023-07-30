@@ -8,7 +8,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'profile_screen.dart';
 import 'profile_edit_screen.dart';
 import 'friends_screen.dart';
-import 'package:gas/other_profile.dart';
 import 'package:gas/home_page_view.dart';
 import 'package:gas/publish_post.dart';
 

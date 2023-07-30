@@ -67,19 +67,23 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
     }
   }
 
-  Future<DocumentSnapshot<Map<String, dynamic>>> getUserData(
-      String phoneNumber) {
-    return FirebaseFirestore.instance
+  Future<DocumentSnapshot<Map<String, dynamic>>> getUserData(String phoneNumber) async {
+    QuerySnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore.instance
         .collection('users')
-        .where('phoneNumber', isEqualTo: phoneNumber)
-        .get()
-        .then((querySnapshot) {
-      if (querySnapshot.size > 0) {
-        return querySnapshot.docs.first;
-      } else {
-        throw Exception('User data not found.');
+        .get();
+
+    String phoneNumberEdited = phoneNumber.replaceAll(RegExp(r'[^0-9]'), '');
+
+    for (var doc in snapshot.docs) {
+      String userPhoneNumber = doc['phoneNumber'];
+      if (userPhoneNumber != null) {
+        String userPhoneNumberEdited = userPhoneNumber.replaceAll(RegExp(r'[^0-9]'), '');
+        if (userPhoneNumberEdited.contains(phoneNumberEdited)) {
+          return doc; // Return the matched document directly
+        }
       }
-    });
+    }
+    throw Exception('User data not found.');
   }
 
   bool isLoading = false;
@@ -104,11 +108,12 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
             ),
             CupertinoDialogAction(
               child: Text('Elimina'),
-              onPressed: () {
+              onPressed: () async {
                 setState(() {
                   isLoading = false;
                 });
-                friendSystem.deleteFriend(friendToDeleteId);
+                await friendSystem.deleteFriend(friendToDeleteId);
+                ref.refresh(friendsProvider);
                 Navigator.pop(context);
               },
             ),
@@ -129,7 +134,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
     double screenHeight = MediaQuery.of(context).size.height;
 
     final List<Widget> pages = [
-      requests(),
+      pageContactsNoFriend(),
       tryFriends(),
       requests()
     ];
@@ -452,15 +457,12 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
     final registeredContactsStream =
         Stream.fromFuture(friendSystem.getNonFriendsContacts());
 
-    return StreamBuilder<List<Contact>>(
-      stream: registeredContactsStream,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return CircularProgressIndicator();
-        } else if (snapshot.hasError) {
-          return Text('Error: ${snapshot.error}');
-        } else {
-          final registeredContacts = snapshot.data ?? [];
+    return Consumer(
+      builder: (context, watch, child) {
+        final contactsState = ref.watch(nonFriendsContactsProvider);
+
+        return contactsState.when(
+            data: (registeredContacts) {
 
           if (registeredContacts.length > 0) {
             return ListView(
@@ -482,19 +484,15 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                   padding: EdgeInsets.symmetric(horizontal: 20),
                   shrinkWrap: true,
                   physics: NeverScrollableScrollPhysics(),
-                  // Disable list scrolling
                   itemCount: registeredContacts.length,
                   itemBuilder: (context, index) {
                     final contact = registeredContacts[index];
                     final phoneNumber = contact.phones?.firstOrNull?.value;
 
-                    return FutureBuilder<
-                        DocumentSnapshot<Map<String, dynamic>>>(
-                      future:
-                          phoneNumber != null ? getUserData(phoneNumber) : null,
+                    return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                      future: phoneNumber != null ? getUserData(phoneNumber) : null,
                       builder: (context, userSnapshot) {
-                        if (userSnapshot.connectionState ==
-                            ConnectionState.waiting) {
+                        if (userSnapshot.connectionState == ConnectionState.waiting) {
                           return CircularProgressIndicator();
                         } else if (userSnapshot.hasError) {
                           return Text('Error: ${userSnapshot.error}');
@@ -507,28 +505,19 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                             final id = userData['id'];
 
                             return ContactWidget(
-                                profilePicture: profilePicture,
-                                name: name,
-                                username: username,
-                                nameContact: contact.displayName ?? '',
-                                id: id,
-                                onTap: () async {
-                                  final recipientUserId = userSnapshot.data?.id;
-                                  if (recipientUserId != null) {
-                                    await sendFriendRequest(recipientUserId);
-                                    setState(() {
-                                      registeredContacts.removeAt(index);
-                                    });
-                                  } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                            'Recipient user ID not found.'),
-                                        duration: const Duration(seconds: 2),
-                                      ),
-                                    );
-                                  }
-                                });
+                              profilePicture: profilePicture,
+                              name: name,
+                              username: username,
+                              nameContact: contact.displayName ?? '',
+                              id: id,
+                              onTap: () async {
+                                  await sendFriendRequest(id);
+                                  ref.refresh(sentRequestsProvider);
+                                  setState(() {
+                                    registeredContacts.removeAt(index);
+                                  });
+                                }
+                            );
                           } else {
                             return Text('User data not found.');
                           }
@@ -542,7 +531,10 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
           } else {
             return Container();
           }
-        }
+        },
+        loading: () => CircularProgressIndicator(),
+        error: (error, stackTrace) => Text('Error: $error'),
+        );
       },
     );
   }
@@ -636,7 +628,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                             setState(() {
                               friendToDeleteId = friendId;
                               isLoading = true;
-                              ref.refresh(friendsProvider);
                             });
                             showDialogWithChoices();
                           },
@@ -763,6 +754,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                           onAcceptFriendRequest: () async {
                             await friendSystem.acceptFriendRequest(senderUserId);
                             ref.refresh(receivedRequestsProvider);
+                            ref.refresh(friendsProvider);
                           },
                           onDeleteSentRequest: () async {
                             await friendSystem.declineFriendRequest(senderUserId);
@@ -814,98 +806,95 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
-            return CupertinoScrollbar(
-              child: SingleChildScrollView(
-                child: Container(
-                  padding: EdgeInsets.all(16.0),
-                  height: MediaQuery.of(context).size.height * 0.9,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            Icon(Icons.arrow_downward),
-                            SizedBox(width: 100),
-                            Text('Sent Requests'),
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: 16.0),
-                      Expanded(
-                        child: FutureBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                          future: friendSystem.getSentRequestsImm(),
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState == ConnectionState.waiting) {
-                              return Center(child: CircularProgressIndicator());
-                            } else if (snapshot.hasError) {
-                              return Center(child: Text('Error: ${snapshot.error}'));
-                            } else if (!snapshot.hasData) {
-                              return Center(child: Text('No data available.'));
-                            } else {
-                              final sentRequests = snapshot.data!.docs;
+            return Consumer(
+              builder: (context, ref, child) {
+                final sentRequestsSnapshot = ref.watch(sentRequestsProvider);
 
-                              return CustomScrollView(
-                                slivers: [
-                                  CupertinoSliverRefreshControl(
-                                    onRefresh: () async {
-                                      await Future.delayed(Duration(seconds: 1));
-                                      setState((){});
-                                    },
-                                  ),
-                                  SliverList(
-                                    delegate: SliverChildBuilderDelegate(
-                                          (context, index) {
-                                        final request = sentRequests[index];
-                                        final recipientUserId = request['recipientUserId'] as String;
-
-                                        return FutureBuilder(
-                                          future: ref.watch(otherUserProfileProvider(recipientUserId).future),
-                                          builder: (context, snapshot) {
-                                            if (snapshot.connectionState == ConnectionState.waiting) {
-                                              return CupertinoActivityIndicator();
-                                            } else if (snapshot.hasError) {
-                                              return Text('Error: ${snapshot.error}');
-                                            } else if (!snapshot.hasData) {
-                                              return Text('No data available.');
-                                            } else {
-                                              final UserModel? user = snapshot.data!;
-                                              final username = user!.username;
-                                              final profilePictureUrl = user.imageUrl!;
-                                              final name = user.name!;
-                                              final id = user.id!;
-
-                                              return SentRequestWidget(
-                                                profilePictureUrl: profilePictureUrl,
-                                                name: name,
-                                                username: username!,
-                                                id: id,
-                                                onDeleteSentRequest: () async {
-                                                  await friendSystem.deleteSentRequest(recipientUserId);
-                                                  setState(() {
-                                                    sentRequests.removeAt(index);
-                                                  });
-                                                },
-                                              );
-                                            }
-                                          },
-                                        );
+                return sentRequestsSnapshot.when(
+                  loading: () => Center(child: CircularProgressIndicator()),
+                  error: (error, stackTrace) => Center(child: Text('Error: $error')),
+                  data: (sentRequests) {
+                    return CupertinoScrollbar(
+                      child: SingleChildScrollView(
+                        child: Container(
+                          padding: EdgeInsets.all(16.0),
+                          height: MediaQuery.of(context).size.height * 0.9,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              GestureDetector(
+                                onTap: () => Navigator.pop(context),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  children: [
+                                    Icon(Icons.arrow_downward),
+                                    SizedBox(width: 100),
+                                    Text('Sent Requests'),
+                                  ],
+                                ),
+                              ),
+                              SizedBox(height: 16.0),
+                              Expanded(
+                                child: CustomScrollView(
+                                  slivers: [
+                                    CupertinoSliverRefreshControl(
+                                      onRefresh: () async {
+                                        await Future.delayed(Duration(seconds: 1));
+                                        ref.refresh(sentRequestsProvider);
                                       },
-                                      childCount: sentRequests.length,
                                     ),
-                                  ),
-                                ],
-                              );
-                            }
-                          },
+                                    SliverList(
+                                      delegate: SliverChildBuilderDelegate(
+                                            (context, index) {
+                                          final request = sentRequests[index];
+                                          final recipientUserId = request['recipientUserId'] as String;
+
+                                          return FutureBuilder(
+                                            future: ref.watch(otherUserProfileProvider(recipientUserId).future),
+                                            builder: (context, snapshot) {
+                                              if (snapshot.connectionState == ConnectionState.waiting) {
+                                                return CupertinoActivityIndicator();
+                                              } else if (snapshot.hasError) {
+                                                return Text('Error: ${snapshot.error}');
+                                              } else if (!snapshot.hasData) {
+                                                return Text('No data available.');
+                                              } else {
+                                                final UserModel? user = snapshot.data!;
+                                                final username = user!.username;
+                                                final profilePictureUrl = user.imageUrl!;
+                                                final name = user.name!;
+                                                final id = user.id!;
+
+                                                return SentRequestWidget(
+                                                  profilePictureUrl: profilePictureUrl,
+                                                  name: name,
+                                                  username: username!,
+                                                  id: id,
+                                                  onDeleteSentRequest: () async {
+                                                    await friendSystem.deleteSentRequest(recipientUserId);
+                                                    setState(() {
+                                                      sentRequests.removeAt(index);
+                                                    });
+                                                  },
+                                                );
+                                              }
+                                            },
+                                          );
+                                        },
+                                        childCount: sentRequests.length,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ),
+                    );
+                  },
+                );
+              },
             );
           },
         );
