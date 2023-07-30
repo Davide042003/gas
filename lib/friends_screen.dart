@@ -474,6 +474,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                     child: Text(
                       'ADD YOUR CONTACTS',
                       style: TextStyle(
+                        fontFamily: 'Helvetica',
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -552,7 +553,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
           },
         ),
         SliverPadding(
-          padding: EdgeInsets.only(right: 15, left: 15, top: 15, bottom: 16),
+          padding: EdgeInsets.only(right: 15, left: 15, top: 10, bottom: 9),
           sliver: SliverToBoxAdapter(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -567,9 +568,19 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                         if (friends.length <= 50) {
                           return Text(
                             "MY FRIENDS ($friendsCount)",
+                            style: TextStyle(
+                              fontFamily: 'Helvetica',
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           );
                         } else {
-                          return Text("MY FRIENDS (50+)");
+                          return Text("MY FRIENDS (50+)",
+                            style: TextStyle(
+                              fontFamily: 'Helvetica',
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),);
                         }
                       },
                       loading: () => Text("MY FRIENDS (0)"), // Default count when data is not available
@@ -639,7 +650,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
               } else {
                 return Container(
                   padding: EdgeInsets.symmetric(vertical: 50),
-                  margin: EdgeInsets.symmetric(horizontal: 25),
+                  margin: EdgeInsets.symmetric(horizontal: 25, vertical: 20),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
                     color: AppColors.a,
@@ -678,7 +689,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
         SliverPadding(
           padding: EdgeInsets.symmetric(horizontal: 15),
           sliver: SliverToBoxAdapter(
-            child: Row(
+            child: Container(height: 35, child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Consumer(
@@ -688,10 +699,22 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                     return receivedRequestsAsyncValue.when(
                       data: (receivedRequests) {
                         final requestCount = receivedRequests.length;
-                        return Text("FRIEND REQUESTS ($requestCount)");
+                        return Text("FRIEND REQUESTS ($requestCount)", style: TextStyle(
+                          fontFamily: 'Helvetica',
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),);
                       },
-                      loading: () => Text("FRIEND REQUESTS (Loading...)"),
-                      error: (error, stackTrace) => Text("FRIEND REQUESTS (Error)"),
+                      loading: () => Text("FRIEND REQUESTS (Loading...)", style: TextStyle(
+                        fontFamily: 'Helvetica',
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),),
+                      error: (error, stackTrace) => Text("FRIEND REQUESTS (Error)", style: TextStyle(
+                        fontFamily: 'Helvetica',
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),),
                     );
                   },
                 ),
@@ -707,14 +730,17 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Text("SENT"),
-                      const SizedBox(width: 5),
+                      Text("SENT", style: TextStyle(
+                        fontFamily: 'Helvetica'
+                      ),),
+                      SizedBox(width: 5),
                       Icon(Icons.arrow_forward_ios),
                     ],
                   ),
                 ),
               ],
             ),
+            )
           ),
         ),
         SliverToBoxAdapter(
@@ -768,7 +794,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
               } else {
                  return Container(
                   padding: EdgeInsets.symmetric(vertical: 50),
-                  margin: EdgeInsets.symmetric(horizontal: 25),
+                  margin: EdgeInsets.symmetric(horizontal: 25, vertical: 20),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
                     color: AppColors.a,
