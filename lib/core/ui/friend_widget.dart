@@ -12,7 +12,6 @@ class FriendWidget extends StatelessWidget {
   final String id;
   final bool isLoading;
   final Function() onDeleteFriend;
-  final WidgetRef ref;
 
   FriendWidget({
     required this.profilePictureUrl,
@@ -21,13 +20,12 @@ class FriendWidget extends StatelessWidget {
     required this.id,
     required this.isLoading,
     required this.onDeleteFriend,
-    required this.ref,
   });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(onTap: () {
-      BottomSheetProfile.showOtherProfileBottomSheet(context, id, ref);
+      BottomSheetProfile.showOtherProfileBottomSheet(context, id);
     }, child: Container(
       padding: EdgeInsets.symmetric(horizontal: 20,vertical: 13),
       child: Row(

@@ -12,7 +12,6 @@ class RequestWidget extends StatelessWidget {
   final String id;
   final Function() onAcceptFriendRequest;
   final Function() onDeleteSentRequest;
-  final WidgetRef ref;
 
   RequestWidget({
     required this.profilePictureUrl,
@@ -21,14 +20,13 @@ class RequestWidget extends StatelessWidget {
     required this.id,
     required this.onAcceptFriendRequest,
     required this.onDeleteSentRequest,
-    required this.ref,
   });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
         onTap: () {
-          BottomSheetProfile.showOtherProfileBottomSheet(context, id, ref);
+          BottomSheetProfile.showOtherProfileBottomSheet(context, id);
         },
         child: Container(
           padding: EdgeInsets.symmetric(horizontal: 20, vertical: 13),

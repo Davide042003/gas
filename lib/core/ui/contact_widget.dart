@@ -12,7 +12,6 @@ class ContactWidget extends StatelessWidget {
   final String nameContact;
   final String id;
   final Function() onTap;
-  final WidgetRef ref;
 
   ContactWidget({
     required this.profilePicture,
@@ -21,7 +20,6 @@ class ContactWidget extends StatelessWidget {
     required this.nameContact,
     required this.id,
     required this.onTap,
-    required this.ref,
   });
 
   @override
@@ -31,7 +29,7 @@ class ContactWidget extends StatelessWidget {
 
     return InkWell(
         onTap: () {
-          BottomSheetProfile.showOtherProfileBottomSheet(context, id, ref);
+          BottomSheetProfile.showOtherProfileBottomSheet(context, id);
         },
         child: Container(
           padding: EdgeInsets.symmetric(vertical: 13),

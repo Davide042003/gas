@@ -11,7 +11,6 @@ class SentRequestWidget extends StatelessWidget {
   final String username;
   final String id;
   final Function() onDeleteSentRequest;
-  final WidgetRef ref;
 
   SentRequestWidget({
     required this.profilePictureUrl,
@@ -19,7 +18,6 @@ class SentRequestWidget extends StatelessWidget {
     required this.username,
     required this.id,
     required this.onDeleteSentRequest,
-    required this.ref,
   });
 
   @override
@@ -29,7 +27,7 @@ class SentRequestWidget extends StatelessWidget {
 
     return InkWell(
         onTap: () {
-          BottomSheetProfile.showOtherProfileBottomSheet(context, id, ref);
+          BottomSheetProfile.showOtherProfileBottomSheet(context, id);
         },
         child: Container(
           padding: EdgeInsets.symmetric(horizontal: 0, vertical: 13),

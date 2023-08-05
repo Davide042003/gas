@@ -13,7 +13,7 @@ import 'friends_notifier.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class BottomSheetProfile {
-  static void showOtherProfileBottomSheet(BuildContext context, String userId, WidgetRef ref) {
+  static void showOtherProfileBottomSheet(BuildContext context, String userId) {
     Widget _nonFriends(Function() onTapAction) {
       return ElevatedButton.icon(
         onPressed: onTapAction,

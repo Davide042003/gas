@@ -324,7 +324,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                             isLoading = true;
                                           });
                                           showDialogWithChoices();
-                                        }, ref: ref,));
+                                        }));
                                   } else if (type == 'sentRequest') {
                                     widgets.add(SentRequestWidget(
                                         profilePictureUrl:
@@ -338,7 +338,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                           setState(() {
                                             //    sentRequests.removeAt(index);
                                           });
-                                        }, ref: ref,));
+                                        }));
                                   } else if (type == 'receivedRequest') {
                                     widgets.add(RequestWidget(
                                         profilePictureUrl: profilePictureUrl,
@@ -354,7 +354,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                           setState(() {
                                      //       receivedRequests.removeAt(index);
                                           });
-                                        }, ref: ref,));
+                                        }));
                                   } else if (type == 'contact') {
                                     widgets.add(ContactWidget(
                                         profilePicture: profilePictureUrl,
@@ -370,7 +370,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                               //       registeredContacts.removeAt(index);
                                             });
                                           }
-                                        }, ref: ref,));
+                                        }));
                                   }
                                 }
 
@@ -518,7 +518,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                   registeredContacts.removeAt(index);
                                 });
                               },
-                              ref: ref,
                             );
                           } else {
                             return Text('User data not found.');
@@ -640,7 +639,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                             });
                             showDialogWithChoices();
                           },
-                          ref: ref,
                         );
                       },
                     );
@@ -785,7 +783,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                             await friendSystem.declineFriendRequest(senderUserId);
                             ref.refresh(receivedRequestsProvider);
                           },
-                          ref: ref,
                         );
                       },
                     );
@@ -904,7 +901,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                                       sentRequests.removeAt(index);
                                                     });
                                                   },
-                                                  ref: ref,
                                                 );
                                               }
                                             },
