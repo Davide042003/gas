@@ -5,6 +5,8 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
 import 'friends_service.dart';
 import 'answer_post_model.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gas/friends_notifier.dart';
 
 class PostService {
   final String userId;
@@ -167,6 +169,49 @@ class PostService {
     friendPosts.sort((a, b) => b.timestamp!.compareTo(a.timestamp!));
 
     return friendPosts;
+  }
+
+  Future<List<PostModel>> getGlobalPosts(AutoDisposeFutureProviderRef ref) async {
+
+    final friends = await ref.watch(friendsProvider.future);
+    final sentRequests = await ref.watch(sentRequestsProvider.future);
+    final receivedRequests = await ref.watch(receivedRequestsProvider.future);
+
+    final friendIds = friends.map((doc) => doc.id).toSet();
+    final sentRequestIds = sentRequests.map((doc) => doc.id).toSet();
+    final receivedRequestIds = receivedRequests.map((doc) => doc.id).toSet();
+
+    final globalPostsQuery = FirebaseFirestore.instance
+        .collection('users');
+
+    final globalPostsSnapshot = await globalPostsQuery.get();
+    final globalPosts = <PostModel>[];
+
+    for (final userDoc in globalPostsSnapshot.docs) {
+      final otherId = userDoc.id;
+
+      if (!friendIds.contains(otherId) && !sentRequestIds.contains(otherId) && !receivedRequestIds.contains(otherId)) {
+        final userPostsQuery = userDoc.reference
+            .collection('posts')
+            .doc('published_posts')
+            .collection('posts')
+            .where('isMyFriends', isEqualTo: false);
+
+        final userPostsSnapshot = await userPostsQuery.get();
+
+        for (final postDoc in userPostsSnapshot.docs) {
+          final postId = postDoc.id;
+          final post = PostModel.fromData(postDoc.data());
+          post.postId = postId;
+          if (!await _hasUserSeenPost(postId)) {
+            globalPosts.add(post);
+            break;
+          }
+        }
+      }
+    }
+
+    return globalPosts.take(5).toList();
   }
 
   Future<int> getAnswersLengthByIndex(String postId, String userId, int innerListIndex) async {

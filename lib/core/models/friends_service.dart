@@ -3,6 +3,7 @@ import 'package:contacts_service/contacts_service.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:gas/friends_notifier.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 class FriendSystem {
   final String userId;
 
