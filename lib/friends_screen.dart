@@ -284,8 +284,8 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                     : Expanded(
                         child: Padding(
                           padding: EdgeInsets.symmetric(horizontal: 20),
-                          child: StreamBuilder<List<Map<String, dynamic>>>(
-                            stream: friendSystem.combineStreams(_searchQuery),
+                          child: FutureBuilder<List<Map<String, dynamic>>>(
+                            future: friendSystem.combineResults(_searchQuery, ref),
                             builder: (context, snapshot) {
                               if (snapshot.hasData) {
                                 final searchResults = snapshot.data!;
@@ -324,7 +324,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                             isLoading = true;
                                           });
                                           showDialogWithChoices();
-                                        }));
+                                        }, ref: ref,));
                                   } else if (type == 'sentRequest') {
                                     widgets.add(SentRequestWidget(
                                         profilePictureUrl:
@@ -338,7 +338,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                           setState(() {
                                             //    sentRequests.removeAt(index);
                                           });
-                                        }));
+                                        }, ref: ref,));
                                   } else if (type == 'receivedRequest') {
                                     widgets.add(RequestWidget(
                                         profilePictureUrl: profilePictureUrl,
@@ -354,7 +354,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                           setState(() {
                                      //       receivedRequests.removeAt(index);
                                           });
-                                        }));
+                                        }, ref: ref,));
                                   } else if (type == 'contact') {
                                     widgets.add(ContactWidget(
                                         profilePicture: profilePictureUrl,
@@ -370,7 +370,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                               //       registeredContacts.removeAt(index);
                                             });
                                           }
-                                        }));
+                                        }, ref: ref,));
                                   }
                                 }
 
@@ -454,21 +454,21 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
   Widget pageContactsNoFriend() {
     double screenHeight = MediaQuery.of(context).size.height;
 
-    final registeredContactsStream =
-        Stream.fromFuture(friendSystem.getNonFriendsContacts());
+    return FutureBuilder<List<Contact>>(
+      future: friendSystem.getNonFriendsContacts(ref),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return CircularProgressIndicator();
+        } else if (snapshot.hasError) {
+          return Text('Error: ${snapshot.error}');
+        } else {
+          final registeredContacts = snapshot.data;
 
-    return Consumer(
-      builder: (context, watch, child) {
-        final contactsState = ref.watch(nonFriendsContactsProvider);
-
-        return contactsState.when(
-            data: (registeredContacts) {
-
-          if (registeredContacts.length > 0) {
+          if (registeredContacts != null && registeredContacts.length > 0) {
             return ListView(
               children: [
                 Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 20,vertical: 10),
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
@@ -512,12 +512,13 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                               nameContact: contact.displayName ?? '',
                               id: id,
                               onTap: () async {
-                                  await sendFriendRequest(id);
-                                  ref.refresh(sentRequestsProvider);
-                                  setState(() {
-                                    registeredContacts.removeAt(index);
-                                  });
-                                }
+                                await sendFriendRequest(id);
+                                ref.refresh(sentRequestsProvider);
+                                setState(() {
+                                  registeredContacts.removeAt(index);
+                                });
+                              },
+                              ref: ref,
                             );
                           } else {
                             return Text('User data not found.');
@@ -532,10 +533,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
           } else {
             return Container();
           }
-        },
-        loading: () => CircularProgressIndicator(),
-        error: (error, stackTrace) => Text('Error: $error'),
-        );
+        }
       },
     );
   }
@@ -642,6 +640,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                             });
                             showDialogWithChoices();
                           },
+                          ref: ref,
                         );
                       },
                     );
@@ -786,6 +785,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                             await friendSystem.declineFriendRequest(senderUserId);
                             ref.refresh(receivedRequestsProvider);
                           },
+                          ref: ref,
                         );
                       },
                     );
@@ -904,6 +904,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                                       sentRequests.removeAt(index);
                                                     });
                                                   },
+                                                  ref: ref,
                                                 );
                                               }
                                             },

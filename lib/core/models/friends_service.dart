@@ -2,22 +2,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:contacts_service/contacts_service.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:gas/friends_notifier.dart';
-import 'package:riverpod/riverpod.dart';
-
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 class FriendSystem {
   final String userId;
 
   FriendSystem({required this.userId});
-
-  Stream<QuerySnapshot<Map<String, dynamic>>> getSentRequests() {
-    return FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .collection('friends')
-        .doc('sent_requests')
-        .collection('requests')
-        .snapshots();
-  }
 
   Future<QuerySnapshot<Map<String, dynamic>>> getSentRequestsImm() {
     return FirebaseFirestore.instance
@@ -29,16 +18,6 @@ class FriendSystem {
         .get();
   }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> getReceivedRequests() {
-    return FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .collection('friends')
-        .doc('received_requests')
-        .collection('requests')
-        .snapshots();
-  }
-
   Future<QuerySnapshot<Map<String, dynamic>>> getReceivedRequestsImm() {
     return FirebaseFirestore.instance
         .collection('users')
@@ -47,16 +26,6 @@ class FriendSystem {
         .doc('received_requests')
         .collection('requests')
         .get();
-  }
-
-  Stream<QuerySnapshot<Map<String, dynamic>>> getFriends() {
-    return FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .collection('friends')
-        .doc('accepted_friends')
-        .collection('friends')
-        .snapshots();
   }
 
   Future<QuerySnapshot<Map<String, dynamic>>> getFriendsImm() {
@@ -75,31 +44,23 @@ class FriendSystem {
     return contactList;
   }
 
-  Future<List<Contact>> getNonFriendsContacts() async {
+  Future<List<Contact>> getNonFriendsContacts(WidgetRef ref) async {
+    final contacts = await ref.read(contactsProvider.future);
 
-    List<Contact> contacts = await ContactsService.getContacts();
+    final receivedRequestsSnapshot = await ref.read(receivedRequestsProvider.future);
+    final sentRequestsSnapshot = await ref.read(sentRequestsProvider.future);
+    final friendsSnapshot = await ref.read(friendsProvider.future);
 
     List<String?> phoneNumbers = contacts
         .where((contact) => contact.phones?.isNotEmpty == true)
         .map((contact) => contact.phones!.first.value)
         .toList();
 
-
-    QuerySnapshot<Map<String, dynamic>> sentRequestsSnapshot =
-    await getSentRequests().first;
-    QuerySnapshot<Map<String, dynamic>> receivedRequestsSnapshot =
-    await getReceivedRequests().first;
-    QuerySnapshot<Map<String, dynamic>> friendsSnapshot =
-    await getFriends().first;
-
     List<String?> sentRequests =
-    sentRequestsSnapshot.docs.map((doc) => doc['recipientUserId'] as String?)
-        .toList();
+    sentRequestsSnapshot.map((doc) => doc['recipientUserId'] as String?).toList();
     List<String?> receivedRequests =
-    receivedRequestsSnapshot.docs.map((doc) => doc['senderUserId'] as String?)
-        .toList();
-    List<String> friends =
-    friendsSnapshot.docs.map((doc) => doc.id).toList();
+    receivedRequestsSnapshot.map((doc) => doc['senderUserId'] as String?).toList();
+    List<String> friends = friendsSnapshot.map((doc) => doc.id).toList();
 
     List<Contact> nonFriends = [];
 
@@ -312,204 +273,153 @@ class FriendSystem {
     });
   }
 
-  Stream<List<DocumentSnapshot<Map<String, dynamic>>>> searchFriends(String searchText,) {
+  Future<List<DocumentSnapshot<Map<String, dynamic>>>> searchFriends(String searchText, WidgetRef ref) async {
     final queryText = searchText.toLowerCase();
 
-    final stream = FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .collection('friends')
-        .doc('accepted_friends')
-        .collection('friends')
-        .snapshots();
+    final friendsSnapshot = await ref.read(friendsProvider.future);
 
-    return stream.asyncMap((snapshot) async {
-      final filteredDocs = <DocumentSnapshot<Map<String, dynamic>>>[];
+    final filteredDocs = <DocumentSnapshot<Map<String, dynamic>>>[];
 
-      for (final doc in snapshot.docs) {
-        final userSnapshot = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(doc.id)
-            .get();
+    for (final doc in friendsSnapshot) {
+      final userSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(doc.id)
+          .get();
 
-        final username = userSnapshot.data()?['username']?.toString()?.toLowerCase();
-        final name = userSnapshot.data()?['name']?.toString()?.toLowerCase();
+      final username = userSnapshot.data()?['username']?.toString()?.toLowerCase();
+      final name = userSnapshot.data()?['name']?.toString()?.toLowerCase();
 
-        if ((username?.contains(queryText) ?? false) || (name?.contains(queryText) ?? false)) {
-          filteredDocs.add(userSnapshot);
-        }
+      if ((username?.contains(queryText) ?? false) || (name?.contains(queryText) ?? false)) {
+        filteredDocs.add(userSnapshot);
       }
+    }
 
-      return filteredDocs;
-    });
-
+    return filteredDocs;
   }
 
-  Stream<List<DocumentSnapshot<Map<String, dynamic>>>> searchSentRequests(String searchText,) {
+  Future<List<DocumentSnapshot<Map<String, dynamic>>>> searchSentRequests(String searchText, WidgetRef ref) async {
     final queryText = searchText.toLowerCase();
 
-    final sentRequestsStream = FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .collection('friends')
-        .doc('sent_requests')
-        .collection('requests')
-        .snapshots();
+    final sentRequestsSnapshot = await ref.read(receivedRequestsProvider.future);
 
-    return sentRequestsStream.asyncMap((snapshot) async {
-      final filteredDocs = <DocumentSnapshot<Map<String, dynamic>>>[];
+    final filteredDocs = <DocumentSnapshot<Map<String, dynamic>>>[];
 
-      for (final doc in snapshot.docs) {
-        final recipientUserId = doc['recipientUserId'].toString();
+    for (final doc in sentRequestsSnapshot) {
+      final recipientUserId = doc['recipientUserId'].toString();
 
-        final userSnapshot = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(recipientUserId)
-            .get();
+      final userSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(recipientUserId)
+          .get();
 
-        final username = userSnapshot.data()?['username']?.toString()?.toLowerCase();
-        final name = userSnapshot.data()?['name']?.toString()?.toLowerCase();
+      final username = userSnapshot.data()?['username']?.toString()?.toLowerCase();
+      final name = userSnapshot.data()?['name']?.toString()?.toLowerCase();
 
-        if ((username?.contains(queryText) ?? false) || (name?.contains(queryText) ?? false)) {
-          filteredDocs.add(userSnapshot);
-        }
+      if ((username?.contains(queryText) ?? false) || (name?.contains(queryText) ?? false)) {
+        filteredDocs.add(userSnapshot);
       }
+    }
 
-      return filteredDocs;
-    });
+    return filteredDocs;
   }
 
-  Stream<List<DocumentSnapshot<Map<String, dynamic>>>> searchReceivedRequests(String searchText,) {
+  Future<List<DocumentSnapshot<Map<String, dynamic>>>> searchReceivedRequests(String searchText, WidgetRef ref) async {
     final queryText = searchText.toLowerCase();
 
-    final sentRequestsStream = FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .collection('friends')
-        .doc('received_requests')
-        .collection('requests')
-        .snapshots();
+    final receivedRequestsSnapshot = await ref.read(receivedRequestsProvider.future);
 
-    return sentRequestsStream.asyncMap((snapshot) async {
-      final filteredDocs = <DocumentSnapshot<Map<String, dynamic>>>[];
+    final filteredDocs = <DocumentSnapshot<Map<String, dynamic>>>[];
 
-      for (final doc in snapshot.docs) {
-        final senderUserId = doc['senderUserId'].toString();
+    for (final doc in receivedRequestsSnapshot) {
+      final senderUserId = doc['senderUserId'].toString();
 
-        final userSnapshot = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(senderUserId)
-            .get();
+      final userSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(senderUserId)
+          .get();
 
-        final username = userSnapshot.data()?['username']?.toString()?.toLowerCase();
-        final name = userSnapshot.data()?['name']?.toString()?.toLowerCase();
+      final username = userSnapshot.data()?['username']?.toString()?.toLowerCase();
+      final name = userSnapshot.data()?['name']?.toString()?.toLowerCase();
 
-        if ((username?.contains(queryText) ?? false) || (name?.contains(queryText) ?? false)) {
-          filteredDocs.add(userSnapshot);
-        }
+      if ((username?.contains(queryText) ?? false) || (name?.contains(queryText) ?? false)) {
+        filteredDocs.add(userSnapshot);
       }
+    }
 
-      return filteredDocs;
-    });
+    return filteredDocs;
   }
 
-  Stream<List<DocumentSnapshot<Map<String, dynamic>>>> searchContactsByUsername(String searchText) {
+  Future<List<DocumentSnapshot<Map<String, dynamic>>>> searchContactsByUsername(String searchText, WidgetRef ref) async {
     final queryText = searchText.toLowerCase();
 
-    return Stream.fromFuture(getNonFriendsContacts()).asyncMap((nonFriends) async {
-      final filteredDocs = <DocumentSnapshot<Map<String, dynamic>>>[];
+    final nonFriends = await ref.read(contactsProvider.future);
+    final filteredDocs = <DocumentSnapshot<Map<String, dynamic>>>[];
 
-      for (final contact in nonFriends) {
-        final phoneNumber = contact.phones?.first.value;
-        if (phoneNumber != null) {
-          final userExists = await checkUserExistsByPhoneNumber(phoneNumber);
-          if (userExists.userExists) {
-            final userId = await getUserIdFromPhoneNumber(userExists.matchedPhoneNumber);
-            final userSnapshot = await FirebaseFirestore.instance.collection('users').doc(userId).get();
-            final username = userSnapshot.data()?['username']?.toString()?.toLowerCase();
-            final name = userSnapshot.data()?['name']?.toString()?.toLowerCase();
+    for (final contact in nonFriends) {
+      final phoneNumber = contact.phones?.first.value;
+      if (phoneNumber != null) {
+        final userExists = await checkUserExistsByPhoneNumber(phoneNumber);
+        if (userExists.userExists) {
+          final userId = await getUserIdFromPhoneNumber(userExists.matchedPhoneNumber);
+          final userSnapshot = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+          final username = userSnapshot.data()?['username']?.toString()?.toLowerCase();
+          final name = userSnapshot.data()?['name']?.toString()?.toLowerCase();
 
-            if ((username?.contains(queryText) ?? false) || (name?.contains(queryText) ?? false)) {
-              filteredDocs.add(userSnapshot);
-            }
+          if ((username?.contains(queryText) ?? false) || (name?.contains(queryText) ?? false)) {
+            filteredDocs.add(userSnapshot);
           }
         }
       }
+    }
 
-      return filteredDocs;
-    });
+    return filteredDocs;
   }
 
-  Stream<List<Map<String, dynamic>>> combineStreams(String searchText) {
+  Future<List<Map<String, dynamic>>> combineResults(String searchText, WidgetRef ref) async {
     final queryText = searchText.toLowerCase();
 
-    final searchFriendsStream = searchFriends(searchText);
-    final searchSentRequestsStream = searchSentRequests(searchText);
-    final searchReceivedRequestsStream = searchReceivedRequests(searchText);
-    final searchContactsStream = searchContactsByUsername(searchText);
+    final friends = await searchFriends(searchText, ref);
+    final receivedRequests = await searchReceivedRequests(searchText, ref);
+    final sentRequests = await searchSentRequests(searchText, ref);
+    final contacts = await searchContactsByUsername(searchText, ref);
 
-    final combinedStream = Rx.combineLatest4(
-      searchFriendsStream,
-      searchReceivedRequestsStream,
-      searchSentRequestsStream,
-      searchContactsStream,
-          (List<DocumentSnapshot<Map<String, dynamic>>> friends,
-          List<DocumentSnapshot<Map<String, dynamic>>> receivedRequests,
-          List<DocumentSnapshot<Map<String, dynamic>>> sentRequests,
-          List<DocumentSnapshot<Map<String, dynamic>>> contacts,) async {
-        List<Map<String, dynamic>> combinedResults = [];
+    List<Map<String, dynamic>> combinedResults = [];
 
-        // Add friends with title
-        if (friends.isNotEmpty) {
-          combinedResults.add({'title': 'Friends'});
-          combinedResults.add({'type': 'friends'});
-          combinedResults.addAll(friends.map((doc) => doc.data()!));
-        }
+    if (friends.isNotEmpty) {
+      combinedResults.add({'title': 'Friends'});
+      combinedResults.add({'type': 'friends'});
+      combinedResults.addAll(friends.map((doc) => doc.data()!));
+    }
 
-        // Add sent requests with title
-        if (sentRequests.isNotEmpty) {
-          combinedResults.add({'title': 'Sent Requests'});
-          combinedResults.add({'type': 'sentRequest'});
-          combinedResults.addAll(sentRequests.map((doc) => doc.data()!));
-        }
+    if (sentRequests.isNotEmpty) {
+      combinedResults.add({'title': 'Sent Requests'});
+      combinedResults.add({'type': 'sentRequest'});
+      combinedResults.addAll(sentRequests.map((doc) => doc.data()!));
+    }
 
-        // Add received requests with title
-        if (receivedRequests.isNotEmpty) {
-          combinedResults.add({'title': 'Received Requests'});
-          combinedResults.add({'type': 'receivedRequest'});
-          combinedResults.addAll(receivedRequests.map((doc) => doc.data()!));
-        }
+    if (receivedRequests.isNotEmpty) {
+      combinedResults.add({'title': 'Received Requests'});
+      combinedResults.add({'type': 'receivedRequest'});
+      combinedResults.addAll(receivedRequests.map((doc) => doc.data()!));
+    }
 
-        // Add contacts with title
-        if (contacts.isNotEmpty) {
-          combinedResults.add({'title': 'Contacts'});
-          combinedResults.add({'type': 'contact'});
-          combinedResults.addAll(
-            await Future.wait(
-              contacts.map(
-                    (DocumentSnapshot<Map<String, dynamic>> doc) async {
-                  final contactData = doc.data()!;
-                  final phoneNumber = contactData['phoneNumber'];
+    if (contacts.isNotEmpty) {
+      combinedResults.add({'title': 'Contacts'});
+      combinedResults.add({'type': 'contact'});
+      combinedResults.addAll(await Future.wait(
+        contacts.map((DocumentSnapshot<Map<String, dynamic>> doc) async {
+          final contactData = doc.data()!;
+          final phoneNumber = contactData['phoneNumber'];
 
-                  // Assuming you have a ContactService that fetches the display name based on the phone number
-                  final displayName = await getDisplayNameByPhoneNumber(
-                      phoneNumber);
+          final displayName = await getDisplayNameByPhoneNumber(phoneNumber);
 
-                  contactData['displayName'] =
-                      displayName; // Add the 'displayName' field
-                  return contactData;
-                },
-              ),
-            ),
-          );
-        }
+          contactData['displayName'] = displayName;
+          return contactData;
+        }),
+      ));
+    }
 
-        return combinedResults;
-      },
-    ).asyncMap((
-        value) => value); // Convert the Future<List<Map<String, dynamic>>> to List<Map<String, dynamic>>
-
-    return combinedStream;
+    return combinedResults;
   }
 
   Future<String> getDisplayNameByPhoneNumber(String phoneNumber) async {

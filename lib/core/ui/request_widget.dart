@@ -3,6 +3,7 @@ import 'package:gas/styles/styles_provider.dart';
 import 'package:gas/styles/colors.dart';
 import 'package:gas/bottom_sheet_profile.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class RequestWidget extends StatelessWidget {
   final String profilePictureUrl;
@@ -11,6 +12,7 @@ class RequestWidget extends StatelessWidget {
   final String id;
   final Function() onAcceptFriendRequest;
   final Function() onDeleteSentRequest;
+  final WidgetRef ref;
 
   RequestWidget({
     required this.profilePictureUrl,
@@ -19,13 +21,14 @@ class RequestWidget extends StatelessWidget {
     required this.id,
     required this.onAcceptFriendRequest,
     required this.onDeleteSentRequest,
+    required this.ref,
   });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
         onTap: () {
-          BottomSheetProfile.showOtherProfileBottomSheet(context, id);
+          BottomSheetProfile.showOtherProfileBottomSheet(context, id, ref);
         },
         child: Container(
           padding: EdgeInsets.symmetric(horizontal: 20, vertical: 13),

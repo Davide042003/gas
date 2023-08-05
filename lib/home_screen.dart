@@ -173,7 +173,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     user['imageUrl'] as String;
                                     final name = user['name'] as String;
                                     final timestamp =
-                                    user['timeStamp'] as Timestamp;
+                                    user['timestamp'] as Timestamp;
                                     final id = user['id'] as String;
                                     final localDateTime =
                                     post.timestamp!.toDate().toLocal();

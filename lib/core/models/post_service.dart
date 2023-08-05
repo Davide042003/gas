@@ -131,7 +131,7 @@ class PostService {
   Future<List<PostModel>> getFriendsPosts() async {
     final FriendSystem friendService = FriendSystem(userId: userId);
 
-    final friendsSnapshot = await friendService.getFriends().first;
+    final friendsSnapshot = await friendService.getFriendsImm();
     final friendIds = friendsSnapshot.docs.map((doc) => doc.id).toList();
     final friendPosts = <PostModel>[];
 

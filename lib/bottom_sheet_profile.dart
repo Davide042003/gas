@@ -13,7 +13,7 @@ import 'friends_notifier.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class BottomSheetProfile {
-  static void showOtherProfileBottomSheet(BuildContext context, String userId) {
+  static void showOtherProfileBottomSheet(BuildContext context, String userId, WidgetRef ref) {
     Widget _nonFriends(Function() onTapAction) {
       return ElevatedButton.icon(
         onPressed: onTapAction,
@@ -195,7 +195,7 @@ class BottomSheetProfile {
           recipientUserId, FirebaseAuth.instance.currentUser?.uid ?? '');
     }
 
-     showModalBottomSheet(
+    showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: AppColors.backgroundDefault,
@@ -213,7 +213,8 @@ class BottomSheetProfile {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Consumer(builder: (context, ref, child) {
-                    final userProfileFuture = ref.watch(userInfoProvider.future);
+                    final userProfileFuture =
+                        ref.watch(userInfoProvider.future);
                     return FutureBuilder<UserModel?>(
                       future: userProfileFuture,
                       builder: (context, snapshot) {
@@ -222,16 +223,12 @@ class BottomSheetProfile {
                           String buttonText = '';
                           Function()? onTapAction;
 
-                          Stream<QuerySnapshot<Map<String, dynamic>>>
-                              sentRequestsStream =
-                              friendSystem.getSentRequests();
-                          // Stream for checking received requests
-                          Stream<QuerySnapshot<Map<String, dynamic>>>
-                              receivedRequestsStream =
-                              friendSystem.getReceivedRequests();
-                          // Stream for checking friends
-                          Stream<QuerySnapshot<Map<String, dynamic>>>
-                              friendsStream = friendSystem.getFriends();
+                          final sentRequests =
+                          ref.watch(sentRequestsProvider);
+                          final receivedRequests =
+                          ref.watch(receivedRequestsProvider);
+                          final friends =
+                          ref.watch(friendsProvider);
 
                           return Stack(children: [
                             userProfile!.imageUrl!.isEmpty
@@ -241,20 +238,27 @@ class BottomSheetProfile {
                                     height: screenHeight / 2.35,
                                     child: Stack(
                                       children: [
-                                      CachedNetworkImage(
-                                      imageUrl: userProfile!.imageUrl!,
-                                      imageBuilder: (context, imageProvider) => Container(
-                                        decoration: BoxDecoration(
-                                          image: DecorationImage(
-                                            image: imageProvider,
-                                            fit: BoxFit.cover,
+                                        CachedNetworkImage(
+                                          imageUrl: userProfile!.imageUrl!,
+                                          imageBuilder:
+                                              (context, imageProvider) =>
+                                                  Container(
+                                            decoration: BoxDecoration(
+                                              image: DecorationImage(
+                                                image: imageProvider,
+                                                fit: BoxFit.cover,
+                                              ),
+                                            ),
                                           ),
+                                          progressIndicatorBuilder: (context,
+                                                  url, downloadProgress) =>
+                                              Center(
+                                                  child: CircularProgressIndicator(
+                                                      value: downloadProgress
+                                                          .progress)), // Show CircularProgressIndicator while loading
+                                          errorWidget: (context, url, error) =>
+                                              Icon(Icons.error),
                                         ),
-                                      ),
-                                      progressIndicatorBuilder: (context, url, downloadProgress) =>
-                                          Center(child: CircularProgressIndicator(value: downloadProgress.progress)), // Show CircularProgressIndicator while loading
-                                      errorWidget: (context, url, error) => Icon(Icons.error),
-                                    ),
                                         Positioned.fill(
                                           child: ClipRect(
                                             child: Align(
@@ -462,96 +466,80 @@ class BottomSheetProfile {
                               Padding(
                                 padding: EdgeInsets.symmetric(horizontal: 20),
                                 child: Container(
-                                  child: StreamBuilder<
-                                      QuerySnapshot<Map<String, dynamic>>>(
-                                    stream: sentRequestsStream,
-                                    builder: (context, snapshot) {
-                                      if (snapshot.hasData) {
-                                        bool isInSentRequests =
-                                            snapshot.data!.docs.any((doc) =>
-                                                doc.data()["recipientUserId"] ==
-                                                userId);
-                                        if (isInSentRequests) {
-                                          return _buildSentRequestWidget(
-                                              () async {
-                                            await friendSystem
-                                                .deleteSentRequest(userId);
-                                            setState(() {
-                                              //    sentRequests.removeAt(index);
-                                            });
-                                            ref.refresh(sentRequestsProvider);
-                                              });
-                                        } else {
-                                          return StreamBuilder<
-                                              QuerySnapshot<
-                                                  Map<String, dynamic>>>(
-                                            stream: receivedRequestsStream,
-                                            builder: (context, snapshot) {
-                                              if (snapshot.hasData) {
-                                                bool isInReceivedRequests =
-                                                    snapshot
-                                                        .data!.docs
-                                                        .any((doc) =>
-                                                            doc.data()[
-                                                                "senderUserId"] ==
-                                                            userId);
-                                                if (isInReceivedRequests) {
-                                                  return _buildReceivedRequestWidget(
-                                                      userProfile.name! ?? '',
-                                                      () async {
-                                                    await friendSystem
-                                                        .acceptFriendRequest(
-                                                            userId);
-                                                    ref.refresh(receivedRequestsProvider);
-                                                  }, () async {
-                                                    await friendSystem
-                                                        .declineFriendRequest(
-                                                            userId);
-                                                    ref.refresh(receivedRequestsProvider);
-                                                    setState(() {
-                                                      //        receivedRequests.removeAt(index);
+                                  child: Consumer(
+                                    builder: (context, ref, child) {
+                                      final sentRequests = ref.watch(sentRequestsProvider);
+                                      final receivedRequests = ref.watch(receivedRequestsProvider);
+                                      final friends = ref.watch(friendsProvider);
+
+                                      return sentRequests.when(
+                                        data: (sentRequestsData) {
+                                          return receivedRequests.when(
+                                            data: (receivedRequestsData) {
+                                              return friends.when(
+                                                data: (friendsData) {
+                                                  bool isInSentRequests = sentRequestsData.any(
+                                                          (doc) => (doc.data() as Map<String, dynamic>)["recipientUserId"] == userId);
+                                                  if (isInSentRequests) {
+                                                    return _buildSentRequestWidget(() async {
+                                                      await friendSystem.deleteSentRequest(userId);
+                                                      ref.refresh(sentRequestsProvider);
                                                     });
-                                                  });
-                                                } else {
-                                                  return StreamBuilder<
-                                                      QuerySnapshot<
-                                                          Map<String,
-                                                              dynamic>>>(
-                                                    stream: friendsStream,
-                                                    builder:
-                                                        (context, snapshot) {
-                                                      if (snapshot.hasData) {
-                                                        bool areFriends =
-                                                            snapshot.data!.docs
-                                                                .any((doc) =>
-                                                                    doc.id ==
-                                                                    userId);
-                                                        if (areFriends) {
-                                                          return _buildFriendWidget();
-                                                        } else {
-                                                          return _nonFriends(
-                                                              () async {
-                                                            await sendFriendRequest(
-                                                                userId);
-                                                            ref.refresh(sentRequestsProvider);
-                                                            setState(() {});
-                                                          });
-                                                        }
+                                                  } else {
+                                                    bool isInReceivedRequests = sentRequestsData.any(
+                                                            (doc) => (doc.data() as Map<String, dynamic>)["senderUserId"] == userId);
+                                                    if (isInReceivedRequests) {
+                                                      return _buildReceivedRequestWidget(
+                                                        userProfile.name! ?? '',
+                                                            () async {
+                                                          await friendSystem.acceptFriendRequest(userId);
+                                                          ref.refresh(receivedRequestsProvider);
+                                                        },
+                                                            () async {
+                                                          await friendSystem.declineFriendRequest(userId);
+                                                          ref.refresh(receivedRequestsProvider);
+                                                        },
+                                                      );
+                                                    } else {
+                                                      bool areFriends = friendsData.any((doc) => doc.id == userId);
+                                                      if (areFriends) {
+                                                        return _buildFriendWidget();
+                                                      } else {
+                                                        return _nonFriends(() async {
+                                                          await sendFriendRequest(userId);
+                                                          ref.refresh(sentRequestsProvider);
+                                                          setState(() {});
+                                                        });
                                                       }
-                                                      return SizedBox
-                                                          .shrink(); // Return an empty widget if none of the conditions match
-                                                    },
-                                                  );
-                                                }
-                                              }
-                                              return SizedBox
-                                                  .shrink(); // Return an empty widget if none of the conditions match
+                                                    }
+                                                  }
+                                                },
+                                                loading: () => CircularProgressIndicator(),
+                                                error: (error, stackTrace) => Text(
+                                                  'Error fetching friends data',
+                                                  style: TextStyle(
+                                                    color: Colors.red,
+                                                  ),
+                                                ),
+                                              );
                                             },
+                                            loading: () => CircularProgressIndicator(),
+                                            error: (error, stackTrace) => Text(
+                                              'Error fetching received requests data',
+                                              style: TextStyle(
+                                                color: Colors.red,
+                                              ),
+                                            ),
                                           );
-                                        }
-                                      }
-                                      return SizedBox
-                                          .shrink(); // Return an empty widget if none of the conditions match
+                                        },
+                                        loading: () => CircularProgressIndicator(),
+                                        error: (error, stackTrace) => Text(
+                                          'Error fetching sent requests data',
+                                          style: TextStyle(
+                                            color: Colors.red,
+                                          ),
+                                        ),
+                                      );
                                     },
                                   ),
                                 ),
@@ -580,5 +568,3 @@ class BottomSheetProfile {
     );
   }
 }
-
-
