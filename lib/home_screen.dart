@@ -370,7 +370,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                                               0,
                                                               post.postId!,
                                                               friendUserId,
-                                                              false,
+                                                              isAnonymous,
                                                               true);
                                                         },
                                                       ),
@@ -443,7 +443,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                                               1,
                                                               post.postId!,
                                                               friendUserId,
-                                                              false,
+                                                              isAnonymous,
                                                               true);
                                                         },
                                                       ),
@@ -522,7 +522,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                                               0,
                                                               post.postId!,
                                                               friendUserId,
-                                                              false,
+                                                              isAnonymous,
                                                               true);
                                                         },
                                                       ),
@@ -594,7 +594,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                                               1,
                                                               post.postId!,
                                                               friendUserId,
-                                                              false,
+                                                              isAnonymous,
                                                               true);
                                                         },
                                                       ),
@@ -674,7 +674,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                                                   0,
                                                                   post.postId!,
                                                                   friendUserId,
-                                                                  false,
+                                                                  isAnonymous,
                                                                   false);
                                                             },
                                                           ),
@@ -746,7 +746,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                                                   1,
                                                                   post.postId!,
                                                                   friendUserId,
-                                                                  false,
+                                                                  isAnonymous,
                                                                   false);
                                                             },
                                                           ),
@@ -826,7 +826,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                                                   2,
                                                                   post.postId!,
                                                                   friendUserId,
-                                                                  false,
+                                                                  isAnonymous,
                                                                   false);
                                                             },
                                                           ),
@@ -1092,7 +1092,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                                               0,
                                                               post.postId!,
                                                               globalUserId,
-                                                              false,
+                                                              isAnonymous,
                                                               true);
                                                         },
                                                       ),
@@ -1165,7 +1165,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                                               1,
                                                               post.postId!,
                                                               globalUserId,
-                                                              false,
+                                                              isAnonymous,
                                                               true);
                                                         },
                                                       ),
@@ -1244,7 +1244,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                                               0,
                                                               post.postId!,
                                                               globalUserId,
-                                                              false,
+                                                              isAnonymous,
                                                               true);
                                                         },
                                                       ),
@@ -1316,7 +1316,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                                               1,
                                                               post.postId!,
                                                               globalUserId,
-                                                              false,
+                                                              isAnonymous,
                                                               true);
                                                         },
                                                       ),
@@ -1396,7 +1396,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                                                   0,
                                                                   post.postId!,
                                                                   globalUserId,
-                                                                  false,
+                                                                  isAnonymous,
                                                                   false);
                                                             },
                                                           ),
@@ -1468,7 +1468,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                                                   1,
                                                                   post.postId!,
                                                                   globalUserId,
-                                                                  false,
+                                                                  isAnonymous,
                                                                   false);
                                                             },
                                                           ),
@@ -1548,7 +1548,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                                                   2,
                                                                   post.postId!,
                                                                   globalUserId,
-                                                                  false,
+                                                                  isAnonymous,
                                                                   false);
                                                             },
                                                           ),
@@ -1728,28 +1728,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                               mainAxisAlignment: MainAxisAlignment.start,
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                Column(
+                                Container(width: screenWidth/4, child: Column(
                                   children: [
                                     InkWell(
                                       child: Icon(
-                                        Icons.remove_red_eye,
+                                        isAnonymous ? Ionicons.eye_off : Ionicons.eye,
                                         size: 35,
                                         color: AppColors.white,
                                       ),
                                       onTap: () {
-                                        context.pop();
+                                        setState(() {
+                                          if (isAnonymous == true) {
+                                            isAnonymous = false;
+                                          } else {
+                                            isAnonymous = true;
+                                          }
+                                        });
                                       },
                                     ),
                                     SizedBox(
                                       height: screenHeight / 200,
                                     ),
                                     Text(
-                                      "ANONYMOUS",
+                                      isAnonymous ? "ANONYMOUS" : "VISIBLE",
                                       style:
-                                          ref.watch(stylesProvider).text.invite,
+                                      ref.watch(stylesProvider).text.invite,
                                     ),
                                   ],
-                                ),
+                                ),),
                                 Spacer(),
                                 ElevatedButton.icon(
                                   icon: Icon(
