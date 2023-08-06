@@ -224,8 +224,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                 if (value) {
                                   _searchBoxFocused = true;
                                 } else {
-                                  _searchController.clear();
-                                  _searchBoxFocused = false;
+                           //       _searchBoxFocused = false;
                                 }
                               });
                             },
@@ -251,6 +250,8 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                               setState(() {
                                 FocusScope.of(context).unfocus();
                                 _searchQuery = "";
+                                _searchController.clear();
+                                _searchBoxFocused = false;
                               });
                             },
                           ),
@@ -262,189 +263,189 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                 SizedBox(
                   height: 25,
                 ),
-                _searchQuery.isEmpty
+                _searchBoxFocused
                     ? Expanded(
-                        child: AnimatedSwitcher(
-                          duration: Duration(milliseconds: 300),
-                          transitionBuilder:
-                              (Widget child, Animation<double> animation) {
-                            final tween = Tween<Offset>(
-                              begin: Offset(
-                                  _currentIndex > _lastIndex ? -1.0 : 1.0, 0.0),
-                              end: Offset(0.0, 0.0),
-                            );
-                            return SlideTransition(
-                              position: tween.animate(animation),
-                              child: child,
-                            );
-                          },
-                          child: pages[_currentIndex],
-                        ),
-                      )
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    child: FutureBuilder<List<Map<String, dynamic>>>(
+                      future: friendSystem.combineResults(_searchQuery, ref),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData) {
+                          final searchResults = snapshot.data!;
+                          final widgets = <Widget>[];
+                          String type = "";
+
+                          // Build widgets for each result
+                          for (final result in searchResults) {
+                            final userData = result;
+                            final username = userData['username'];
+                            final profilePictureUrl =
+                            userData['imageUrl'];
+                            final name = userData['name'];
+                            final id = userData['id'];
+                            final displayName = userData['displayName'];
+
+                            final title = result['title'] as String?;
+
+                            if (result['type'] != null) {
+                              type = result['type'];
+                            } else if (title != null) {
+                              // Add title widget
+                              widgets.add(Text(title,
+                                  style: TextStyle(fontSize: 16,
+                                      fontWeight: FontWeight.bold)));
+                            } else if (type == 'friends') {
+                              widgets.add(FriendWidget(
+                                  profilePictureUrl: profilePictureUrl,
+                                  name: name,
+                                  username: username,
+                                  id: id,
+                                  isLoading: isLoading,
+                                  onDeleteFriend: () {
+                                    setState(() {
+                                      friendToDeleteId = id;
+                                      isLoading = true;
+                                    });
+                                    showDialogWithChoices();
+                                  }));
+                            } else if (type == 'sentRequest') {
+                              widgets.add(SentRequestWidget(
+                                  profilePictureUrl:
+                                  profilePictureUrl ?? '',
+                                  name: name ?? '',
+                                  username: username ?? '',
+                                  id: id,
+                                  onDeleteSentRequest: () async {
+                                    await friendSystem
+                                        .deleteSentRequest(id);
+                                    setState(() {
+                                      //    sentRequests.removeAt(index);
+                                    });
+                                  }));
+                            } else if (type == 'receivedRequest') {
+                              widgets.add(RequestWidget(
+                                  profilePictureUrl: profilePictureUrl,
+                                  name: name,
+                                  username: username,
+                                  id: id,
+                                  onAcceptFriendRequest: () async {
+                                    await friendSystem
+                                        .acceptFriendRequest(id);
+                                  },
+                                  onDeleteSentRequest: () async {
+                                    await friendSystem.declineFriendRequest(id);
+                                    setState(() {
+                                      //       receivedRequests.removeAt(index);
+                                    });
+                                  }));
+                            } else if (type == 'contact') {
+                              widgets.add(ContactWidget(
+                                  profilePicture: profilePictureUrl,
+                                  name: name,
+                                  username: username,
+                                  nameContact: displayName,
+                                  id: id,
+                                  onTap: () async {
+                                    final recipientUserId = id;
+                                    if (id != null) {
+                                      await sendFriendRequest(id);
+                                      setState(() {
+                                        //       registeredContacts.removeAt(index);
+                                      });
+                                    }
+                                  }));
+                            }
+                          }
+
+                          return ListView(
+                            children: widgets,
+                          );
+                        } else if (snapshot.hasError) {
+                          return Text('Error: ${snapshot.error}');
+                        } else {
+                          return Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                )
                     : Expanded(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 20),
-                          child: FutureBuilder<List<Map<String, dynamic>>>(
-                            future: friendSystem.combineResults(_searchQuery, ref),
-                            builder: (context, snapshot) {
-                              if (snapshot.hasData) {
-                                final searchResults = snapshot.data!;
-                                final widgets = <Widget>[];
-                                String type = "";
-
-                                // Build widgets for each result
-                                for (final result in searchResults) {
-                                  final userData = result;
-                                  final username = userData['username'];
-                                  final profilePictureUrl =
-                                      userData['imageUrl'];
-                                  final name = userData['name'];
-                                  final id = userData['id'];
-                                  final displayName = userData['displayName'];
-
-                                  final title = result['title'] as String?;
-
-                                  if (result['type'] != null) {
-                                    type = result['type'];
-                                  } else if (title != null) {
-                                    // Add title widget
-                                    widgets.add(Text(title,
-                                        style: TextStyle(fontSize: 16,
-                                            fontWeight: FontWeight.bold)));
-                                  } else if (type == 'friends') {
-                                    widgets.add(FriendWidget(
-                                        profilePictureUrl: profilePictureUrl,
-                                        name: name,
-                                        username: username,
-                                        id: id,
-                                        isLoading: isLoading,
-                                        onDeleteFriend: () {
-                                          setState(() {
-                                            friendToDeleteId = id;
-                                            isLoading = true;
-                                          });
-                                          showDialogWithChoices();
-                                        }));
-                                  } else if (type == 'sentRequest') {
-                                    widgets.add(SentRequestWidget(
-                                        profilePictureUrl:
-                                            profilePictureUrl ?? '',
-                                        name: name ?? '',
-                                        username: username ?? '',
-                                        id: id,
-                                        onDeleteSentRequest: () async {
-                                          await friendSystem
-                                              .deleteSentRequest(id);
-                                          setState(() {
-                                            //    sentRequests.removeAt(index);
-                                          });
-                                        }));
-                                  } else if (type == 'receivedRequest') {
-                                    widgets.add(RequestWidget(
-                                        profilePictureUrl: profilePictureUrl,
-                                        name: name,
-                                        username: username,
-                                        id: id,
-                                        onAcceptFriendRequest: () async {
-                                          await friendSystem
-                                              .acceptFriendRequest(id);
-                                        },
-                                        onDeleteSentRequest: () async {
-                                          await friendSystem.declineFriendRequest(id);
-                                          setState(() {
-                                     //       receivedRequests.removeAt(index);
-                                          });
-                                        }));
-                                  } else if (type == 'contact') {
-                                    widgets.add(ContactWidget(
-                                        profilePicture: profilePictureUrl,
-                                        name: name,
-                                        username: username,
-                                        nameContact: displayName,
-                                        id: id,
-                                        onTap: () async {
-                                          final recipientUserId = id;
-                                          if (id != null) {
-                                            await sendFriendRequest(id);
-                                            setState(() {
-                                              //       registeredContacts.removeAt(index);
-                                            });
-                                          }
-                                        }));
-                                  }
-                                }
-
-                                return ListView(
-                                  children: widgets,
-                                );
-                              } else if (snapshot.hasError) {
-                                return Text('Error: ${snapshot.error}');
-                              } else {
-                                return Center(
-                                  child: CircularProgressIndicator(),
-                                );
-                              }
-                            },
-                          ),
-                        ),
-                      )
+                  child: AnimatedSwitcher(
+                    duration: Duration(milliseconds: 300),
+                    transitionBuilder:
+                        (Widget child, Animation<double> animation) {
+                      final tween = Tween<Offset>(
+                        begin: Offset(
+                            _currentIndex > _lastIndex ? -1.0 : 1.0, 0.0),
+                        end: Offset(0.0, 0.0),
+                      );
+                      return SlideTransition(
+                        position: tween.animate(animation),
+                        child: child,
+                      );
+                    },
+                    child: pages[_currentIndex],
+                  ),
+                )
               ],
             ),
-            _searchQuery.isEmpty
-                ? Align(
-                    alignment: Alignment.bottomCenter,
-                    child: Padding(
-                        padding:
-                            EdgeInsets.only(left: 70, right: 70, bottom: 50),
-                        child: Container(
-                          height: 45,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(40),
-                            color: Colors.white,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.withOpacity(0.5),
-                                spreadRadius: 1,
-                                blurRadius: 5,
-                              ),
-                            ],
+            _searchBoxFocused
+                ? SizedBox()
+                : Align(
+                alignment: Alignment.bottomCenter,
+                child: Padding(
+                    padding:
+                    EdgeInsets.only(left: 70, right: 70, bottom: 50),
+                    child: Container(
+                      height: 45,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(40),
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.5),
+                            spreadRadius: 1,
+                            blurRadius: 5,
                           ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: List.generate(
-                              _texts.length,
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: List.generate(
+                          _texts.length,
                               (index) => GestureDetector(
-                                behavior: HitTestBehavior.translucent,
-                                onTap: () {
-                                  setState(() {
-                                    _lastIndex = _currentIndex;
-                                    _currentIndex = index;
-                                  });
-                                },
-                                child: Container(
-                                  padding: EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(16),
-                                    color: _currentIndex == index
-                                        ? Colors.blue.withOpacity(0.5)
-                                        : Colors.transparent,
-                                  ),
-                                  child: Text(
-                                    _texts[index],
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                      color: _currentIndex == index
-                                          ? Colors.blue
-                                          : Colors.black,
-                                    ),
-                                  ),
+                            behavior: HitTestBehavior.translucent,
+                            onTap: () {
+                              setState(() {
+                                _lastIndex = _currentIndex;
+                                _currentIndex = index;
+                              });
+                            },
+                            child: Container(
+                              padding: EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                color: _currentIndex == index
+                                    ? Colors.blue.withOpacity(0.5)
+                                    : Colors.transparent,
+                              ),
+                              child: Text(
+                                _texts[index],
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: _currentIndex == index
+                                      ? Colors.blue
+                                      : Colors.black,
                                 ),
                               ),
                             ),
                           ),
-                        )))
-                : SizedBox()
+                        ),
+                      ),
+                    )))
           ],
         ),
       ),
