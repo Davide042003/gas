@@ -13,6 +13,9 @@ import 'dart:math';
 import 'core/models/answer_post_model.dart';
 import 'post_notifier.dart';
 import 'package:gas/bottom_sheet_profile.dart';
+import 'package:gas/user_notifier.dart';
+import 'core/models/user_model.dart';
+import 'package:flutter/cupertino.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   @override
@@ -171,25 +174,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                             children: List.generate(friendPosts.length, (index) {
                               final post = friendPosts[index];
                               final friendUserId = post.id as String;
+                              final userInfoProvider = otherUserProfileProvider(friendUserId);
+                              final userProfileFuture = ref.watch(userInfoProvider.future);
 
-                              return FutureBuilder<DocumentSnapshot>(
-                                future: FirebaseFirestore.instance
-                                    .collection('users')
-                                    .doc(friendUserId)
-                                    .get(),
+                              return FutureBuilder<UserModel?>(
+                                future: userProfileFuture,
                                 builder: (context, snapshot) {
                                   if (snapshot.hasData) {
                                     postId = post.postId!;
 
-                                    final user = snapshot.data!.data()
-                                    as Map<String, dynamic>;
-                                    final username = user['username'] as String;
-                                    final profilePictureUrl =
-                                    user['imageUrl'] as String;
-                                    final name = user['name'] as String;
-                                    final timestamp =
-                                    user['timestamp'] as Timestamp;
-                                    final id = user['id'] as String;
+                                    UserModel? userProfile = snapshot.data;
+                                    final username = userProfile!.username!;
+                                    final profilePictureUrl = userProfile!.imageUrl!;
+                                    final name = userProfile!.name!;
+                                    final timestamp = userProfile!.timestamp ?? Timestamp.now();
+                                    final id = userProfile!.id!;
                                     final localDateTime =
                                     post.timestamp!.toDate().toLocal();
                                     final hour = localDateTime.hour
@@ -860,7 +859,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                           ),
                                         ));
                                   }
-                                  return CircularProgressIndicator();
+                                  return CupertinoActivityIndicator();
                                 },
                               );
                             }));
@@ -874,7 +873,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                         );
                       }
                     },
-                    loading: () => Center(child: CircularProgressIndicator()),
+                    loading: () => Center(child: CupertinoActivityIndicator(radius: 20,)),
                     error: (error, stackTrace) => Center(child: Text('Error: $error')),
                   );
                 },
@@ -893,25 +892,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                             children: List.generate(globalPosts.length, (index) {
                               final post = globalPosts[index];
                               final globalUserId = post.id as String;
+                              final userInfoProvider = otherUserProfileProvider(globalUserId);
+                              final userProfileFuture = ref.watch(userInfoProvider.future);
 
-                              return FutureBuilder<DocumentSnapshot>(
-                                future: FirebaseFirestore.instance
-                                    .collection('users')
-                                    .doc(globalUserId)
-                                    .get(),
+                              return FutureBuilder<UserModel?>(
+                                future: userProfileFuture,
                                 builder: (context, snapshot) {
                                   if (snapshot.hasData) {
                                     postId = post.postId!;
 
-                                    final user = snapshot.data!.data()
-                                    as Map<String, dynamic>;
-                                    final username = user['username'] as String;
-                                    final profilePictureUrl =
-                                    user['imageUrl'] as String;
-                                    final name = user['name'] as String;
-                                    final timestamp =
-                                    user['timestamp'];
-                                    final id = user['id'] as String;
+                                    UserModel? userProfile = snapshot.data;
+                                    final username = userProfile!.username!;
+                                    final profilePictureUrl = userProfile!.imageUrl!;
+                                    final name = userProfile!.name!;
+                                    final timestamp = userProfile!.timestamp ?? Timestamp.now();
+                                    final id = userProfile!.id!;
                                     final localDateTime =
                                     post.timestamp!.toDate().toLocal();
                                     final hour = localDateTime.hour
@@ -1582,7 +1577,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                           ),
                                         ));
                                   }
-                                  return CircularProgressIndicator();
+                                  return CupertinoActivityIndicator(radius: 20);
                                 },
                               );
                             }));
@@ -1596,7 +1591,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                         );
                       }
                     },
-                    loading: () => Center(child: CircularProgressIndicator()),
+                    loading: () => Center(child: CupertinoActivityIndicator(radius: 20,)),
                     error: (error, stackTrace) => Center(child: Text('Error: $error')),
                   );
                 },

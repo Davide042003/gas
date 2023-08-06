@@ -4,6 +4,7 @@ import 'package:gas/styles/colors.dart';
 import 'package:gas/bottom_sheet_profile.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/cupertino.dart';
 
 class FriendWidget extends StatelessWidget {
   final String profilePictureUrl;
@@ -51,7 +52,7 @@ class FriendWidget extends StatelessWidget {
                             ),
                           ),
                           progressIndicatorBuilder: (context, url, downloadProgress) =>
-                              Center(child: CircularProgressIndicator(value: downloadProgress.progress)), // Show CircularProgressIndicator while loading
+                              Center(child: CupertinoActivityIndicator()),
                           errorWidget: (context, url, error) => Icon(Icons.error),
                         ),
 
@@ -98,7 +99,7 @@ class FriendWidget extends StatelessWidget {
               onDeleteFriend();
             },
             child: isLoading
-                ? CircularProgressIndicator()
+                ? Container(width: 25, height: 25, child: CircularProgressIndicator(color: AppColors.white, strokeWidth: 2,))
                 : Icon(
               Icons.close_rounded,
               size: 25,

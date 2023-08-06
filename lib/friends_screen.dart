@@ -364,7 +364,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                           return Text('Error: ${snapshot.error}');
                         } else {
                           return Center(
-                            child: CircularProgressIndicator(),
+                            child: CupertinoActivityIndicator(radius: 20,),
                           );
                         }
                       },
@@ -459,7 +459,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
       future: friendSystem.getNonFriendsContacts(ref),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return CircularProgressIndicator();
+          return Padding(padding: EdgeInsets.only(bottom: 150), child: CupertinoActivityIndicator(radius: 20,));
         } else if (snapshot.hasError) {
           return Text('Error: ${snapshot.error}');
         } else {
@@ -495,7 +495,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                       future: phoneNumber != null ? getUserData(phoneNumber) : null,
                       builder: (context, userSnapshot) {
                         if (userSnapshot.connectionState == ConnectionState.waiting) {
-                          return CircularProgressIndicator();
+                          return CupertinoActivityIndicator(radius: 20,);
                         } else if (userSnapshot.hasError) {
                           return Text('Error: ${userSnapshot.error}');
                         } else {
@@ -614,7 +614,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                       future: ref.watch(otherUserProfileProvider(friendId).future),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.waiting) {
-                          return CircularProgressIndicator();
+                          return CupertinoActivityIndicator(radius: 20,);
                         }
 
                         if (snapshot.hasError || !snapshot.hasData) {
@@ -664,7 +664,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                 );
               }
             },
-            loading: () => Center(child: CircularProgressIndicator()),
+            loading: () => Center(child: CupertinoActivityIndicator(radius: 20,)),
             error: (_, __) => Text("Error loading friends"),
           )
         ),
@@ -757,7 +757,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                       future: ref.watch(otherUserProfileProvider(senderUserId).future),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.waiting) {
-                          return CircularProgressIndicator();
+                          return CupertinoActivityIndicator(radius: 20,);
                         }
 
                         if (snapshot.hasError) {
@@ -808,7 +808,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                 );
               }
             },
-            loading: () => CircularProgressIndicator(),
+            loading: () => CupertinoActivityIndicator(radius: 20,),
             error: (error, stackTrace) => Text("Error fetching data."),
           ),
         ),
@@ -835,7 +835,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                 final sentRequestsSnapshot = ref.watch(sentRequestsProvider);
 
                 return sentRequestsSnapshot.when(
-                  loading: () => Center(child: CircularProgressIndicator()),
+                  loading: () => Center(child: CupertinoActivityIndicator(radius: 20,)),
                   error: (error, stackTrace) => Center(child: Text('Error: $error')),
                   data: (sentRequests) {
                     return CupertinoScrollbar(

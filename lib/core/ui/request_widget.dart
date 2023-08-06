@@ -4,6 +4,7 @@ import 'package:gas/styles/colors.dart';
 import 'package:gas/bottom_sheet_profile.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/cupertino.dart';
 
 class RequestWidget extends StatelessWidget {
   final String profilePictureUrl;
@@ -53,7 +54,7 @@ class RequestWidget extends StatelessWidget {
                                 ),
                               ),
                               progressIndicatorBuilder: (context, url, downloadProgress) =>
-                                  Center(child: CircularProgressIndicator(value: downloadProgress.progress)), // Show CircularProgressIndicator while loading
+                                  Center(child: CupertinoActivityIndicator()), // Show CircularProgressIndicator while loading
                               errorWidget: (context, url, error) => Icon(Icons.error),
                             ),
 

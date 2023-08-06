@@ -8,6 +8,7 @@ import 'core/models/user_model.dart';
 import 'core/models/user_info_service.dart';
 import 'package:gas/user_notifier.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/cupertino.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   @override
@@ -104,7 +105,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                               ),
                                             ),
                                             progressIndicatorBuilder: (context, url, downloadProgress) =>
-                                                Center(child: CircularProgressIndicator(value: downloadProgress.progress)), // Show CircularProgressIndicator while loading
+                                                Center(child: CupertinoActivityIndicator()), // Show CircularProgressIndicator while loading
                                             errorWidget: (context, url, error) => Icon(Icons.error),
                                           ),
                                         // Show Text with the first character of the name if userProfile?.imageUrl is empty
@@ -163,15 +164,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ]
                     );
                   } else {
-                    // Handle the case when the data is null
-                    // (e.g., data is still loading or an error occurred)
                     return Center(
-                      child: CircularProgressIndicator(),
+                      child: CupertinoActivityIndicator(radius: 20,),
                     );
                   }
                 },
                 loading: () => Center(
-                  child: CircularProgressIndicator(),
+                  child: CupertinoActivityIndicator(radius: 20,),
                 ),
                 error: (error, stackTrace) => Center(
                   child: Text('Error fetching data.'),

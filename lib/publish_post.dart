@@ -206,7 +206,7 @@ class _PublishPostPageState extends ConsumerState<PublishPostPage> {
         backgroundColor:
             isPublishing ? AppColors.backgroundDefault : AppColors.white,
         body: isPublishing
-            ? Center(child: CircularProgressIndicator())
+            ? Center(child: CupertinoActivityIndicator(radius: 20,))
             : SingleChildScrollView(
           physics: NeverScrollableScrollPhysics(),
                 child: Column(

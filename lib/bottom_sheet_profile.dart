@@ -11,6 +11,7 @@ import 'user_notifier.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'friends_notifier.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/cupertino.dart';
 
 class BottomSheetProfile {
   static void showOtherProfileBottomSheet(BuildContext context, String userId) {
@@ -253,9 +254,7 @@ class BottomSheetProfile {
                                           progressIndicatorBuilder: (context,
                                                   url, downloadProgress) =>
                                               Center(
-                                                  child: CircularProgressIndicator(
-                                                      value: downloadProgress
-                                                          .progress)), // Show CircularProgressIndicator while loading
+                                                  child: CupertinoActivityIndicator()), // Show CircularProgressIndicator while loading
                                           errorWidget: (context, url, error) =>
                                               Icon(Icons.error),
                                         ),
@@ -514,7 +513,7 @@ class BottomSheetProfile {
                                                     }
                                                   }
                                                 },
-                                                loading: () => CircularProgressIndicator(),
+                                                loading: () => CupertinoActivityIndicator(radius: 20,),
                                                 error: (error, stackTrace) => Text(
                                                   'Error fetching friends data',
                                                   style: TextStyle(
@@ -523,7 +522,7 @@ class BottomSheetProfile {
                                                 ),
                                               );
                                             },
-                                            loading: () => CircularProgressIndicator(),
+                                            loading: () => CupertinoActivityIndicator(radius: 20,),
                                             error: (error, stackTrace) => Text(
                                               'Error fetching received requests data',
                                               style: TextStyle(
@@ -532,7 +531,7 @@ class BottomSheetProfile {
                                             ),
                                           );
                                         },
-                                        loading: () => CircularProgressIndicator(),
+                                        loading: () => CupertinoActivityIndicator(radius: 20,),
                                         error: (error, stackTrace) => Text(
                                           'Error fetching sent requests data',
                                           style: TextStyle(
@@ -554,7 +553,7 @@ class BottomSheetProfile {
                             ),
                           );
                         } else {
-                          return CircularProgressIndicator();
+                          return CupertinoActivityIndicator(radius: 20,);
                         }
                       },
                     );

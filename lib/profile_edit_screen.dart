@@ -293,9 +293,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                                               url,
                                                               downloadProgress) =>
                                                           Center(
-                                                              child: CircularProgressIndicator(
-                                                                  value: downloadProgress
-                                                                      .progress)),
+                                                              child: CupertinoActivityIndicator()),
                                                       errorWidget: (context,
                                                               url, error) =>
                                                           Icon(Icons.error),
@@ -541,12 +539,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       );
                     } else {
                       return Center(
-                        child: CircularProgressIndicator(),
+                        child: CupertinoActivityIndicator(radius: 20,),
                       );
                     }
                   },
                   loading: () => Center(
-                    child: CircularProgressIndicator(),
+                    child: CupertinoActivityIndicator(radius: 20,),
                   ),
                   error: (error, stackTrace) => Center(
                     child: Text('Error fetching profile data.'),
