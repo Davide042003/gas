@@ -67,17 +67,18 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
     }
   }
 
-  Future<DocumentSnapshot<Map<String, dynamic>>> getUserData(String phoneNumber) async {
-    QuerySnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore.instance
-        .collection('users')
-        .get();
+  Future<DocumentSnapshot<Map<String, dynamic>>> getUserData(
+      String phoneNumber) async {
+    QuerySnapshot<Map<String, dynamic>> snapshot =
+        await FirebaseFirestore.instance.collection('users').get();
 
     String phoneNumberEdited = phoneNumber.replaceAll(RegExp(r'[^0-9]'), '');
 
     for (var doc in snapshot.docs) {
       String userPhoneNumber = doc['phoneNumber'];
       if (userPhoneNumber != null) {
-        String userPhoneNumberEdited = userPhoneNumber.replaceAll(RegExp(r'[^0-9]'), '');
+        String userPhoneNumberEdited =
+            userPhoneNumber.replaceAll(RegExp(r'[^0-9]'), '');
         if (userPhoneNumberEdited.contains(phoneNumberEdited)) {
           return doc; // Return the matched document directly
         }
@@ -165,6 +166,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                           color: AppColors.white,
                         ),
                         onTap: () {
+                          FocusManager.instance.primaryFocus?.unfocus();
                           context.pop();
                         },
                       ),
@@ -188,6 +190,10 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                           ),
                           child: Focus(
                             child: TextField(
+                              onTap: () {
+                                _searchBoxFocused = true;
+                                print("tap");
+                              },
                               controller: _searchController,
                               textAlignVertical: TextAlignVertical.center,
                               decoration: InputDecoration(
@@ -222,9 +228,9 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                             onFocusChange: (value) {
                               setState(() {
                                 if (value) {
-                                  _searchBoxFocused = true;
+                                  //         _searchBoxFocused = true;
                                 } else {
-                           //       _searchBoxFocused = false;
+                                  //       _searchBoxFocused = false;
                                 }
                               });
                             },
@@ -252,6 +258,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                 _searchQuery = "";
                                 _searchController.clear();
                                 _searchBoxFocused = false;
+                                print("close");
                               });
                             },
                           ),
@@ -265,187 +272,193 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                 ),
                 _searchBoxFocused
                     ? Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 20),
-                    child: FutureBuilder<List<Map<String, dynamic>>>(
-                      future: friendSystem.combineResults(_searchQuery, ref),
-                      builder: (context, snapshot) {
-                        if (snapshot.hasData) {
-                          final searchResults = snapshot.data!;
-                          final widgets = <Widget>[];
-                          String type = "";
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 20),
+                          child: FutureBuilder<List<Map<String, dynamic>>>(
+                            future:
+                                friendSystem.combineResults(_searchQuery, ref),
+                            builder: (context, snapshot) {
+                              if (snapshot.hasData) {
+                                final searchResults = snapshot.data!;
+                                final widgets = <Widget>[];
+                                String type = "";
 
-                          // Build widgets for each result
-                          for (final result in searchResults) {
-                            final userData = result;
-                            final username = userData['username'];
-                            final profilePictureUrl =
-                            userData['imageUrl'];
-                            final name = userData['name'];
-                            final id = userData['id'];
-                            final displayName = userData['displayName'];
+                                // Build widgets for each result
+                                for (final result in searchResults) {
+                                  final userData = result;
+                                  final username = userData['username'];
+                                  final profilePictureUrl =
+                                      userData['imageUrl'];
+                                  final name = userData['name'];
+                                  final id = userData['id'];
+                                  final displayName = userData['displayName'];
 
-                            final title = result['title'] as String?;
+                                  final title = result['title'] as String?;
 
-                            if (result['type'] != null) {
-                              type = result['type'];
-                            } else if (title != null) {
-                              // Add title widget
-                              widgets.add(Text(title,
-                                  style: TextStyle(fontSize: 16,
-                                      fontWeight: FontWeight.bold)));
-                            } else if (type == 'friends') {
-                              widgets.add(FriendWidget(
-                                  profilePictureUrl: profilePictureUrl,
-                                  name: name,
-                                  username: username,
-                                  id: id,
-                                  isLoading: isLoading,
-                                  onDeleteFriend: () {
-                                    setState(() {
-                                      friendToDeleteId = id;
-                                      isLoading = true;
-                                    });
-                                    showDialogWithChoices();
-                                  }));
-                            } else if (type == 'sentRequest') {
-                              widgets.add(SentRequestWidget(
-                                  profilePictureUrl:
-                                  profilePictureUrl ?? '',
-                                  name: name ?? '',
-                                  username: username ?? '',
-                                  id: id,
-                                  onDeleteSentRequest: () async {
-                                    await friendSystem
-                                        .deleteSentRequest(id);
-                                    setState(() {
-                                      //    sentRequests.removeAt(index);
-                                    });
-                                  }));
-                            } else if (type == 'receivedRequest') {
-                              widgets.add(RequestWidget(
-                                  profilePictureUrl: profilePictureUrl,
-                                  name: name,
-                                  username: username,
-                                  id: id,
-                                  onAcceptFriendRequest: () async {
-                                    await friendSystem
-                                        .acceptFriendRequest(id);
-                                  },
-                                  onDeleteSentRequest: () async {
-                                    await friendSystem.declineFriendRequest(id);
-                                    setState(() {
-                                      //       receivedRequests.removeAt(index);
-                                    });
-                                  }));
-                            } else if (type == 'contact') {
-                              widgets.add(ContactWidget(
-                                  profilePicture: profilePictureUrl,
-                                  name: name,
-                                  username: username,
-                                  nameContact: displayName,
-                                  id: id,
-                                  onTap: () async {
-                                    final recipientUserId = id;
-                                    if (id != null) {
-                                      await sendFriendRequest(id);
-                                      setState(() {
-                                        //       registeredContacts.removeAt(index);
-                                      });
-                                    }
-                                  }));
-                            }
-                          }
+                                  if (result['type'] != null) {
+                                    type = result['type'];
+                                  } else if (title != null) {
+                                    // Add title widget
+                                    widgets.add(Text(title,
+                                        style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold)));
+                                  } else if (type == 'friends') {
+                                    widgets.add(FriendWidget(
+                                        profilePictureUrl: profilePictureUrl,
+                                        name: name,
+                                        username: username,
+                                        id: id,
+                                        isLoading: isLoading,
+                                        onDeleteFriend: () {
+                                          setState(() {
+                                            friendToDeleteId = id;
+                                            isLoading = true;
+                                          });
+                                          showDialogWithChoices();
+                                        }));
+                                  } else if (type == 'sentRequest') {
+                                    widgets.add(SentRequestWidget(
+                                        profilePictureUrl:
+                                            profilePictureUrl ?? '',
+                                        name: name ?? '',
+                                        username: username ?? '',
+                                        id: id,
+                                        onDeleteSentRequest: () async {
+                                          await friendSystem
+                                              .deleteSentRequest(id);
+                                          setState(() {
+                                            //    sentRequests.removeAt(index);
+                                          });
+                                        }));
+                                  } else if (type == 'receivedRequest') {
+                                    widgets.add(RequestWidget(
+                                        profilePictureUrl: profilePictureUrl,
+                                        name: name,
+                                        username: username,
+                                        id: id,
+                                        onAcceptFriendRequest: () async {
+                                          await friendSystem
+                                              .acceptFriendRequest(id);
+                                        },
+                                        onDeleteSentRequest: () async {
+                                          await friendSystem
+                                              .declineFriendRequest(id);
+                                          setState(() {
+                                            //       receivedRequests.removeAt(index);
+                                          });
+                                        }));
+                                  } else if (type == 'contact') {
+                                    widgets.add(ContactWidget(
+                                        profilePicture: profilePictureUrl,
+                                        name: name,
+                                        username: username,
+                                        nameContact: displayName,
+                                        id: id,
+                                        onTap: () async {
+                                          final recipientUserId = id;
+                                          if (id != null) {
+                                            await sendFriendRequest(id);
+                                            setState(() {
+                                              //       registeredContacts.removeAt(index);
+                                            });
+                                          }
+                                        }));
+                                  }
+                                }
 
-                          return ListView(
-                            children: widgets,
-                          );
-                        } else if (snapshot.hasError) {
-                          return Text('Error: ${snapshot.error}');
-                        } else {
-                          return Center(
-                            child: CupertinoActivityIndicator(radius: 20,),
-                          );
-                        }
-                      },
-                    ),
-                  ),
-                )
+                                return ListView(
+                                  children: widgets,
+                                );
+                              } else if (snapshot.hasError) {
+                                return Text('Error: ${snapshot.error}');
+                              } else {
+                                return Padding(
+                                    padding: EdgeInsets.only(bottom: screenHeight/1.35),
+                                    child: CupertinoActivityIndicator(
+                                      radius: 15,
+                                    )
+                                );
+                              }
+                            },
+                          ),
+                        ),
+                      )
                     : Expanded(
-                  child: AnimatedSwitcher(
-                    duration: Duration(milliseconds: 300),
-                    transitionBuilder:
-                        (Widget child, Animation<double> animation) {
-                      final tween = Tween<Offset>(
-                        begin: Offset(
-                            _currentIndex > _lastIndex ? -1.0 : 1.0, 0.0),
-                        end: Offset(0.0, 0.0),
-                      );
-                      return SlideTransition(
-                        position: tween.animate(animation),
-                        child: child,
-                      );
-                    },
-                    child: pages[_currentIndex],
-                  ),
-                )
+                        child: AnimatedSwitcher(
+                          duration: Duration(milliseconds: 300),
+                          transitionBuilder:
+                              (Widget child, Animation<double> animation) {
+                            final tween = Tween<Offset>(
+                              begin: Offset(
+                                  _currentIndex > _lastIndex ? -1.0 : 1.0, 0.0),
+                              end: Offset(0.0, 0.0),
+                            );
+                            return SlideTransition(
+                              position: tween.animate(animation),
+                              child: child,
+                            );
+                          },
+                          child: pages[_currentIndex],
+                        ),
+                      )
               ],
             ),
-            _searchBoxFocused
-                ? SizedBox()
-                : Align(
-                alignment: Alignment.bottomCenter,
-                child: Padding(
-                    padding:
-                    EdgeInsets.only(left: 70, right: 70, bottom: 50),
-                    child: Container(
-                      height: 45,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(40),
-                        color: Colors.white,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.5),
-                            spreadRadius: 1,
-                            blurRadius: 5,
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: List.generate(
-                          _texts.length,
-                              (index) => GestureDetector(
-                            behavior: HitTestBehavior.translucent,
-                            onTap: () {
-                              setState(() {
-                                _lastIndex = _currentIndex;
-                                _currentIndex = index;
-                              });
-                            },
-                            child: Container(
-                              padding: EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(16),
-                                color: _currentIndex == index
-                                    ? Colors.blue.withOpacity(0.5)
-                                    : Colors.transparent,
+            Visibility(
+                visible: !_searchBoxFocused,
+                child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Padding(
+                        padding:
+                            EdgeInsets.only(left: 70, right: 70, bottom: 50),
+                        child: Container(
+                          height: 45,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(40),
+                            color: Colors.white,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.5),
+                                spreadRadius: 1,
+                                blurRadius: 5,
                               ),
-                              child: Text(
-                                _texts[index],
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: _currentIndex == index
-                                      ? Colors.blue
-                                      : Colors.black,
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: List.generate(
+                              _texts.length,
+                              (index) => GestureDetector(
+                                behavior: HitTestBehavior.translucent,
+                                onTap: () {
+                                  setState(() {
+                                    _lastIndex = _currentIndex;
+                                    _currentIndex = index;
+                                  });
+                                },
+                                child: Container(
+                                  padding: EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(16),
+                                    color: _currentIndex == index
+                                        ? Colors.blue.withOpacity(0.5)
+                                        : Colors.transparent,
+                                  ),
+                                  child: Text(
+                                    _texts[index],
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: _currentIndex == index
+                                          ? Colors.blue
+                                          : Colors.black,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                      ),
-                    )))
+                        ))))
           ],
         ),
       ),
@@ -459,7 +472,11 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
       future: friendSystem.getNonFriendsContacts(ref),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Padding(padding: EdgeInsets.only(bottom: 150), child: CupertinoActivityIndicator(radius: 20,));
+          return Padding(
+              padding: EdgeInsets.only(bottom: screenHeight/1.35),
+              child: CupertinoActivityIndicator(
+                radius: 15,
+              ));
         } else if (snapshot.hasError) {
           return Text('Error: ${snapshot.error}');
         } else {
@@ -491,11 +508,16 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                     final contact = registeredContacts[index];
                     final phoneNumber = contact.phones?.firstOrNull?.value;
 
-                    return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                      future: phoneNumber != null ? getUserData(phoneNumber) : null,
+                    return FutureBuilder<
+                        DocumentSnapshot<Map<String, dynamic>>>(
+                      future:
+                          phoneNumber != null ? getUserData(phoneNumber) : null,
                       builder: (context, userSnapshot) {
-                        if (userSnapshot.connectionState == ConnectionState.waiting) {
-                          return CupertinoActivityIndicator(radius: 20,);
+                        if (userSnapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return CupertinoActivityIndicator(
+                            radius: 20,
+                          );
                         } else if (userSnapshot.hasError) {
                           return Text('Error: ${userSnapshot.error}');
                         } else {
@@ -573,15 +595,18 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                             ),
                           );
                         } else {
-                          return Text("MY FRIENDS (50+)",
+                          return Text(
+                            "MY FRIENDS (50+)",
                             style: TextStyle(
                               fontFamily: 'Helvetica',
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                            ),);
+                            ),
+                          );
                         }
                       },
-                      loading: () => Text("MY FRIENDS (0)"), // Default count when data is not available
+                      loading: () => Text(
+                          "MY FRIENDS (0)"), // Default count when data is not available
                       error: (_, __) => Text("Error loading friends"),
                     );
                   },
@@ -591,83 +616,90 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
           ),
         ),
         SliverToBoxAdapter(
-          child: friendsAsyncValue.when(
-            data: (friends) {
-              if (friends.isNotEmpty) {
-                friends.sort((a, b) {
-                  final friendDataA = (a.data() as Map<String, dynamic>);
-                  final friendDataB = (b.data() as Map<String, dynamic>);
-                  final usernameA = friendDataA['username'] as String;
-                  final usernameB = friendDataB['username'] as String;
-                  return usernameA.compareTo(usernameB);
-                });
-                return ListView.builder(
-                  shrinkWrap: true,
-                  physics: NeverScrollableScrollPhysics(),
-                  itemCount: friends.length,
+            child: friendsAsyncValue.when(
+          data: (friends) {
+            if (friends.isNotEmpty) {
+              friends.sort((a, b) {
+                final friendDataA = (a.data() as Map<String, dynamic>);
+                final friendDataB = (b.data() as Map<String, dynamic>);
+                final usernameA = friendDataA['username'] as String;
+                final usernameB = friendDataB['username'] as String;
+                return usernameA.compareTo(usernameB);
+              });
+              return ListView.builder(
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
+                itemCount: friends.length,
+                itemBuilder: (context, index) {
+                  final friendData = friends[index].data();
+                  final friendId = friends[index].id;
 
-                  itemBuilder: (context, index) {
-                    final friendData = friends[index].data();
-                    final friendId = friends[index].id;
+                  return FutureBuilder(
+                    future:
+                        ref.watch(otherUserProfileProvider(friendId).future),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return Padding(
+                            padding: EdgeInsets.only(bottom: screenHeight/1.35),
+                            child: CupertinoActivityIndicator(
+                              radius: 15,
+                            ));
+                      }
 
-                    return FutureBuilder(
-                      future: ref.watch(otherUserProfileProvider(friendId).future),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return CupertinoActivityIndicator(radius: 20,);
-                        }
+                      if (snapshot.hasError || !snapshot.hasData) {
+                        return Text("Error fetching data.");
+                      }
 
-                        if (snapshot.hasError || !snapshot.hasData) {
-                          return Text("Error fetching data.");
-                        }
+                      final UserModel? user = snapshot.data!;
+                      final username = user!.username;
+                      final profilePictureUrl = user.imageUrl!;
+                      final name = user.name!;
+                      final id = user.id!;
 
-                        final UserModel? user = snapshot.data!;
-                        final username = user!.username;
-                        final profilePictureUrl = user.imageUrl!;
-                        final name = user.name!;
-                        final id = user.id!;
-
-                        return FriendWidget(
-                          profilePictureUrl: profilePictureUrl,
-                          name: name,
-                          username: username!,
-                          id: id,
-                          isLoading: isLoading,
-                          onDeleteFriend: () {
-                            setState(() {
-                              friendToDeleteId = friendId;
-                              isLoading = true;
-                            });
-                            showDialogWithChoices();
-                          },
-                        );
-                      },
-                    );
-                  },
-                );
-              } else {
-                return Container(
-                  padding: EdgeInsets.symmetric(vertical: 50),
-                  margin: EdgeInsets.symmetric(horizontal: 25, vertical: 20),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    color: AppColors.a,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('Non hai ancora nessun amico'),
-                      SizedBox(height: 20),
-                      Text('Aggiungi nuovi amici!'),
-                    ],
-                  ),
-                );
-              }
-            },
-            loading: () => Center(child: CupertinoActivityIndicator(radius: 20,)),
-            error: (_, __) => Text("Error loading friends"),
-          )
-        ),
+                      return FriendWidget(
+                        profilePictureUrl: profilePictureUrl,
+                        name: name,
+                        username: username!,
+                        id: id,
+                        isLoading: isLoading,
+                        onDeleteFriend: () {
+                          setState(() {
+                            friendToDeleteId = friendId;
+                            isLoading = true;
+                          });
+                          showDialogWithChoices();
+                        },
+                      );
+                    },
+                  );
+                },
+              );
+            } else {
+              return Container(
+                padding: EdgeInsets.symmetric(vertical: 50),
+                margin: EdgeInsets.symmetric(horizontal: 25, vertical: 20),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  color: AppColors.a,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Non hai ancora nessun amico'),
+                    SizedBox(height: 20),
+                    Text('Aggiungi nuovi amici!'),
+                  ],
+                ),
+              );
+            }
+          },
+          loading: () => Padding(
+    padding: EdgeInsets.only(bottom: screenHeight/1.35),
+    child: CupertinoActivityIndicator(
+    radius: 15,
+    )),
+          error: (_, __) => Text("Error loading friends"),
+        )),
       ],
     );
   }
@@ -687,32 +719,44 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
         SliverPadding(
           padding: EdgeInsets.symmetric(horizontal: 15),
           sliver: SliverToBoxAdapter(
-            child: Container(height: 35, child: Row(
+              child: Container(
+            height: 35,
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Consumer(
                   builder: (context, watch, child) {
-                    final receivedRequestsAsyncValue = ref.watch(receivedRequestsProvider);
+                    final receivedRequestsAsyncValue =
+                        ref.watch(receivedRequestsProvider);
 
                     return receivedRequestsAsyncValue.when(
                       data: (receivedRequests) {
                         final requestCount = receivedRequests.length;
-                        return Text("FRIEND REQUESTS ($requestCount)", style: TextStyle(
+                        return Text(
+                          "FRIEND REQUESTS ($requestCount)",
+                          style: TextStyle(
+                            fontFamily: 'Helvetica',
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        );
+                      },
+                      loading: () => Text(
+                        "FRIEND REQUESTS (Loading...)",
+                        style: TextStyle(
                           fontFamily: 'Helvetica',
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                        ),);
-                      },
-                      loading: () => Text("FRIEND REQUESTS (Loading...)", style: TextStyle(
-                        fontFamily: 'Helvetica',
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),),
-                      error: (error, stackTrace) => Text("FRIEND REQUESTS (Error)", style: TextStyle(
-                        fontFamily: 'Helvetica',
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),),
+                        ),
+                      ),
+                      error: (error, stackTrace) => Text(
+                        "FRIEND REQUESTS (Error)",
+                        style: TextStyle(
+                          fontFamily: 'Helvetica',
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     );
                   },
                 ),
@@ -728,9 +772,10 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                   ),
                   child: Row(
                     children: [
-                      Text("SENT", style: TextStyle(
-                        fontFamily: 'Helvetica'
-                      ),),
+                      Text(
+                        "SENT",
+                        style: TextStyle(fontFamily: 'Helvetica'),
+                      ),
                       SizedBox(width: 5),
                       Icon(Icons.arrow_forward_ios),
                     ],
@@ -738,8 +783,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                 ),
               ],
             ),
-            )
-          ),
+          )),
         ),
         SliverToBoxAdapter(
           child: receivedRequestsAsyncValue.when(
@@ -754,10 +798,16 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                     final senderUserId = request['senderUserId'] as String;
 
                     return FutureBuilder(
-                      future: ref.watch(otherUserProfileProvider(senderUserId).future),
+                      future: ref
+                          .watch(otherUserProfileProvider(senderUserId).future),
                       builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return CupertinoActivityIndicator(radius: 20,);
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return Padding(
+                              padding: EdgeInsets.only(bottom: screenHeight/1.35),
+                              child: CupertinoActivityIndicator(
+                                radius: 15,
+                              ));
                         }
 
                         if (snapshot.hasError) {
@@ -776,12 +826,14 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                           username: username!,
                           id: id,
                           onAcceptFriendRequest: () async {
-                            await friendSystem.acceptFriendRequest(senderUserId);
+                            await friendSystem
+                                .acceptFriendRequest(senderUserId);
                             ref.refresh(receivedRequestsProvider);
                             ref.refresh(friendsProvider);
                           },
                           onDeleteSentRequest: () async {
-                            await friendSystem.declineFriendRequest(senderUserId);
+                            await friendSystem
+                                .declineFriendRequest(senderUserId);
                             ref.refresh(receivedRequestsProvider);
                           },
                         );
@@ -790,7 +842,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                   },
                 );
               } else {
-                 return Container(
+                return Container(
                   padding: EdgeInsets.symmetric(vertical: 50),
                   margin: EdgeInsets.symmetric(horizontal: 25, vertical: 20),
                   decoration: BoxDecoration(
@@ -808,7 +860,11 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                 );
               }
             },
-            loading: () => CupertinoActivityIndicator(radius: 20,),
+            loading: () => Padding(
+    padding: EdgeInsets.only(bottom: screenHeight/1.35),
+    child: CupertinoActivityIndicator(
+    radius: 15,
+    )),
             error: (error, stackTrace) => Text("Error fetching data."),
           ),
         ),
@@ -835,8 +891,13 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                 final sentRequestsSnapshot = ref.watch(sentRequestsProvider);
 
                 return sentRequestsSnapshot.when(
-                  loading: () => Center(child: CupertinoActivityIndicator(radius: 20,)),
-                  error: (error, stackTrace) => Center(child: Text('Error: $error')),
+                  loading: () => Padding(
+                padding: EdgeInsets.only(bottom: screenHeight/1.35),
+                child: CupertinoActivityIndicator(
+                radius: 15,
+                )),
+                  error: (error, stackTrace) =>
+                      Center(child: Text('Error: $error')),
                   data: (sentRequests) {
                     return CupertinoScrollbar(
                       child: SingleChildScrollView(
@@ -853,9 +914,13 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                   children: [
                                     Icon(Icons.arrow_downward),
                                     SizedBox(width: 105),
-                                    Text('Sent Requests', style: TextStyle(
-                                      fontFamily: 'Helvetica',fontSize: 16, fontWeight: FontWeight.bold
-                                    ),),
+                                    Text(
+                                      'Sent Requests',
+                                      style: TextStyle(
+                                          fontFamily: 'Helvetica',
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold),
+                                    ),
                                   ],
                                 ),
                               ),
@@ -865,41 +930,57 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                   slivers: [
                                     CupertinoSliverRefreshControl(
                                       onRefresh: () async {
-                                        await Future.delayed(Duration(seconds: 1));
+                                        await Future.delayed(
+                                            Duration(seconds: 1));
                                         ref.refresh(sentRequestsProvider);
                                       },
                                     ),
                                     SliverList(
                                       delegate: SliverChildBuilderDelegate(
-                                            (context, index) {
+                                        (context, index) {
                                           final request = sentRequests[index];
-                                          final recipientUserId = request['recipientUserId'] as String;
+                                          final recipientUserId =
+                                              request['recipientUserId']
+                                                  as String;
 
                                           return FutureBuilder(
-                                            future: ref.watch(otherUserProfileProvider(recipientUserId).future),
+                                            future: ref.watch(
+                                                otherUserProfileProvider(
+                                                        recipientUserId)
+                                                    .future),
                                             builder: (context, snapshot) {
-                                              if (snapshot.connectionState == ConnectionState.waiting) {
+                                              if (snapshot.connectionState ==
+                                                  ConnectionState.waiting) {
                                                 return CupertinoActivityIndicator();
                                               } else if (snapshot.hasError) {
-                                                return Text('Error: ${snapshot.error}');
+                                                return Text(
+                                                    'Error: ${snapshot.error}');
                                               } else if (!snapshot.hasData) {
-                                                return Text('No data available.');
+                                                return Text(
+                                                    'No data available.');
                                               } else {
-                                                final UserModel? user = snapshot.data!;
+                                                final UserModel? user =
+                                                    snapshot.data!;
                                                 final username = user!.username;
-                                                final profilePictureUrl = user.imageUrl!;
+                                                final profilePictureUrl =
+                                                    user.imageUrl!;
                                                 final name = user.name!;
                                                 final id = user.id!;
 
                                                 return SentRequestWidget(
-                                                  profilePictureUrl: profilePictureUrl,
+                                                  profilePictureUrl:
+                                                      profilePictureUrl,
                                                   name: name,
                                                   username: username!,
                                                   id: id,
-                                                  onDeleteSentRequest: () async {
-                                                    await friendSystem.deleteSentRequest(recipientUserId);
+                                                  onDeleteSentRequest:
+                                                      () async {
+                                                    await friendSystem
+                                                        .deleteSentRequest(
+                                                            recipientUserId);
                                                     setState(() {
-                                                      sentRequests.removeAt(index);
+                                                      sentRequests
+                                                          .removeAt(index);
                                                     });
                                                   },
                                                 );

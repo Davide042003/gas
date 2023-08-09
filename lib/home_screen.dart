@@ -16,6 +16,8 @@ import 'package:gas/bottom_sheet_profile.dart';
 import 'package:gas/user_notifier.dart';
 import 'core/models/user_model.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:gas/friends_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   @override
@@ -57,7 +59,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
   }
 
   Future<void> goToNextPage() async {
-    await postService.markPostAsSeen(postId);
+ //   await postService.markPostAsSeen(postId);
 
     int nextPage = _pageController.page!.toInt() + 1;
     if (nextPage < totalPosts) {
@@ -143,7 +145,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
 
     return Scaffold(
         backgroundColor: color,
-        body: Stack(
+        body: SingleChildScrollView(
+            physics: NeverScrollableScrollPhysics(), child: Stack (
           children: [
             Container(
               width: screenWidth,
@@ -224,31 +227,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                                         Icons.hide_image),
                                                   )
                                                       : CircleAvatar(
-                                                    maxRadius: 25,
-                                                    backgroundImage:
-                                                    profilePictureUrl
-                                                        .isEmpty
-                                                        ? null
-                                                        : NetworkImage(
-                                                        profilePictureUrl),
-                                                    child: profilePictureUrl
-                                                        .isEmpty
-                                                        ? Text(
-                                                      name.isNotEmpty
-                                                          ? name[0]
-                                                          : '',
-                                                      style: TextStyle(
-                                                          fontFamily:
-                                                          'Helvetica',
-                                                          fontWeight:
-                                                          FontWeight
-                                                              .bold,
-                                                          fontSize:
-                                                          20,
-                                                          color: AppColors
-                                                              .white),
-                                                    )
-                                                        : SizedBox(),
+                                                    radius: 25,
+                                                    child: Stack(
+                                                      children: [
+                                                        // Show CachedNetworkImage if userProfile?.imageUrl is not empty
+                                                        if (profilePictureUrl != null && profilePictureUrl != "")
+                                                          CachedNetworkImage(
+                                                            imageUrl: profilePictureUrl,
+                                                            imageBuilder: (context, imageProvider) => Container(
+                                                              decoration: BoxDecoration(
+                                                                shape: BoxShape.circle,
+                                                                image: DecorationImage(
+                                                                  image: imageProvider,
+                                                                  fit: BoxFit.cover,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                            progressIndicatorBuilder: (context, url, downloadProgress) =>
+                                                                Center(child: CupertinoActivityIndicator()), // Show CircularProgressIndicator while loading
+                                                            errorWidget: (context, url, error) => Icon(Icons.error),
+                                                          ),
+
+                                                        if (profilePictureUrl == null || profilePictureUrl == "")
+                                                          Center(
+                                                            child: Text(
+                                                              name != null && name != "" ? name![0] : '',
+                                                              style: TextStyle(
+                                                                  fontFamily: 'Helvetica',
+                                                                  fontWeight: FontWeight.bold,
+                                                                  fontSize: 26,
+                                                                  color: AppColors.white),
+                                                            ),
+                                                          ),
+                                                      ],
+                                                    ),
                                                   ),
                                                   SizedBox(width: 16),
                                                   Expanded(
@@ -865,11 +877,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                             }));
                       } else {
                         return Align(
-                          alignment: Alignment.topCenter,
-                          child: Padding(
-                            padding: EdgeInsets.only(top: screenHeight / 4.5),
-                            child: Text('No posts available'),
-                          ),
+                            alignment: Alignment.center,
+                            child: Container(
+                              height: screenHeight/4,
+                              width: screenWidth/1.3,
+                              padding: EdgeInsets.symmetric(vertical: 50),
+                              margin: EdgeInsets.symmetric(horizontal: 50, vertical: 20),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20),
+                                color: AppColors.a,
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text('Nessun nuovo post'),
+                                  SizedBox(height: 20),
+                                  Text('Aggiungi nuovi amici!'),
+                                ],
+                              ),
+                            )
                         );
                       }
                     },
@@ -1583,11 +1609,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                             }));
                       } else {
                         return Align(
-                          alignment: Alignment.topCenter,
-                          child: Padding(
-                            padding: EdgeInsets.only(top: screenHeight / 4.5),
-                            child: Text('No posts available'),
-                          ),
+                          alignment: Alignment.center,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(vertical: 50),
+                            margin: EdgeInsets.symmetric(horizontal: 25, vertical: 20),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              color: AppColors.a,
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text('Non hai ancora nessun amico'),
+                                SizedBox(height: 20),
+                                Text('Aggiungi nuovi amici!'),
+                              ],
+                            ),
+                          )
                         );
                       }
                     },
@@ -1659,7 +1697,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                               color: AppColors.white,
                             ),
                             onTap: () {
-                              context.push("/contact");
+                             context.push("/contact");
                             },
                           ),
                           SizedBox(
@@ -1699,9 +1737,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                     height: hasVoted ? screenHeight / 1.8 : screenHeight / 1.45,
                   ),
                   hasVoted
-                      ? Expanded(
-                          child: GestureDetector(
+                      ? GestureDetector(
                           child: Container(
+                            padding: EdgeInsets.only(top: screenHeight/10),
                             width: screenWidth,
                             child: Center(
                                 child: Text(
@@ -1715,7 +1753,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                           ),
                           behavior: HitTestBehavior.translucent,
                           onTap: goToNextPageTapToContinue,
-                        ))
+                        )
                       : Padding(
                           padding: EdgeInsets.symmetric(horizontal: 20),
                           child: Container(
@@ -1780,6 +1818,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
               ),
             ),
           ],
-        ));
+        )));
   }
 }

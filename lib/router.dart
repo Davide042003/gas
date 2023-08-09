@@ -58,7 +58,7 @@ final GoRouter router = GoRouter(
                             ),
                           ),
                           child: HomeScreen(),
-                        )
+                        ),
                       ],
                     );
                   });
