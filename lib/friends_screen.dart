@@ -141,6 +141,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
     ];
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: AppColors.backgroundDefault,
       body: SafeArea(
         bottom: false,
@@ -272,9 +273,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                 ),
                 _searchBoxFocused
                     ? Expanded(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 20),
-                          child: FutureBuilder<List<Map<String, dynamic>>>(
+                        child: FutureBuilder<List<Map<String, dynamic>>>(
                             future:
                                 friendSystem.combineResults(_searchQuery, ref),
                             builder: (context, snapshot) {
@@ -299,10 +298,10 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                     type = result['type'];
                                   } else if (title != null) {
                                     // Add title widget
-                                    widgets.add(Text(title,
+                                    widgets.add(Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Text(title,
                                         style: TextStyle(
                                             fontSize: 16,
-                                            fontWeight: FontWeight.bold)));
+                                            fontWeight: FontWeight.bold))));
                                   } else if (type == 'friends') {
                                     widgets.add(FriendWidget(
                                         profilePictureUrl: profilePictureUrl,
@@ -318,7 +317,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                           showDialogWithChoices();
                                         }));
                                   } else if (type == 'sentRequest') {
-                                    widgets.add(SentRequestWidget(
+                                    widgets.add(Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: SentRequestWidget(
                                         profilePictureUrl:
                                             profilePictureUrl ?? '',
                                         name: name ?? '',
@@ -330,7 +329,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                           setState(() {
                                             //    sentRequests.removeAt(index);
                                           });
-                                        }));
+                                        })));
                                   } else if (type == 'receivedRequest') {
                                     widgets.add(RequestWidget(
                                         profilePictureUrl: profilePictureUrl,
@@ -371,6 +370,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                   children: widgets,
                                 );
                               } else if (snapshot.hasError) {
+                                print("ok");
                                 return Text('Error: ${snapshot.error}');
                               } else {
                                 return Padding(
@@ -382,7 +382,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                               }
                             },
                           ),
-                        ),
                       )
                     : Expanded(
                         child: AnimatedSwitcher(

@@ -301,7 +301,7 @@ class FriendSystem {
   Future<List<DocumentSnapshot<Map<String, dynamic>>>> searchSentRequests(String searchText, WidgetRef ref) async {
     final queryText = searchText.toLowerCase();
 
-    final sentRequestsSnapshot = await ref.read(receivedRequestsProvider.future);
+    final sentRequestsSnapshot = await ref.read(sentRequestsProvider.future);
 
     final filteredDocs = <DocumentSnapshot<Map<String, dynamic>>>[];
 
@@ -382,7 +382,7 @@ class FriendSystem {
     final friends = await searchFriends(searchText, ref);
     final receivedRequests = await searchReceivedRequests(searchText, ref);
     final sentRequests = await searchSentRequests(searchText, ref);
-    final contacts = await searchContactsByUsername(searchText, ref);
+ //   final contacts = await searchContactsByUsername(searchText, ref);
 
     List<Map<String, dynamic>> combinedResults = [];
 
@@ -404,9 +404,10 @@ class FriendSystem {
       combinedResults.addAll(receivedRequests.map((doc) => doc.data()!));
     }
 
-    if (contacts.isNotEmpty) {
+ /*   if (contacts.isNotEmpty) {
       combinedResults.add({'title': 'Contacts'});
       combinedResults.add({'type': 'contact'});
+      combinedResults.addAll(contacts.map((doc) => doc.data()!));
       combinedResults.addAll(await Future.wait(
         contacts.map((DocumentSnapshot<Map<String, dynamic>> doc) async {
           final contactData = doc.data()!;
@@ -418,7 +419,7 @@ class FriendSystem {
           return contactData;
         }),
       ));
-    }
+    }*/
 
     return combinedResults;
   }

@@ -28,7 +28,7 @@ class FriendWidget extends StatelessWidget {
     return InkWell(onTap: () {
       BottomSheetProfile.showOtherProfileBottomSheet(context, id);
     }, child: Container(
-      padding: EdgeInsets.symmetric(horizontal: 20,vertical: 13),
+      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 13),
       child: Row(
         children: <Widget>[
           Expanded(
