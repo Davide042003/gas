@@ -47,7 +47,6 @@ class FriendSystem {
 
   Future<List<Contact>> getNonFriendsContacts(WidgetRef ref) async {
     final contacts = await ref.read(contactsProvider.future);
-
     final receivedRequestsSnapshot = await ref.read(receivedRequestsProvider.future);
     final sentRequestsSnapshot = await ref.read(sentRequestsProvider.future);
     final friendsSnapshot = await ref.read(friendsProvider.future);
@@ -63,27 +62,37 @@ class FriendSystem {
     receivedRequestsSnapshot.map((doc) => doc['senderUserId'] as String?).toList();
     List<String> friends = friendsSnapshot.map((doc) => doc.id).toList();
 
+    Map<String, DocumentSnapshot<Map<String, dynamic>>> userDataMap = {};
+
+    await Future.wait(phoneNumbers.map((phoneNumber) async {
+      if (phoneNumber != null) {
+        String phoneNumberEdited = phoneNumber.replaceAll(RegExp(r'[^0-9]'), '');
+
+        QuerySnapshot<Map<String, dynamic>> snapshot =
+        await FirebaseFirestore.instance.collection('users').where("phoneNumber", isEqualTo: phoneNumberEdited).get();
+
+        if (snapshot.docs.isNotEmpty) {
+          userDataMap[phoneNumber] = snapshot.docs.first;
+        }
+      }
+    }));
+
     List<Contact> nonFriends = [];
 
-    // Check user existence for each contact
     for (var contact in contacts) {
       if (contact.phones != null &&
           contact.phones!.isNotEmpty &&
           contact.phones!.first.value != null) {
         String phoneNumber = contact.phones!.first.value!;
 
-        // Check if user exists by phone number
-        PhoneNumberCheckResult userExists = await checkUserExistsByPhoneNumber(phoneNumber);
+        if (userDataMap.containsKey(phoneNumber)) {
+          DocumentSnapshot<Map<String, dynamic>> userDoc = userDataMap[phoneNumber]!;
+          String receiverUserId = userDoc.id; // You might need to adjust this based on your data structure
 
-        if (userExists.userExists) {
-          String receiverUserId = await getUserIdFromPhoneNumber(userExists.matchedPhoneNumber);
-
-          if (receiverUserId != userId) {
-            if (!sentRequests.contains(receiverUserId) &&
-                !receivedRequests.contains(receiverUserId) &&
-                !friends.contains(receiverUserId)) {
-              nonFriends.add(contact);
-            }
+          if (!sentRequests.contains(receiverUserId) &&
+              !receivedRequests.contains(receiverUserId) &&
+              !friends.contains(receiverUserId) && receiverUserId != userId) {
+            nonFriends.add(contact);
           }
         }
       }
