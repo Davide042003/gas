@@ -87,7 +87,7 @@ class FriendSystem {
 
         if (userDataMap.containsKey(phoneNumber)) {
           DocumentSnapshot<Map<String, dynamic>> userDoc = userDataMap[phoneNumber]!;
-          String receiverUserId = userDoc.id; // You might need to adjust this based on your data structure
+          String receiverUserId = userDoc.id;
 
           if (!sentRequests.contains(receiverUserId) &&
               !receivedRequests.contains(receiverUserId) &&
@@ -363,36 +363,30 @@ class FriendSystem {
   Future<List<DocumentSnapshot<Map<String, dynamic>>>> searchContactsByUsername(String searchText, WidgetRef ref) async {
     final queryText = searchText.toLowerCase();
 
-    final nonFriends = await ref.read(contactsProvider.future);
+    final nonFriends = await ref.read(nonFriendsContactsProvider.future);
+
     final filteredDocs = <DocumentSnapshot<Map<String, dynamic>>>[];
 
     for (final contact in nonFriends) {
-      if (contact.phones != null &&
-          contact.phones!.isNotEmpty &&
-          contact.displayName != null &&
-          contact.displayName!.isNotEmpty) {
-        final phoneNumber = contact.phones?.first.value;
-        if (phoneNumber != null) {
-          final userExists = await checkUserExistsByPhoneNumber(phoneNumber);
-          if (userExists.userExists) {
-            final otherUserId = await getUserIdFromPhoneNumber(
-                userExists.matchedPhoneNumber);
-            if(otherUserId != userId) {
-              final userSnapshot = await FirebaseFirestore.instance.collection(
-                  'users').doc(otherUserId).get();
-              final username = userSnapshot.data()?['username']
-                  ?.toString()
-                  ?.toLowerCase();
-              final name = userSnapshot.data()?['name']
-                  ?.toString()
-                  ?.toLowerCase();
+      final phoneNumber = contact.phones?.first.value;
+      if (phoneNumber != null) {
+        final phoneNumberEdited = phoneNumber.replaceAll(RegExp(r'[^0-9]'), '');
+        final otherUserId = await getUserIdFromPhoneNumber(phoneNumberEdited);
 
-              if ((username?.contains(queryText) ?? false) ||
-                  (name?.contains(queryText) ?? false)) {
-                filteredDocs.add(userSnapshot);
-              }
-            }
-          }
+        QuerySnapshot<Map<String, dynamic>> snapshot =
+        await FirebaseFirestore.instance.collection('users').where("phoneNumber", isEqualTo: phoneNumberEdited).get();
+        DocumentSnapshot<Map<String, dynamic>> doc = snapshot.docs.first;
+
+        final username = doc.data()?['username']
+            ?.toString()
+            ?.toLowerCase();
+        final name = doc.data()?['name']
+            ?.toString()
+            ?.toLowerCase();
+
+        if ((username?.contains(queryText) ?? false) ||
+            (name?.contains(queryText) ?? false)) {
+          filteredDocs.add(doc);
         }
       }
     }
@@ -406,44 +400,59 @@ class FriendSystem {
     final friends = await searchFriends(searchText, ref);
     final receivedRequests = await searchReceivedRequests(searchText, ref);
     final sentRequests = await searchSentRequests(searchText, ref);
-  //  final contacts = await searchContactsByUsername(searchText, ref);
+    final contacts = await searchContactsByUsername(searchText, ref);
+
+    Set<String> addedUserIds = {}; // Set to track added users
 
     List<Map<String, dynamic>> combinedResults = [];
 
     if (friends.isNotEmpty) {
       combinedResults.add({'title': 'Friends'});
       combinedResults.add({'type': 'friends'});
-      combinedResults.addAll(friends.map((doc) => doc.data()!));
+      combinedResults.addAll(friends.map((doc) {
+        addedUserIds.add(doc.id); // Add user ID to the set
+        return doc.data()!;
+      }));
     }
 
     if (sentRequests.isNotEmpty) {
       combinedResults.add({'title': 'Sent Requests'});
       combinedResults.add({'type': 'sentRequest'});
-      combinedResults.addAll(sentRequests.map((doc) => doc.data()!));
+      combinedResults.addAll(sentRequests.map((doc) {
+        addedUserIds.add(doc.id); // Add user ID to the set
+        return doc.data()!;
+      }));
     }
 
     if (receivedRequests.isNotEmpty) {
       combinedResults.add({'title': 'Received Requests'});
       combinedResults.add({'type': 'receivedRequest'});
-      combinedResults.addAll(receivedRequests.map((doc) => doc.data()!));
+      combinedResults.addAll(receivedRequests.map((doc) {
+        addedUserIds.add(doc.id); // Add user ID to the set
+        return doc.data()!;
+      }));
     }
 
- /*  if (contacts.isNotEmpty) {
+    if (contacts.isNotEmpty) {
       combinedResults.add({'title': 'Contacts'});
       combinedResults.add({'type': 'contact'});
-      combinedResults.addAll(contacts.map((doc) => doc.data()!));
-      combinedResults.addAll(await Future.wait(
-        contacts.map((DocumentSnapshot<Map<String, dynamic>> doc) async {
-          final contactData = doc.data()!;
-          final phoneNumber = contactData['phoneNumber'];
+
+      await Future.forEach(contacts, (doc) async {
+        final contactData = doc.data()!;
+        final phoneNumber = contactData['phoneNumber'];
+
+        if (!addedUserIds.contains(phoneNumber)) {
+          addedUserIds.add(phoneNumber);
 
           final displayName = await getDisplayNameByPhoneNumber(phoneNumber);
 
-          contactData['displayName'] = displayName;
-          return contactData;
-        }),
-      ));
-    }*/
+          if (displayName != null) {
+            contactData['displayName'] = displayName;
+            combinedResults.add(contactData);
+          }
+        }
+      });
+    }
 
     return combinedResults;
   }
@@ -455,8 +464,6 @@ class FriendSystem {
     if (contacts.isNotEmpty) {
       // Get the first contact that matches the phone number
       final Contact contact = contacts.first;
-
-      print(contact.displayName);
       // Retrieve the display name
       return contact.displayName ?? '';
     }

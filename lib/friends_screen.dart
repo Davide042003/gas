@@ -316,9 +316,12 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                         id: id,
                                         onDeleteSentRequest: () async {
                                           await friendSystem
-                                              .deleteSentRequest(id);
+                                              .deleteSentRequest(
+                                              id);
                                           setState(() {
-                                            //    sentRequests.removeAt(index);
+                                       //     sentRequests.removeAt(index);
+                                            ref.refresh(sentRequestsProvider);
+                                            ref.refresh(nonFriendsContactsProvider);
                                           });
                                         })));
                                   } else if (type == 'receivedRequest') {
@@ -330,13 +333,14 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                         onAcceptFriendRequest: () async {
                                           await friendSystem
                                               .acceptFriendRequest(id);
+                                          ref.refresh(receivedRequestsProvider);
+                                          ref.refresh(friendsProvider);
                                         },
                                         onDeleteSentRequest: () async {
                                           await friendSystem
                                               .declineFriendRequest(id);
-                                          setState(() {
-                                            //       receivedRequests.removeAt(index);
-                                          });
+                                          ref.refresh(receivedRequestsProvider);
+                                          ref.refresh(nonFriendsContactsProvider);
                                         }));
                                   } else if (type == 'contact') {
                                     widgets.add(Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: ContactWidget(
@@ -346,13 +350,12 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                         nameContact: displayName,
                                         id: id,
                                         onTap: () async {
-                                          final recipientUserId = id;
-                                          if (id != null) {
-                                            await sendFriendRequest(id);
-                                            setState(() {
-                                              //       registeredContacts.removeAt(index);
-                                            });
-                                          }
+                                          await sendFriendRequest(id);
+                                          ref.refresh(sentRequestsProvider);
+                                          ref.refresh(nonFriendsContactsProvider);
+                                          setState(() {
+                                     //       registeredContacts.removeAt(index);
+                                          });
                                         })));
                                   }
                                 }
