@@ -459,7 +459,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
     double screenHeight = MediaQuery.of(context).size.height;
 
     return FutureBuilder<List<Contact>>(
-      future: friendSystem.getNonFriendsContacts(ref),
+      future: ref.watch(nonFriendsContactsProvider.future),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Padding(

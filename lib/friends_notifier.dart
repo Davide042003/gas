@@ -27,3 +27,8 @@ final contactsProvider = FutureProvider<List<Contact>>((ref) async {
   List<Contact> contacts = await ContactsService.getContacts();
   return contacts;
 });
+
+final nonFriendsContactsProvider = FutureProvider<List<Contact>>((ref) {
+
+  return friendSystem.getNonFriendsContacts(ref);
+});

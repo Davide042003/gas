@@ -45,7 +45,7 @@ class FriendSystem {
     return contactList;
   }
 
-  Future<List<Contact>> getNonFriendsContacts(WidgetRef ref) async {
+  Future<List<Contact>> getNonFriendsContacts(FutureProviderRef<List<Contact>> ref) async {
     final contacts = await ref.read(contactsProvider.future);
     final receivedRequestsSnapshot = await ref.read(receivedRequestsProvider.future);
     final sentRequestsSnapshot = await ref.read(sentRequestsProvider.future);
