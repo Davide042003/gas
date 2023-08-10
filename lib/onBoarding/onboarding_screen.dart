@@ -364,7 +364,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     onPressed: () {
                       if (controllers[step].text.length == 10) {
                         phoneNumber = "+" + country.phoneCode + controllers[step].text;
-                        print(phoneNumber);
                         PhoneAuthService()
                             .verifyPhoneNumber(phoneNumber, _onCodeSent);
                       } else {
@@ -507,6 +506,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   if (controllers[step].text.isNotEmpty) {
                     String? userId = FirebaseAuth.instance.currentUser?.uid;
                     if (userId != null) {
+                      phoneNumber = phoneNumber.replaceAll(RegExp(r'[^0-9]'), '');
+
                       UserInfoService().storeUserInfo(
                         UserModel(
                           id: userId,

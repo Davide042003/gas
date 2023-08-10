@@ -69,22 +69,13 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
 
   Future<DocumentSnapshot<Map<String, dynamic>>> getUserData(
       String phoneNumber) async {
-    QuerySnapshot<Map<String, dynamic>> snapshot =
-        await FirebaseFirestore.instance.collection('users').get();
-
     String phoneNumberEdited = phoneNumber.replaceAll(RegExp(r'[^0-9]'), '');
 
-    for (var doc in snapshot.docs) {
-      String userPhoneNumber = doc['phoneNumber'];
-      if (userPhoneNumber != null) {
-        String userPhoneNumberEdited =
-            userPhoneNumber.replaceAll(RegExp(r'[^0-9]'), '');
-        if (userPhoneNumberEdited.contains(phoneNumberEdited)) {
-          return doc; // Return the matched document directly
-        }
-      }
-    }
-    throw Exception('User data not found.');
+    QuerySnapshot<Map<String, dynamic>> snapshot =
+        await FirebaseFirestore.instance.collection('users').where("phoneNumber", isEqualTo: phoneNumberEdited).get();
+
+    DocumentSnapshot<Map<String, dynamic>> doc = snapshot.docs.first;
+    return doc;
   }
 
   bool isLoading = false;
@@ -290,7 +281,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                       userData['imageUrl'];
                                   final name = userData['name'];
                                   final id = userData['id'];
-                                  final displayName = userData['displayName'];
+                                  final displayName = userData['displayName'] ?? "name";
 
                                   final title = result['title'] as String?;
 
@@ -348,7 +339,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                           });
                                         }));
                                   } else if (type == 'contact') {
-                                    widgets.add(ContactWidget(
+                                    widgets.add(Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: ContactWidget(
                                         profilePicture: profilePictureUrl,
                                         name: name,
                                         username: username,
@@ -362,7 +353,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                               //       registeredContacts.removeAt(index);
                                             });
                                           }
-                                        }));
+                                        })));
                                   }
                                 }
 
