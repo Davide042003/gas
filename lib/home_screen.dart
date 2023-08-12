@@ -20,6 +20,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:gas/friends_screen.dart';
 import 'package:gas/fractional_range_clipper.dart';
 import 'text_answer.dart';
+import 'image_answer.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   @override
@@ -217,6 +218,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                     int randomColor = Random().nextInt(5);
 
                                     int questionLenght = post.answersList?.length! ?? 0;
+                                    if (questionLenght == 0){
+                                      questionLenght = post.images?.length! ?? 0;
+                                    }
+
                                     for (int i = 0; i < questionLenght; i++) {
                                       AnimationController controller = AnimationController(
                                         vsync: this,
@@ -356,152 +361,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                                 MainAxisAlignment
                                                     .spaceEvenly,
                                                 children: [
-                                                  Column(
-                                                    children: [
-                                                      GestureDetector(
-                                                        child: Stack(
-                                                            alignment: Alignment.bottomCenter,
-                                                            children: [
-                                                              Container(
-                                                                width:
-                                                                screenWidth /
-                                                                    2.3,
-                                                                height:
-                                                                screenHeight /
-                                                                    4,
-                                                                decoration:
-                                                                BoxDecoration(
-                                                                  image: post.images![0] !=
-                                                                      null
-                                                                      ? DecorationImage(
-                                                                      image: NetworkImage(post.images![0]),
-                                                                      fit: BoxFit.cover)
-                                                                      : null,
-                                                                  color: Colors
-                                                                      .white,
-                                                                  borderRadius:
-                                                                  BorderRadius.circular(
-                                                                      20),
-                                                                ),
-                                                              ),
-                                                              AnimatedContainer(
-                                                                duration: Duration(seconds: 1),
-                                                                curve: Curves.easeInOut,
-                                                                width: screenWidth / 2.3,
-                                                                height: hasVoted ? (screenHeight / 4) * answersCount[0] : 0,
-                                                                decoration: BoxDecoration(
-                                                                  color: AppColors.fadeImageAnswer.withOpacity(.61),
-                                                                  borderRadius: BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20)),
-                                                                ),
-                                                              ),
-                                                            ]),
-                                                        behavior:
-                                                        HitTestBehavior
-                                                            .translucent,
-                                                        onTap: () async {
-                                                          hasVoted ? null : await clickAnswer(
-                                                              0,
-                                                              post.postId!,
-                                                              friendUserId,
-                                                              isAnonymous,
-                                                              true);
-                                                        },
-                                                      ),
-                                                      SizedBox(
-                                                        height:
-                                                        screenHeight /
-                                                            50,
-                                                      ),
-                                                      hasVoted
-                                                          ? Text(
-                                                        "${(answersCount[0] * 100).round()}%",
-                                                        style: TextStyle(
-                                                            fontFamily:
-                                                            'Helvetica',
-                                                            fontWeight:
-                                                            FontWeight
-                                                                .bold,
-                                                            fontSize:
-                                                            20,
-                                                            color: AppColors
-                                                                .white),
-                                                      )
-                                                          : SizedBox()
-                                                    ],
+                                                  ImageAnswer(
+                                                    answersCount: hasVoted ? answersCount[0] ?? 0.0 : 0.0,
+                                                    imageUrl: post.images![0] ?? "",
+                                                    hasVoted: hasVoted,
+                                                    curvedAnimation: CurvedAnimation(
+                                                      parent: animationControllers[0],
+                                                      curve: Curves.easeInOut,
+                                                    ),
+                                                    clickAnswer: () async {
+                                                      if (!hasVoted) {
+                                                        await clickAnswer(0, post.postId!, friendUserId, isAnonymous, true);
+                                                      }
+                                                    },
                                                   ),
-                                                  Column(
-                                                    children: [
-                                                      GestureDetector(
-                                                        child: Stack(
-                                                            alignment: Alignment.bottomCenter,
-                                                            children: [
-                                                              Container(
-                                                                width:
-                                                                screenWidth /
-                                                                    2.3,
-                                                                height:
-                                                                screenHeight /
-                                                                    4,
-                                                                decoration:
-                                                                BoxDecoration(
-                                                                  image: post.images![0] !=
-                                                                      null
-                                                                      ? DecorationImage(
-                                                                      image: NetworkImage(post.images![0]),
-                                                                      fit: BoxFit.cover)
-                                                                      : null,
-                                                                  color: Colors
-                                                                      .white,
-                                                                  borderRadius:
-                                                                  BorderRadius.circular(
-                                                                      20),
-                                                                ),
-                                                              ),
-                                                              AnimatedContainer(
-                                                                duration: Duration(seconds: 1),
-                                                                curve: Curves.easeInOut,
-                                                                width: screenWidth / 2.3,
-                                                                height: hasVoted ? (screenHeight / 4) * answersCount[1] : 0,
-                                                                decoration: BoxDecoration(
-                                                                  color: AppColors.fadeImageAnswer.withOpacity(.61),
-                                                                  borderRadius: BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20)),
-                                                                ),
-                                                              ),
-                                                            ]),
-                                                        behavior:
-                                                        HitTestBehavior
-                                                            .translucent,
-                                                        onTap: () async {
-                                                          hasVoted ? null : await clickAnswer(
-                                                              1,
-                                                              post.postId!,
-                                                              friendUserId,
-                                                              isAnonymous,
-                                                              true);
-                                                        },
-                                                      ),
-                                                      SizedBox(
-                                                        height:
-                                                        screenHeight /
-                                                            50,
-                                                      ),
-                                                      hasVoted
-                                                          ? Text(
-                                                        "${(answersCount[1] * 100).round()}%",
-                                                        style: TextStyle(
-                                                            fontFamily:
-                                                            'Helvetica',
-                                                            fontWeight:
-                                                            FontWeight
-                                                                .bold,
-                                                            fontSize:
-                                                            20,
-                                                            color: AppColors
-                                                                .white),
-                                                      )
-                                                          : SizedBox()
-                                                    ],
-                                                  )
+                                                  ImageAnswer(
+                                                    answersCount: hasVoted ? answersCount[1] ?? 0.0 : 0.0,
+                                                    imageUrl: post.images![1] ?? "",
+                                                    hasVoted: hasVoted,
+                                                    curvedAnimation: CurvedAnimation(
+                                                      parent: animationControllers[1],
+                                                      curve: Curves.easeInOut,
+                                                    ),
+                                                    clickAnswer: () async {
+                                                      if (!hasVoted) {
+                                                        await clickAnswer(1, post.postId!, friendUserId, isAnonymous, true);
+                                                      }
+                                                    },
+                                                  ),
+
                                                 ],
                                               )
                                                   : post.answersList!.length == 2 ? Row(
@@ -545,150 +433,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                                     MainAxisAlignment
                                                         .spaceEvenly,
                                                     children: [
-                                                      Column(
-                                                        children: [
-                                                          GestureDetector(
-                                                            child: Stack(
-                                                                alignment: Alignment.centerLeft,
-                                                                children: [
-                                                                  Container(
-                                                                    width:
-                                                                    screenWidth /
-                                                                        3.3,
-                                                                    height:
-                                                                    screenHeight /
-                                                                        16,
-                                                                    decoration:
-                                                                    BoxDecoration(
-                                                                      color: Colors
-                                                                          .white,
-                                                                      borderRadius:
-                                                                      BorderRadius.circular(
-                                                                          20),
-                                                                    ),
-                                                                    child: Center(child : Text(
-                                                                      post.answersList![0], style: TextStyle(
-                                                                        fontFamily: 'Helvetica', fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.brown
-                                                                    ),
-                                                                    )),
-                                                                  ),
-                                                                  AnimatedContainer(
-                                                                    duration: Duration(seconds: 1),
-                                                                    curve: Curves.easeInOut,
-                                                                    width: hasVoted ? (screenWidth / 3.3) * answersCount[0] : 0,
-                                                                    height: screenHeight / 16,
-                                                                    decoration: BoxDecoration(
-                                                                      color: AppColors.fadeImageAnswer.withOpacity(.61),
-                                                                      borderRadius: BorderRadius.only(topLeft: Radius.circular(20), bottomLeft: Radius.circular(20)),
-                                                                    ),
-                                                                  ),
-                                                                ]),
-                                                            behavior:
-                                                            HitTestBehavior
-                                                                .translucent,
-                                                            onTap: () async {
-                                                              hasVoted ? null : await clickAnswer(
-                                                                  0,
-                                                                  post.postId!,
-                                                                  friendUserId,
-                                                                  isAnonymous,
-                                                                  false);
-                                                            },
-                                                          ),
-                                                          SizedBox(
-                                                            height:
-                                                            screenHeight /
-                                                                50,
-                                                          ),
-                                                          hasVoted
-                                                              ? Text(
-                                                            "${(answersCount[0] * 100).round()}%",
-                                                            style: TextStyle(
-                                                                fontFamily:
-                                                                'Helvetica',
-                                                                fontWeight:
-                                                                FontWeight
-                                                                    .bold,
-                                                                fontSize:
-                                                                20,
-                                                                color: AppColors
-                                                                    .white),
-                                                          )
-                                                              : SizedBox()
-                                                        ],
+                                                      TextAnswer(
+                                                        answersCount: hasVoted ? answersCount[0] ?? 0.0 : 0.0,
+                                                        answerText: post.answersList?[0] ?? "",
+                                                        hasVoted: hasVoted,
+                                                        curvedAnimation: CurvedAnimation(
+                                                          parent: animationControllers[0],
+                                                          curve: Curves.easeInOut,
+                                                        ),
+                                                        clickAnswer: () async {
+                                                          if (!hasVoted) {
+                                                            await clickAnswer(0, post.postId!, friendUserId, isAnonymous, false);
+                                                          }
+                                                        },
                                                       ),
-                                                      Column(
-                                                        children: [
-                                                          GestureDetector(
-                                                            child: Stack(
-                                                                alignment: Alignment.centerLeft,
-                                                                children: [
-                                                                  Container(
-                                                                    width:
-                                                                    screenWidth /
-                                                                        3.3,
-                                                                    height:
-                                                                    screenHeight /
-                                                                        16,
-                                                                    decoration:
-                                                                    BoxDecoration(
-                                                                      color: Colors
-                                                                          .white,
-                                                                      borderRadius:
-                                                                      BorderRadius.circular(
-                                                                          20),
-                                                                    ),
-                                                                    child: Center(child : Text(
-                                                                      post.answersList![1], style: TextStyle(
-                                                                        fontFamily: 'Helvetica', fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.brown
-                                                                    ),
-                                                                    )),
-                                                                  ),
-                                                                  AnimatedContainer(
-                                                                    duration: Duration(seconds: 1),
-                                                                    curve: Curves.easeInOut,
-                                                                    width: hasVoted ? (screenWidth / 3.3) * answersCount[1] : 0,
-                                                                    height: screenHeight / 16,
-                                                                    decoration: BoxDecoration(
-                                                                      color: AppColors.fadeImageAnswer.withOpacity(.61),
-                                                                      borderRadius: BorderRadius.only(topLeft: Radius.circular(20), bottomLeft: Radius.circular(20)),
-                                                                    ),
-                                                                  ),
-                                                                ]),
-                                                            behavior:
-                                                            HitTestBehavior
-                                                                .translucent,
-                                                            onTap: () async {
-                                                              hasVoted ? null : await clickAnswer(
-                                                                  1,
-                                                                  post.postId!,
-                                                                  friendUserId,
-                                                                  isAnonymous,
-                                                                  false);
-                                                            },
-                                                          ),
-                                                          SizedBox(
-                                                            height:
-                                                            screenHeight /
-                                                                50,
-                                                          ),
-                                                          hasVoted
-                                                              ? Text(
-                                                            "${(answersCount[1] * 100).round()}%",
-                                                            style: TextStyle(
-                                                                fontFamily:
-                                                                'Helvetica',
-                                                                fontWeight:
-                                                                FontWeight
-                                                                    .bold,
-                                                                fontSize:
-                                                                20,
-                                                                color: AppColors
-                                                                    .white),
-                                                          )
-                                                              : SizedBox()
-                                                        ],
-                                                      ),
+                                                      TextAnswer(
+                                                        answersCount: hasVoted ? answersCount[1] ?? 0.0 : 0.0,
+                                                        answerText: post.answersList?[1] ?? "",
+                                                        hasVoted: hasVoted,
+                                                        curvedAnimation: CurvedAnimation(
+                                                          parent: animationControllers[1],
+                                                          curve: Curves.easeInOut,
+                                                        ),
+                                                        clickAnswer: () async {
+                                                          if (!hasVoted) {
+                                                            await clickAnswer(1, post.postId!, friendUserId, isAnonymous, false);
+                                                          }
+                                                        },
+                                                      )
                                                     ],
                                                   ),
                                                   SizedBox(height: screenHeight/40,),
@@ -697,78 +469,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                                     MainAxisAlignment
                                                         .spaceEvenly,
                                                     children: [
-                                                      Column(
-                                                        children: [
-                                                          GestureDetector(
-                                                            child: Stack(
-                                                                alignment: Alignment.centerLeft,
-                                                                children: [
-                                                                  Container(
-                                                                    width:
-                                                                    screenWidth /
-                                                                        3.3,
-                                                                    height:
-                                                                    screenHeight /
-                                                                        16,
-                                                                    decoration:
-                                                                    BoxDecoration(
-                                                                      color: Colors
-                                                                          .white,
-                                                                      borderRadius:
-                                                                      BorderRadius.circular(
-                                                                          20),
-                                                                    ),
-                                                                    child: Center(child : Text(
-                                                                      post.answersList![2], style: TextStyle(
-                                                                        fontFamily: 'Helvetica', fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.brown
-                                                                    ),
-                                                                    )),
-                                                                  ),
-                                                                  AnimatedContainer(
-                                                                    duration: Duration(seconds: 1),
-                                                                    curve: Curves.easeInOut,
-                                                                    width: hasVoted ? (screenWidth / 3.3) * answersCount[2] : 0,
-                                                                    height: screenHeight / 16,
-                                                                    decoration: BoxDecoration(
-                                                                      color: AppColors.fadeImageAnswer.withOpacity(.61),
-                                                                      borderRadius: BorderRadius.only(topLeft: Radius.circular(20), bottomLeft: Radius.circular(20)),
-                                                                    ),
-                                                                  ),
-                                                                ]),
-                                                            behavior:
-                                                            HitTestBehavior
-                                                                .translucent,
-                                                            onTap: () async {
-                                                              hasVoted ? null : await clickAnswer(
-                                                                  2,
-                                                                  post.postId!,
-                                                                  friendUserId,
-                                                                  isAnonymous,
-                                                                  false);
-                                                            },
-                                                          ),
-                                                          SizedBox(
-                                                            height:
-                                                            screenHeight /
-                                                                50,
-                                                          ),
-                                                          hasVoted
-                                                              ? Text(
-                                                            "${(answersCount[2] * 100).round()}%",
-                                                            style: TextStyle(
-                                                                fontFamily:
-                                                                'Helvetica',
-                                                                fontWeight:
-                                                                FontWeight
-                                                                    .bold,
-                                                                fontSize:
-                                                                20,
-                                                                color: AppColors
-                                                                    .white),
-                                                          )
-                                                              : SizedBox()
-                                                        ],
-                                                      ),
+                                                      TextAnswer(
+                                                        answersCount: hasVoted ? answersCount[2] ?? 0.0 : 0.0,
+                                                        answerText: post.answersList?[2] ?? "",
+                                                        hasVoted: hasVoted,
+                                                        curvedAnimation: CurvedAnimation(
+                                                          parent: animationControllers[2],
+                                                          curve: Curves.easeInOut,
+                                                        ),
+                                                        clickAnswer: () async {
+                                                          if (!hasVoted) {
+                                                            await clickAnswer(2, post.postId!, friendUserId, isAnonymous, false);
+                                                          }
+                                                        },
+                                                      )
                                                     ],
                                                   )
                                                 ],
