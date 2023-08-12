@@ -24,7 +24,7 @@ class HomeScreen extends ConsumerStatefulWidget {
   _HomeScreenState createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStateMixin {
+class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProviderStateMixin {
   Color color = AppColors.backgroundDefault;
   final String? userId = FirebaseAuth.instance.currentUser!.uid;
   final PostService postService =
@@ -39,15 +39,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
   bool isAnonymous = false;
   bool isFriends = true;
 
+  late AnimationController _animationController;
+  late CurvedAnimation _curvedAnimation;
+
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: 0);
+
+    _animationController = AnimationController(
+      vsync: this,
+      duration: Duration(seconds: 1),
+    );
+
+    _curvedAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    );
   }
 
   @override
   void dispose() {
     _pageController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
@@ -514,16 +528,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                                                 ),
                                                                 )),
                                                               ),
-                                                              AnimatedContainer(
-                                                                duration: Duration(seconds: 1),
-                                                                curve: Curves.easeInOut,
-                                                                width: hasVoted ? (screenWidth / 3.3) * answersCount[0] : 0,
-                                                                height: screenHeight / 16,
-                                                                decoration: BoxDecoration(
-                                                                  color: AppColors.fadeImageAnswer.withOpacity(.61),
-                                                                  borderRadius: BorderRadius.only(topLeft: Radius.circular(20), bottomLeft: Radius.circular(20)),
-                                                                ),
-                                                              ),
+                                                              hasVoted ? AnimatedBuilder(
+                                                                animation: _curvedAnimation,
+                                                                builder: (BuildContext context, Widget? child) {
+
+                                                                  final clipper = FractionalRangeClipper(
+                                                                    begin: 0,
+                                                                    end: answersCount[0] * _curvedAnimation.value,
+                                                                  );
+
+                                                                  return ClipPath(
+                                                                    clipper: clipper,
+                                                                    clipBehavior: Clip.hardEdge,
+                                                                    child: Container(
+                                                                      width: screenWidth / 3.3,
+                                                                      height: screenHeight / 16,
+                                                                      decoration: BoxDecoration(
+                                                                        color: AppColors.fadeImageAnswer.withOpacity(.61),
+                                                                        borderRadius: BorderRadius.circular(20),
+                                                                      ),
+                                                                    ),
+                                                                  );
+                                                                },
+                                                              ) : Container(),
                                                             ]),
                                                         behavior:
                                                         HitTestBehavior
@@ -535,6 +562,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                                               friendUserId,
                                                               isAnonymous,
                                                               true);
+                                                          _animationController.forward();
                                                         },
                                                       ),
                                                       SizedBox(
@@ -586,16 +614,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                                                 ),
                                                                 )),
                                                               ),
-                                                              AnimatedContainer(
-                                                                duration: Duration(seconds: 1),
-                                                                curve: Curves.easeInOut,
-                                                                width: hasVoted ? (screenWidth / 3.3) * answersCount[1] : 0,
-                                                                height: screenHeight / 16,
-                                                                decoration: BoxDecoration(
-                                                                  color: AppColors.fadeImageAnswer.withOpacity(.61),
-                                                                  borderRadius: BorderRadius.only(topLeft: Radius.circular(20), bottomLeft: Radius.circular(20)),
-                                                                ),
-                                                              ),
+                                                              hasVoted ? new ClipPath(
+                                                                  clipper: FractionalRangeClipper(begin: 0, end: answersCount[1]),
+                                                                  clipBehavior: Clip.hardEdge,
+                                                                  child: Container(
+                                                                    width: screenWidth / 3.3,
+                                                                    height: screenHeight / 16,
+                                                                    decoration: BoxDecoration(
+                                                                      color: AppColors.fadeImageAnswer.withOpacity(.61),
+                                                                      borderRadius: BorderRadius.circular(20),
+                                                                    ),
+                                                                  )) : Container(),
                                                             ]),
                                                         behavior:
                                                         HitTestBehavior
@@ -1819,5 +1848,59 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
             ),
           ],
         )));
+  }
+}
+
+class FractionalRangeClipper extends CustomClipper<Path> {
+  final double begin;
+  final double end;
+
+  FractionalRangeClipper({required this.begin, required this.end});
+
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    final absoluteBegin = size.width * begin;
+    final absoluteEnd = size.width * end;
+    path.lineTo(absoluteBegin, 0);
+    path.lineTo(absoluteBegin, size.height);
+    path.lineTo(absoluteEnd, size.height);
+    path.lineTo(absoluteEnd, 0);
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => true;
+}
+
+class ClipPathFillPainter extends CustomPainter {
+  final double begin;
+  final double end;
+
+  ClipPathFillPainter({required this.begin, required this.end});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    double clipWidth = size.width * (end - begin);
+    Path path = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(size.width - clipWidth, 0, clipWidth, size.height),
+          Radius.circular(20),
+        ),
+      );
+
+    canvas.clipPath(path);
+
+    Paint paint = Paint()
+      ..color = AppColors.fadeImageAnswer.withOpacity(.61);
+
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return true;
   }
 }
