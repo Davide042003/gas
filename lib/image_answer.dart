@@ -48,6 +48,10 @@ class _ImageAnswerState extends State<ImageAnswer> with SingleTickerProviderStat
               Container(
                 width: screenWidth / 2.3,
                 height: screenHeight / 4,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                ),
                 child: CachedNetworkImage(
                   imageUrl: widget.imageUrl,
                   imageBuilder: (context, imageProvider) => Container(
@@ -62,10 +66,6 @@ class _ImageAnswerState extends State<ImageAnswer> with SingleTickerProviderStat
                   progressIndicatorBuilder: (context, url, downloadProgress) =>
                       Center(child: CupertinoActivityIndicator()), // Show CircularProgressIndicator while loading
                   errorWidget: (context, url, error) => Icon(Icons.error),
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
                 ),
               ),
               widget.hasVoted
@@ -82,7 +82,7 @@ class _ImageAnswerState extends State<ImageAnswer> with SingleTickerProviderStat
                     clipBehavior: Clip.hardEdge,
                     child: Container(
                       width: screenWidth / 2.3,
-                      height: (screenHeight / 4) * widget.answersCount,
+                      height: screenHeight / 4,
                       decoration: BoxDecoration(
                         color: AppColors.fadeImageAnswer.withOpacity(.61),
                         borderRadius: BorderRadius.circular(20)
