@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:gas/styles/colors.dart';
 import 'fractional_range_clipper_vertical.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ImageAnswer extends StatefulWidget {
   final double answersCount;
@@ -46,13 +48,22 @@ class _ImageAnswerState extends State<ImageAnswer> with SingleTickerProviderStat
               Container(
                 width: screenWidth / 2.3,
                 height: screenHeight / 4,
+                child: CachedNetworkImage(
+                  imageUrl: widget.imageUrl,
+                  imageBuilder: (context, imageProvider) => Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      image: DecorationImage(
+                        image: imageProvider,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  progressIndicatorBuilder: (context, url, downloadProgress) =>
+                      Center(child: CupertinoActivityIndicator()), // Show CircularProgressIndicator while loading
+                  errorWidget: (context, url, error) => Icon(Icons.error),
+                ),
                 decoration: BoxDecoration(
-                  image: widget.imageUrl.isNotEmpty
-                      ? DecorationImage(
-                    image: NetworkImage(widget.imageUrl),
-                    fit: BoxFit.cover,
-                  )
-                      : null,
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
                 ),
