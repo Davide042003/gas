@@ -7,14 +7,23 @@ import 'friends_service.dart';
 import 'answer_post_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gas/friends_notifier.dart';
+import 'package:flutter_native_image/flutter_native_image.dart';
 
 class PostService {
   final String userId;
 
   PostService({required this.userId});
 
+  Future<File> compressFile(File file) async{
+    File compressedFile = await FlutterNativeImage.compressImage(file.path,
+      quality: 1,);
+    return compressedFile;
+  }
+
   Future<String> saveImage(File imageFile) async {
     try {
+      imageFile = await compressFile(imageFile);
+
       // Generate a unique file name
       String fileName = path.basename(imageFile.path);
 

@@ -74,10 +74,7 @@ class _ImageAnswerState extends State<ImageAnswer> with SingleTickerProviderStat
                       height: (screenHeight / 4) * widget.answersCount,
                       decoration: BoxDecoration(
                         color: AppColors.fadeImageAnswer.withOpacity(.61),
-                        borderRadius: BorderRadius.only(
-                          bottomLeft: Radius.circular(20),
-                          bottomRight: Radius.circular(20),
-                        ),
+                        borderRadius: BorderRadius.circular(20)
                       ),
                     ),
                   );
