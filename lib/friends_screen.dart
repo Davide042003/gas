@@ -262,7 +262,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                 SizedBox(
                   height: 25,
                 ),
-                _searchBoxFocused
+                _searchController.text.length >= 1
                     ? Expanded(
                         child: FutureBuilder<List<Map<String, dynamic>>>(
                             future:

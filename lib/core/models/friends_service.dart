@@ -263,25 +263,34 @@ class FriendSystem {
     await recipientAcceptedRef.delete();
   }
 
-  Stream<List<DocumentSnapshot<Map<String, dynamic>>>> searchUsers(String searchText,) {
+  Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>> searchUsers(String searchText, {int batchSize = 20, DocumentSnapshot<Map<String, dynamic>>? startAfter}) async {
     final queryText = searchText.toLowerCase();
 
-    final stream = FirebaseFirestore.instance
+    Query<Map<String, dynamic>> query = FirebaseFirestore.instance
         .collection('users')
         .orderBy('username', descending: false)
-        .snapshots();
+        .limit(batchSize)
+        .withConverter<Map<String, dynamic>>(
+      fromFirestore: (snapshot, _) => snapshot.data()!,
+      toFirestore: (data, _) => data,
+    );
 
-    return stream.map((snapshot) {
-      final filteredDocs = snapshot.docs.where((doc) {
-        final username = doc.data()['username'].toString().toLowerCase();
-        final name = doc.data()['name'].toString().toLowerCase();
-        final userIdDoc = doc.id;
-        return (username.contains(queryText) || name.contains(queryText)) &&
-            userIdDoc != userId;
-      }).toList();
+    if (startAfter != null) {
+      query = query.startAfterDocument(startAfter);
+    }
 
-      return filteredDocs;
-    });
+    final querySnapshot = await query.get();
+
+    final filteredDocs = querySnapshot.docs.where((doc) {
+      final data = doc.data();
+      final username = data['username'].toString().toLowerCase();
+      final name = data['name'].toString().toLowerCase();
+      final userIdDoc = doc.id;
+      return (username.contains(queryText) || name.contains(queryText)) &&
+          userIdDoc != userId;
+    }).toList();
+
+    return filteredDocs;
   }
 
   Future<List<DocumentSnapshot<Map<String, dynamic>>>> searchFriends(String searchText, WidgetRef ref) async {
