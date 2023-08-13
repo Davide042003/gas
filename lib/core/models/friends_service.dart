@@ -334,36 +334,6 @@ class FriendSystem {
     await recipientAcceptedRef.delete();
   }
 
-  Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>> searchUsers(String searchText, {int batchSize = 20, DocumentSnapshot<Map<String, dynamic>>? startAfter}) async {
-    final queryText = searchText.toLowerCase();
-
-    Query<Map<String, dynamic>> query = FirebaseFirestore.instance
-        .collection('users')
-        .orderBy('username', descending: false)
-        .limit(batchSize)
-        .withConverter<Map<String, dynamic>>(
-      fromFirestore: (snapshot, _) => snapshot.data()!,
-      toFirestore: (data, _) => data,
-    );
-
-    if (startAfter != null) {
-      query = query.startAfterDocument(startAfter);
-    }
-
-    final querySnapshot = await query.get();
-
-    final filteredDocs = querySnapshot.docs.where((doc) {
-      final data = doc.data();
-      final username = data['username'].toString().toLowerCase();
-      final name = data['name'].toString().toLowerCase();
-      final userIdDoc = doc.id;
-      return (username.contains(queryText) || name.contains(queryText)) &&
-          userIdDoc != userId;
-    }).toList();
-
-    return filteredDocs;
-  }
-
   Future<List<DocumentSnapshot<Map<String, dynamic>>>> searchFriends(String searchText, WidgetRef ref) async {
     final queryText = searchText.toLowerCase();
 
@@ -484,6 +454,65 @@ class FriendSystem {
     return filteredList;
   }
 
+  Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>> searchNonFriends(
+      WidgetRef ref,
+      String searchText,
+      ) async {
+    final friendsSnapshot = await ref.read(friendsProvider.future);
+    final nonFriendsContacts = await ref.read(nonFriendsContactsProvider.future);
+    final receivedRequestsSnapshot = await ref.read(receivedRequestsProvider.future);
+    final sentRequestsSnapshot = await ref.read(sentRequestsProvider.future);
+
+    final friendsIds = friendsSnapshot.map((doc) => doc.id).toSet();
+    List<String?> sentRequests = sentRequestsSnapshot.map((doc) => doc['recipientUserId'] as String?).toList();
+    List<String?> receivedRequests = receivedRequestsSnapshot.map((doc) => doc['senderUserId'] as String?).toList();
+    List<String?> nonFriendsContactsIDs = nonFriendsContacts.map((doc) => doc['id'] as String?).toList();
+
+    Set<String> addedUserIds = Set(); // To keep track of added users
+
+    QuerySnapshot<Map<String, dynamic>> nameQuerySnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .where('name', isGreaterThanOrEqualTo: searchText, isLessThan: searchText + 'z')
+        .limit(25)
+        .get();
+
+    QuerySnapshot<Map<String, dynamic>> usernameQuerySnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .where('username', isGreaterThanOrEqualTo: searchText, isLessThan: searchText + 'z')
+        .limit(25)
+        .get();
+
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> nonFriends = [];
+
+    for (var doc in nameQuerySnapshot.docs) {
+      String userId = doc.id;
+
+      if (!friendsIds.contains(userId) && !sentRequests.contains(userId) && !receivedRequests.contains(userId) && !nonFriendsContactsIDs.contains(userId) && !addedUserIds.contains(userId)) {
+        nonFriends.add(doc);
+        addedUserIds.add(userId);
+      }
+
+      if (nonFriends.length >= 25) {
+        return nonFriends;
+      }
+    }
+
+    for (var doc in usernameQuerySnapshot.docs) {
+      String userId = doc.id;
+
+      if (!friendsIds.contains(userId) && !sentRequests.contains(userId) && !receivedRequests.contains(userId) && !nonFriendsContactsIDs.contains(userId) && !addedUserIds.contains(userId)) {
+        nonFriends.add(doc);
+        addedUserIds.add(userId);
+      }
+
+      if (nonFriends.length >= 25) {
+        return nonFriends;
+      }
+    }
+
+    return nonFriends;
+  }
+
   Future<List<Map<String, dynamic>>> combineResults(String searchText, WidgetRef ref) async {
     final queryText = searchText.toLowerCase();
 
@@ -546,6 +575,19 @@ class FriendSystem {
           'userDoc': userDoc,
           'commonFriendsCount': commonFriendsCount,
         });
+      }
+    }
+
+    if (combinedResults.length < 20) {
+      final general = await searchNonFriends(ref, searchText);
+
+      if(general.isNotEmpty){
+        combinedResults.add({'title': 'PIU RISULTATI'});
+        combinedResults.add({'type': 'general'});
+        combinedResults.addAll(general.map((doc) {
+          addedUserIds.add(doc.id); // Add user ID to the set
+          return doc.data()!;
+        }));
       }
     }
 

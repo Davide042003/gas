@@ -18,6 +18,7 @@ import 'package:gas/friends_notifier.dart';
 import 'package:gas/user_notifier.dart';
 import 'core/models/user_model.dart';
 import 'core/ui/mutual_friend_widget.dart';
+import 'core/ui/general_user_widget.dart';
 
 class FriendsScreen extends ConsumerStatefulWidget {
   @override
@@ -399,6 +400,17 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                                   potentialFriendsWithCommonFriendsProvider);
                                             })));
                                   }
+                                } else if (type == 'general') {
+                                  widgets.add(Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: GeneralUserWidget(
+                                      profilePicture: profilePictureUrl,
+                                      name: name,
+                                      username: username,
+                                      id: id,
+                                      onTap: () async {
+                                  await sendFriendRequest(id);
+                                  ref.refresh(sentRequestsProvider);
+                                  //rimuovi elemnto qui
+                                  })));
                                 }
                               }
 
