@@ -287,7 +287,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                 final displayName =
                                     userData['displayName'] ?? "name";
                                 final commonFriendsCount =
-                                    userData['commonFriendsCount'] ?? 1;
+                                    userData['commonFriendsCount'] ?? 0;
 
                                 final title = result['title'] as String?;
 
@@ -369,23 +369,23 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                             ref.refresh(sentRequestsProvider);
                                             ref.refresh(
                                                 nonFriendsContactsProvider);
-                                            setState(() {
-                                              //       registeredContacts.removeAt(index);
-                                            });
                                           })));
-                                }else if (type == 'mutual') {
-                                  final userData = result['userDoc'] as DocumentSnapshot<Map<String, dynamic>>;
-                                  final commonFriendsCount = result['commonFriendsCount'] as int;
+                                } else if (type == 'mutual') {
+                                  final userData = result['userDoc']
+                                      as DocumentSnapshot<Map<String, dynamic>>;
+                                  final commonFriendsCount =
+                                      result['commonFriendsCount'] as int;
 
                                   if (userData != null) {
                                     final name = userData['name'];
                                     final username = userData['username'];
-                                    final profilePictureUrl = userData['imageUrl'];
+                                    final profilePictureUrl =
+                                        userData['imageUrl'];
                                     final id = userData['id'];
 
                                     widgets.add(Padding(
-                                        padding:
-                                        EdgeInsets.symmetric(horizontal: 20),
+                                        padding: EdgeInsets.symmetric(
+                                            horizontal: 20),
                                         child: MutualFriendWidget(
                                             profilePicture: profilePictureUrl,
                                             name: name,
@@ -506,7 +506,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
     return ListView(
       children: [
         // First FutureBuilder for non-friend contacts
-        FutureBuilder<List<Contact>>(
+        FutureBuilder(
           future: ref.watch(nonFriendsContactsProvider.future),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -525,7 +525,8 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                 return Column(
                   children: [
                     Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                       child: Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
@@ -538,56 +539,36 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                         ),
                       ),
                     ),
-                    // ListView.builder for non-friend contacts
                     ListView.builder(
                       padding: EdgeInsets.symmetric(horizontal: 20),
                       shrinkWrap: true,
                       physics: NeverScrollableScrollPhysics(),
                       itemCount: registeredContacts.length,
                       itemBuilder: (context, index) {
-                        final contact = registeredContacts[index];
-                        final phoneNumber = contact.phones?.firstOrNull?.value;
+                        final userData = registeredContacts[index];
 
-                        return FutureBuilder<
-                            DocumentSnapshot<Map<String, dynamic>>>(
-                          future:
-                          phoneNumber != null ? getUserData(phoneNumber) : null,
-                          builder: (context, userSnapshot) {
-                            if (userSnapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return CupertinoActivityIndicator(
-                                radius: 20,
-                              );
-                            } else if (userSnapshot.hasError) {
-                              return Text('Error: ${userSnapshot.error}');
-                            } else {
-                              final userData = userSnapshot.data?.data();
-                              if (userData != null) {
-                                final name = userData['name'];
-                                final username = userData['username'];
-                                final profilePicture = userData['imageUrl'];
-                                final id = userData['id'];
+                        if (userData != null) {
+                          final name = userData['name'];
+                          final username = userData['username'];
+                          final profilePicture = userData['imageUrl'];
+                          final id = userData['id'];
+                          final displayName = userData['displayName'];
 
-                                return ContactWidget(
-                                  profilePicture: profilePicture,
-                                  name: name,
-                                  username: username,
-                                  nameContact: contact.displayName ?? '',
-                                  id: id,
-                                  onTap: () async {
-                                    await sendFriendRequest(id);
-                                    ref.refresh(sentRequestsProvider);
-                                    setState(() {
-                                      registeredContacts.removeAt(index);
-                                    });
-                                  },
-                                );
-                              } else {
-                                return Text('User data not found.');
-                              }
-                            }
-                          },
-                        );
+                          return ContactWidget(
+                            profilePicture: profilePicture,
+                            name: name,
+                            username: username,
+                            nameContact: displayName ?? '',
+                            id: id,
+                            onTap: () async {
+                              await sendFriendRequest(id);
+                              ref.refresh(sentRequestsProvider);
+                              setState(() {
+                                registeredContacts.removeAt(index);
+                              });
+                            },
+                          );
+                        }
                       },
                     ),
                   ],
@@ -617,7 +598,8 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                 return Column(
                   children: [
                     Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                       child: Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
@@ -636,8 +618,10 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                       physics: NeverScrollableScrollPhysics(),
                       itemCount: potentialFriends.length,
                       itemBuilder: (context, index) {
-                        final userData = potentialFriends[index]['userDoc'] as DocumentSnapshot<Map<String, dynamic>>;
-                        final commonFriendsCount = potentialFriends[index]['commonFriendsCount'] as int;
+                        final userData = potentialFriends[index]['userDoc']
+                            as DocumentSnapshot<Map<String, dynamic>>;
+                        final commonFriendsCount = potentialFriends[index]
+                            ['commonFriendsCount'] as int;
 
                         if (userData != null) {
                           final name = userData['name'];
@@ -656,7 +640,8 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                               onTap: () async {
                                 await sendFriendRequest(id);
                                 ref.refresh(sentRequestsProvider);
-                                ref.refresh(potentialFriendsWithCommonFriendsProvider);
+                                ref.refresh(
+                                    potentialFriendsWithCommonFriendsProvider);
                               },
                             ),
                           );

@@ -33,6 +33,6 @@ final potentialFriendsWithCommonFriendsProvider = FutureProvider<List<Map<String
 });
 
 
-final nonFriendsContactsProvider = FutureProvider<List<Contact>>((ref) {
+final nonFriendsContactsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) {
   return friendSystem.getNonFriendsContacts(ref);
 });

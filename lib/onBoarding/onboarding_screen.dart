@@ -516,6 +516,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           phoneNumber: phoneNumber,
                           imageUrl: "",
                           timestamp: Timestamp.now(),
+                          displayName: "",
                         ),
                       );
                     } else {
