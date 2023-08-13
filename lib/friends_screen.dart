@@ -69,56 +69,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
     }
   }
 
-  Future<DocumentSnapshot<Map<String, dynamic>>> getUserData(
-      String phoneNumber) async {
-    String phoneNumberEdited = phoneNumber.replaceAll(RegExp(r'[^0-9]'), '');
-
-    QuerySnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore
-        .instance
-        .collection('users')
-        .where("phoneNumber", isEqualTo: phoneNumberEdited)
-        .get();
-
-    DocumentSnapshot<Map<String, dynamic>> doc = snapshot.docs.first;
-    return doc;
-  }
-
-  bool isLoading = false;
   String friendToDeleteId = '';
-  void showDialogWithChoices() {
-    showDialog(
-      barrierDismissible: false,
-      context: context,
-      builder: (BuildContext context) {
-        return CupertinoAlertDialog(
-          title: Text('Choose an option'),
-          content: Text('Your friend will not see you anymore'),
-          actions: [
-            CupertinoDialogAction(
-              child: Text('Annulla'),
-              onPressed: () {
-                setState(() {
-                  isLoading = false;
-                });
-                Navigator.pop(context);
-              },
-            ),
-            CupertinoDialogAction(
-              child: Text('Elimina'),
-              onPressed: () async {
-                setState(() {
-                  isLoading = false;
-                });
-                await friendSystem.deleteFriend(friendToDeleteId);
-                ref.refresh(friendsProvider);
-                Navigator.pop(context);
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
 
   @override
   void dispose() {
@@ -309,14 +260,18 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                       name: name,
                                       username: username,
                                       id: id,
-                                      isLoading: isLoading,
-                                      onDeleteFriend: () {
-                                        setState(() {
-                                          friendToDeleteId = id;
-                                          isLoading = true;
-                                        });
-                                        showDialogWithChoices();
-                                      }));
+                                      onDeleteFriend: () async {
+                                        await friendSystem.deleteFriend(friendToDeleteId);
+                                        ref.refresh(friendsProvider);
+                                        Navigator.pop(context);
+                                      }, onNo: (){
+                                    Navigator.pop(context);
+                                  },
+                                    onTap: () {
+                                      setState(() {
+                                        friendToDeleteId = id;
+                                      });
+                                    },));
                                 } else if (type == 'sentRequest') {
                                   widgets.add(Padding(
                                       padding:
@@ -776,13 +731,17 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                         name: name,
                         username: username!,
                         id: id,
-                        isLoading: isLoading,
-                        onDeleteFriend: () {
+                          onDeleteFriend: () async {
+                            await friendSystem.deleteFriend(friendToDeleteId);
+                            ref.refresh(friendsProvider);
+                            Navigator.pop(context);
+                          }, onNo: () {
+                        Navigator.pop(context);
+                      },
+                        onTap: () {
                           setState(() {
-                            friendToDeleteId = friendId;
-                            isLoading = true;
+                            friendToDeleteId = id;
                           });
-                          showDialogWithChoices();
                         },
                       );
                     },
