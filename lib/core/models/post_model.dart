@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gas/core/models/answer_post_model.dart';
+import 'package:flutter/material.dart';
 
 class PostModel {
   final String? id;
@@ -11,6 +12,7 @@ class PostModel {
   final bool? isMyFriends;
   final Map<int, List<AnswerPostModel>>? answersTap; // Map of int keys to lists of AnswerPostModel
   final Timestamp? timestamp;
+  Color? colorBackground;
 
   PostModel({
     this.id,
@@ -21,6 +23,7 @@ class PostModel {
     this.isMyFriends,
     this.answersTap,
     this.timestamp,
+    this.colorBackground,
   });
 
   PostModel.fromData(Map<String, dynamic> data)
@@ -38,7 +41,8 @@ class PostModel {
                 .toList(),
           ),
         ),
-        timestamp = data['timestamp'];
+        timestamp = data['timestamp'],
+        colorBackground = data['color'];
 
   Map<String, dynamic> toJson() {
     return {
@@ -50,6 +54,7 @@ class PostModel {
       'isMyFriends': isMyFriends,
       'answersTap': answersTap?.map((key, value) => MapEntry(key.toString(), value.map((answer) => answer.toJson()).toList())),
       'timestamp': timestamp,
+      'colorBackground' : colorBackground,
     };
   }
 }

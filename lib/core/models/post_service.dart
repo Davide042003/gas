@@ -8,6 +8,8 @@ import 'answer_post_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gas/friends_notifier.dart';
 import 'package:flutter_native_image/flutter_native_image.dart';
+import 'package:gas/styles/colors.dart';
+import 'dart:math';
 
 class PostService {
   final String userId;
@@ -168,6 +170,9 @@ class PostService {
 
         if(post.isMyFriends!) {
           if (!await _hasUserSeenPost(postId)) {
+            int randomColor = Random().nextInt(5);
+
+            post.colorBackground = AppColors.backgroundColors[randomColor];
             friendPosts.add(post);
           }
         }
@@ -177,6 +182,7 @@ class PostService {
     // Sort the friendPosts list based on timestamp (descending order)
     friendPosts.sort((a, b) => b.timestamp!.compareTo(a.timestamp!));
 
+    print("ok");
     return friendPosts;
   }
 

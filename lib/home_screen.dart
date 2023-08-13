@@ -215,8 +215,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                         .toString()
                                         .padLeft(2, '0');
 
-                                    int randomColor = Random().nextInt(5);
-
                                     int questionLenght = post.answersList?.length! ?? 0;
                                     if (questionLenght == 0){
                                       questionLenght = post.images?.length! ?? 0;
@@ -233,8 +231,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                     return Container(
                                         color: index == 0
                                             ? AppColors.backgroundDefault
-                                            : AppColors
-                                            .backgroundColors[randomColor],
+                                            : post.colorBackground,
                                         child: Padding(
                                           padding: EdgeInsets.only(
                                               right: 20,
