@@ -101,6 +101,70 @@ class FriendSystem {
     return nonFriends;
   }
 
+  Future<List<Map<String, dynamic>>> getPotentialFriendsWithCommonFriendsCount(FutureProviderRef<List<Map<String, dynamic>>> ref) async {
+    final friendsSnapshot = await ref.read(friendsProvider.future);
+    final nonFriendsContacts = await ref.read(nonFriendsContactsProvider.future);
+    final receivedRequestsSnapshot = await ref.read(receivedRequestsProvider.future);
+    final sentRequestsSnapshot = await ref.read(sentRequestsProvider.future);
+
+    final friendsIds = friendsSnapshot.map((doc) => doc.id).toList();
+
+    List<String?> sentRequests = sentRequestsSnapshot.map((doc) => doc['recipientUserId'] as String?).toList();
+    List<String?> receivedRequests = receivedRequestsSnapshot.map((doc) => doc['senderUserId'] as String?).toList();
+
+    Map<String, int> potentialFriendsWithCommonFriendsCount = {}; // Map to store potential friends and their common friend count
+
+    for (final friendId in friendsIds) {
+      final friendFriendsSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(friendId)
+          .collection('friends')
+          .doc('accepted_friends')
+          .collection('friends')
+          .get();
+
+      final friendFriendsIds = friendFriendsSnapshot.docs.map((doc) => doc.id).toList();
+
+      for (final potentialFriendId in friendFriendsIds) {
+        if (!friendsIds.contains(potentialFriendId)) {
+          potentialFriendsWithCommonFriendsCount[potentialFriendId] =
+              (potentialFriendsWithCommonFriendsCount[potentialFriendId] ?? 0) + 1;
+        }
+      }
+    }
+
+    final currentUserFriendsSnapshot = await ref.read(friendsProvider.future);
+    final currentUserFriendsIds = currentUserFriendsSnapshot.map((doc) => doc.id).toList();
+
+    // Exclude current user from potential friends
+    currentUserFriendsIds.add(userId);
+
+    potentialFriendsWithCommonFriendsCount.removeWhere((id, count) =>
+    currentUserFriendsIds.contains(id) ||
+        sentRequests.contains(id) ||
+        receivedRequests.contains(id) ||
+        friendsIds.contains(id));
+
+    final potentialFriendDocs = await Future.wait(potentialFriendsWithCommonFriendsCount.keys.map((id) =>
+        FirebaseFirestore.instance
+            .collection('users')
+            .doc(id)
+            .get()));
+
+    List<Map<String, dynamic>> potentialFriendsWithCommonFriends = [];
+
+    for (var i = 0; i < potentialFriendDocs.length; i++) {
+      final friendDoc = potentialFriendDocs[i];
+      final commonFriendsCount = potentialFriendsWithCommonFriendsCount[friendDoc.id];
+      potentialFriendsWithCommonFriends.add({
+        'userDoc': friendDoc,
+        'commonFriendsCount': commonFriendsCount,
+      });
+    }
+
+    return potentialFriendsWithCommonFriends;
+  }
+
   Future<PhoneNumberCheckResult> checkUserExistsByPhoneNumber(String phoneNumber) async {
 
     QuerySnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore.instance
@@ -403,6 +467,23 @@ class FriendSystem {
     return filteredDocs;
   }
 
+  Future<List<Map<String, dynamic>>> searchPotentialFriendsWithCommonFriends(
+      String searchText, WidgetRef ref) async {
+    final potentialFriendsWithCommonFriends = await ref.read(potentialFriendsWithCommonFriendsProvider.future);
+
+    final filteredList = potentialFriendsWithCommonFriends.where((user) {
+      final userDoc = user['userDoc'];
+      final userData = userDoc.data();
+      final username = userData?['username']?.toString()?.toLowerCase();
+      final name = userData?['name']?.toString()?.toLowerCase();
+
+      return (username?.contains(searchText) ?? false) ||
+          (name?.contains(searchText) ?? false);
+    }).toList();
+
+    return filteredList;
+  }
+
   Future<List<Map<String, dynamic>>> combineResults(String searchText, WidgetRef ref) async {
     final queryText = searchText.toLowerCase();
 
@@ -410,6 +491,7 @@ class FriendSystem {
     final receivedRequests = await searchReceivedRequests(searchText, ref);
     final sentRequests = await searchSentRequests(searchText, ref);
     final contacts = await searchContactsByUsername(searchText, ref);
+    final mutual = await searchPotentialFriendsWithCommonFriends(searchText, ref);
 
     Set<String> addedUserIds = {}; // Set to track added users
 
@@ -463,6 +545,21 @@ class FriendSystem {
       });
     }
 
+    if (mutual.isNotEmpty) {
+      combinedResults.add({'title': 'PERSONE CHE POTRESTI CONOSCERE'});
+      combinedResults.add({'type': 'mutual'});
+
+      // Add potential friends with common friends along with the number of common friends
+      for (final potentialFriend in mutual) {
+        final userDoc = potentialFriend['userDoc'];
+        final commonFriendsCount = potentialFriend['commonFriendsCount'];
+        combinedResults.add({
+          'userDoc': userDoc,
+          'commonFriendsCount': commonFriendsCount,
+        });
+      }
+    }
+
     return combinedResults;
   }
 
@@ -510,6 +607,7 @@ class FriendSystem {
       }
     }
   }
+
 }
 
 class PhoneNumberCheckResult {

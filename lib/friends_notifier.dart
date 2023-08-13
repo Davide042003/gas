@@ -28,6 +28,11 @@ final contactsProvider = FutureProvider<List<Contact>>((ref) async {
   return contacts;
 });
 
+final potentialFriendsWithCommonFriendsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  return friendSystem.getPotentialFriendsWithCommonFriendsCount(ref);
+});
+
+
 final nonFriendsContactsProvider = FutureProvider<List<Contact>>((ref) {
   return friendSystem.getNonFriendsContacts(ref);
 });

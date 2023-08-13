@@ -8,8 +8,9 @@ class UserModel {
   final String? bio;
   final String? imageUrl;
   final Timestamp? timestamp;
+  String? displayName;
 
-  UserModel({this.id, this.name, this.username, this.phoneNumber, this.bio, this.imageUrl, this.timestamp});
+  UserModel({this.id, this.name, this.username, this.phoneNumber, this.bio, this.imageUrl, this.timestamp, this.displayName});
 
   UserModel.fromData(Map<String, dynamic> data):
         id = data['id'],
@@ -18,7 +19,8 @@ class UserModel {
         phoneNumber = data['phoneNumber'],
         bio = data['bio'],
         imageUrl = data['imageUrl'],
-        timestamp = data['timestamp'];
+        timestamp = data['timestamp'],
+  displayName = data['displayName'];
 
   Map<String, dynamic> toJson() {
     return {
@@ -29,6 +31,7 @@ class UserModel {
       'bio': bio,
       'imageUrl': imageUrl,
       'timestamp': timestamp,
+      'displayName' : displayName
     };
   }
 }
