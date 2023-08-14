@@ -145,7 +145,7 @@ class PostService {
     final FriendSystem friendService = FriendSystem(userId: userId);
 
     final friendsSnapshot = await friendService.getFriendsImm();
-    final friendIds = friendsSnapshot.docs.map((doc) => doc.id).toList();
+    final friendIds = friendsSnapshot.map((doc) => doc.id).toList();
     final friendPosts = <PostModel>[];
 
     // Retrieve the posts of each friend and filter out the posts the user has already seen

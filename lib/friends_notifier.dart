@@ -20,7 +20,7 @@ final sentRequestsProvider = FutureProvider<List<DocumentSnapshot>>((ref) async 
 
 final friendsProvider = FutureProvider<List<DocumentSnapshot>>((ref) async {
   final snapshot = await friendSystem.getFriendsImm();
-  return snapshot.docs;
+  return snapshot;
 });
 
 final contactsProvider = FutureProvider<List<Contact>>((ref) async {

@@ -688,13 +688,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
             child: friendsAsyncValue.when(
           data: (friends) {
             if (friends.isNotEmpty) {
-              /*      friends.sort((a, b) {
-                final friendDataA = (a.data() as Map<String, dynamic>);
-                final friendDataB = (b.data() as Map<String, dynamic>);
-                final usernameA = friendDataA['username'] as String;
-                final usernameB = friendDataB['username'] as String;
-                return usernameA.compareTo(usernameB);
-              });*/
               return ListView.builder(
                 shrinkWrap: true,
                 physics: NeverScrollableScrollPhysics(),

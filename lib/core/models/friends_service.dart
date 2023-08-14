@@ -29,7 +29,7 @@ class FriendSystem {
         .get();
   }
 
-  Future<QuerySnapshot<Map<String, dynamic>>> getFriendsImm() {
+ /* Future<QuerySnapshot<Map<String, dynamic>>> getFriendsImm() {
     return FirebaseFirestore.instance
         .collection('users')
         .doc(userId)
@@ -37,6 +37,38 @@ class FriendSystem {
         .doc('accepted_friends')
         .collection('friends')
         .get();
+  }*/
+
+  Future<List<DocumentSnapshot<Map<String, dynamic>>>> getFriendsImm() async {
+    final QuerySnapshot<Map<String, dynamic>> friendsQuery = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .collection('friends')
+        .doc('accepted_friends')
+        .collection('friends')
+        .get();
+
+    List<String> friendIds = friendsQuery.docs.map((doc) => doc.id).toList();
+
+    List<DocumentSnapshot<Map<String, dynamic>>> friendSnapshots = [];
+
+    for (String friendId in friendIds) {
+      DocumentSnapshot<Map<String, dynamic>> userSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(friendId) // Assuming user IDs are the same as friend IDs
+          .get();
+
+      friendSnapshots.add(userSnapshot);
+    }
+
+    // Sort the friendSnapshots based on usernames
+    friendSnapshots.sort((a, b) {
+      String usernameA = a.data()!['username']; // Update with the actual field name
+      String usernameB = b.data()!['username']; // Update with the actual field name
+      return usernameA.compareTo(usernameB);
+    });
+
+    return friendSnapshots;
   }
 
   Future<List<Contact>> getContacts() async {
