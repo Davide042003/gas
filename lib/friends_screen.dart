@@ -229,165 +229,195 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                               final widgets = <Widget>[];
                               String type = "";
 
-                              // Build widgets for each result
-                              for (final result in searchResults) {
-                                final userData = result;
-                                final username = userData['username'];
-                                final profilePictureUrl = userData['imageUrl'];
-                                final name = userData['name'];
-                                final id = userData['id'];
-                                final displayName =
-                                    userData['displayName'] ?? "name";
-                                final commonFriendsCount =
-                                    userData['commonFriendsCount'] ?? 0;
+                              if (searchResults.length > 0) {
+                                // Build widgets for each result
+                                for (final result in searchResults) {
+                                  final userData = result;
+                                  final username = userData['username'];
+                                  final profilePictureUrl = userData['imageUrl'];
+                                  final name = userData['name'];
+                                  final id = userData['id'];
+                                  final displayName =
+                                      userData['displayName'] ?? "name";
+                                  final commonFriendsCount =
+                                      userData['commonFriendsCount'] ?? 0;
 
-                                final title = result['title'] as String?;
+                                  final title = result['title'] as String?;
 
-                                if (result['type'] != null) {
-                                  type = result['type'];
-                                } else if (title != null) {
-                                  // Add title widget
-                                  widgets.add(Padding(
-                                      padding:
-                                          EdgeInsets.symmetric(horizontal: 20),
-                                      child: Text(title,
-                                          style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold))));
-                                } else if (type == 'friends') {
-                                  widgets.add(FriendWidget(
+                                  if (result['type'] != null) {
+                                    type = result['type'];
+                                  } else if (title != null) {
+                                    // Add title widget
+                                    widgets.add(Padding(
+                                        padding:
+                                        EdgeInsets.symmetric(horizontal: 20),
+                                        child: Text(title,
+                                            style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold))));
+                                  } else if (type == 'friends') {
+                                    widgets.add(FriendWidget(
                                       profilePictureUrl: profilePictureUrl,
                                       name: name,
                                       username: username,
                                       id: id,
                                       onDeleteFriend: () async {
-                                        await friendSystem.deleteFriend(friendToDeleteId);
+                                        await friendSystem.deleteFriend(
+                                            friendToDeleteId);
                                         ref.refresh(friendsProvider);
                                         Navigator.pop(context);
-                                      }, onNo: (){
-                                    Navigator.pop(context);
-                                  },
-                                    onTap: () {
-                                      setState(() {
-                                        friendToDeleteId = id;
-                                      });
-                                    },));
-                                } else if (type == 'sentRequest') {
-                                  widgets.add(Padding(
-                                      padding:
-                                          EdgeInsets.symmetric(horizontal: 20),
-                                      child: SentRequestWidget(
-                                          profilePictureUrl:
-                                              profilePictureUrl ?? '',
-                                          name: name ?? '',
-                                          username: username ?? '',
-                                          id: id,
-                                          onDeleteSentRequest: () async {
-                                            await friendSystem
-                                                .deleteSentRequest(id);
-                                            setState(() {
+                                      },
+                                      onNo: () {
+                                        Navigator.pop(context);
+                                      },
+                                      onTap: () {
+                                        setState(() {
+                                          friendToDeleteId = id;
+                                        });
+                                      },));
+                                  } else if (type == 'sentRequest') {
+                                    widgets.add(Padding(
+                                        padding:
+                                        EdgeInsets.symmetric(horizontal: 20),
+                                        child: SentRequestWidget(
+                                            profilePictureUrl:
+                                            profilePictureUrl ?? '',
+                                            name: name ?? '',
+                                            username: username ?? '',
+                                            id: id,
+                                            onDeleteSentRequest: () async {
+                                              await friendSystem
+                                                  .deleteSentRequest(id);
+                                              setState(() {
+                                                ref.refresh(
+                                                    sentRequestsProvider);
+                                                ref.refresh(
+                                                    nonFriendsContactsProvider);
+                                                setState(() {
+                                                  searchResults.remove(result);
+                                                });
+                                              });
+                                            })));
+                                  } else if (type == 'receivedRequest') {
+                                    widgets.add(RequestWidget(
+                                        profilePictureUrl: profilePictureUrl,
+                                        name: name,
+                                        username: username,
+                                        id: id,
+                                        onAcceptFriendRequest: () async {
+                                          await friendSystem
+                                              .acceptFriendRequest(id);
+                                          ref.refresh(receivedRequestsProvider);
+                                          ref.refresh(friendsProvider);
+                                          setState(() {
+                                            searchResults.remove(result);
+                                          });
+                                        },
+                                        onDeleteSentRequest: () async {
+                                          await friendSystem
+                                              .declineFriendRequest(id);
+                                          ref.refresh(receivedRequestsProvider);
+                                          ref.refresh(
+                                              nonFriendsContactsProvider);
+                                          setState(() {
+                                            searchResults.remove(result);
+                                          });
+                                        }));
+                                  } else if (type == 'contact') {
+                                    widgets.add(Padding(
+                                        padding:
+                                        EdgeInsets.symmetric(horizontal: 20),
+                                        child: ContactWidget(
+                                            profilePicture: profilePictureUrl,
+                                            name: name,
+                                            username: username,
+                                            nameContact: displayName,
+                                            id: id,
+                                            onTap: () async {
+                                              await sendFriendRequest(id);
                                               ref.refresh(sentRequestsProvider);
                                               ref.refresh(
                                                   nonFriendsContactsProvider);
                                               setState(() {
                                                 searchResults.remove(result);
                                               });
-                                            });
-                                          })));
-                                } else if (type == 'receivedRequest') {
-                                  widgets.add(RequestWidget(
-                                      profilePictureUrl: profilePictureUrl,
-                                      name: name,
-                                      username: username,
-                                      id: id,
-                                      onAcceptFriendRequest: () async {
-                                        await friendSystem
-                                            .acceptFriendRequest(id);
-                                        ref.refresh(receivedRequestsProvider);
-                                        ref.refresh(friendsProvider);
-                                        setState(() {
-                                          searchResults.remove(result);
-                                        });
-                                      },
-                                      onDeleteSentRequest: () async {
-                                        await friendSystem
-                                            .declineFriendRequest(id);
-                                        ref.refresh(receivedRequestsProvider);
-                                        ref.refresh(nonFriendsContactsProvider);
-                                        setState(() {
-                                          searchResults.remove(result);
-                                        });
-                                      }));
-                                } else if (type == 'contact') {
-                                  widgets.add(Padding(
-                                      padding:
-                                          EdgeInsets.symmetric(horizontal: 20),
-                                      child: ContactWidget(
-                                          profilePicture: profilePictureUrl,
-                                          name: name,
-                                          username: username,
-                                          nameContact: displayName,
-                                          id: id,
-                                          onTap: () async {
-                                            await sendFriendRequest(id);
-                                            ref.refresh(sentRequestsProvider);
-                                            ref.refresh(
-                                                nonFriendsContactsProvider);
-                                            setState(() {
-                                              searchResults.remove(result);
-                                            });
-                                          })));
-                                } else if (type == 'mutual') {
-                                  final userData = result['userDoc']
-                                      as DocumentSnapshot<Map<String, dynamic>>;
-                                  final commonFriendsCount =
-                                      result['commonFriendsCount'] as int;
+                                            })));
+                                  } else if (type == 'mutual') {
+                                    final userData = result['userDoc']
+                                    as DocumentSnapshot<Map<String, dynamic>>;
+                                    final commonFriendsCount =
+                                    result['commonFriendsCount'] as int;
 
-                                  if (userData != null) {
-                                    final name = userData['name'];
-                                    final username = userData['username'];
-                                    final profilePictureUrl =
-                                        userData['imageUrl'];
-                                    final id = userData['id'];
+                                    if (userData != null) {
+                                      final name = userData['name'];
+                                      final username = userData['username'];
+                                      final profilePictureUrl =
+                                      userData['imageUrl'];
+                                      final id = userData['id'];
 
+                                      widgets.add(Padding(
+                                          padding: EdgeInsets.symmetric(
+                                              horizontal: 20),
+                                          child: MutualFriendWidget(
+                                              profilePicture: profilePictureUrl,
+                                              name: name,
+                                              username: username,
+                                              friendsInCommon: commonFriendsCount,
+                                              id: id,
+                                              onTap: () async {
+                                                await sendFriendRequest(id);
+                                                ref.refresh(
+                                                    sentRequestsProvider);
+                                                ref.refresh(
+                                                    potentialFriendsWithCommonFriendsProvider);
+                                                setState(() {
+                                                  searchResults.remove(result);
+                                                });
+                                              })));
+                                    }
+                                  } else if (type == 'general') {
                                     widgets.add(Padding(
                                         padding: EdgeInsets.symmetric(
                                             horizontal: 20),
-                                        child: MutualFriendWidget(
+                                        child: GeneralUserWidget(
                                             profilePicture: profilePictureUrl,
                                             name: name,
                                             username: username,
-                                            friendsInCommon: commonFriendsCount,
                                             id: id,
                                             onTap: () async {
                                               await sendFriendRequest(id);
                                               ref.refresh(sentRequestsProvider);
-                                              ref.refresh(
-                                                  potentialFriendsWithCommonFriendsProvider);
                                               setState(() {
                                                 searchResults.remove(result);
                                               });
                                             })));
                                   }
-                                } else if (type == 'general') {
-                                  widgets.add(Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: GeneralUserWidget(
-                                      profilePicture: profilePictureUrl,
-                                      name: name,
-                                      username: username,
-                                      id: id,
-                                      onTap: () async {
-                                  await sendFriendRequest(id);
-                                  ref.refresh(sentRequestsProvider);
-                                  setState(() {
-                                    searchResults.remove(result);
-                                  });
-                                  })));
                                 }
-                              }
 
-                              return ListView(
-                                children: widgets,
-                              );
+                                return ListView(
+                                  children: widgets,
+                                );
+                              } else {
+                                return Align(
+                                    alignment: Alignment.topCenter,
+                                    child: Container(
+                                      height: screenHeight/5.5,
+                                      width: screenWidth/1,
+                                      padding: EdgeInsets.symmetric(vertical: 0),
+                                      margin: EdgeInsets.symmetric(horizontal: 25, vertical: 20),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(20),
+                                        color: AppColors.a,
+                                      ),
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Text('Nessun amico trovato!'),
+                                        ],
+                                      ),
+                                    )
+                                );
+                              }
                             } else if (snapshot.hasError) {
                               print("ok");
                               return Text('Error: ${snapshot.error}');
@@ -486,160 +516,201 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
   Widget pageContactsNoFriend() {
     double screenHeight = MediaQuery.of(context).size.height;
 
-    return ListView(
-      children: [
-        // First FutureBuilder for non-friend contacts
-        FutureBuilder(
-          future: ref.watch(nonFriendsContactsProvider.future),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Padding(
-                padding: EdgeInsets.only(bottom: screenHeight / 1.35),
-                child: CupertinoActivityIndicator(
-                  radius: 15,
-                ),
-              );
-            } else if (snapshot.hasError) {
-              return Text('Error: ${snapshot.error}');
-            } else {
-              final registeredContacts = snapshot.data;
-
-              if (registeredContacts != null && registeredContacts.length > 0) {
-                return Column(
-                  children: [
-                    Padding(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          'ADD YOUR CONTACTS',
-                          style: TextStyle(
-                            fontFamily: 'Helvetica',
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                    ListView.builder(
-                      padding: EdgeInsets.symmetric(horizontal: 20),
-                      shrinkWrap: true,
-                      physics: NeverScrollableScrollPhysics(),
-                      itemCount: registeredContacts.length,
-                      itemBuilder: (context, index) {
-                        final userData = registeredContacts[index];
-
-                        if (userData != null) {
-                          final name = userData['name'];
-                          final username = userData['username'];
-                          final profilePicture = userData['imageUrl'];
-                          final id = userData['id'];
-                          final displayName = userData['displayName'];
-
-                          return ContactWidget(
-                            profilePicture: profilePicture,
-                            name: name,
-                            username: username,
-                            nameContact: displayName ?? '',
-                            id: id,
-                            onTap: () async {
-                              await sendFriendRequest(id);
-                              ref.refresh(sentRequestsProvider);
-                              setState(() {
-                                registeredContacts.removeAt(index);
-                              });
-                            },
-                          );
-                        }
-                      },
-                    ),
-                  ],
-                );
-              } else {
-                return Container();
-              }
-            }
+    return CustomScrollView(
+      slivers: [
+        CupertinoSliverRefreshControl(
+          onRefresh: () async {
+            ref.refresh(potentialFriendsWithCommonFriendsProvider);
           },
         ),
-        FutureBuilder<List<Map<String, dynamic>>>(
-          future: ref.watch(potentialFriendsWithCommonFriendsProvider.future),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Padding(
-                padding: EdgeInsets.symmetric(vertical: 10),
-                child: CupertinoActivityIndicator(
-                  radius: 15,
-                ),
-              );
-            } else if (snapshot.hasError) {
-              return Text('Error: ${snapshot.error}');
-            } else {
-              final potentialFriends = snapshot.data;
-
-              if (potentialFriends != null && potentialFriends.length > 0) {
-                return Column(
-                  children: [
-                    Padding(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          'PERSONE CHE POTRESTI CONOSCERE',
-                          style: TextStyle(
-                            fontFamily: 'Helvetica',
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+        SliverList(
+          delegate: SliverChildListDelegate(
+            [
+              FutureBuilder(
+                future: ref.watch(nonFriendsContactsProvider.future),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Padding(
+                      padding: EdgeInsets.only(bottom: screenHeight / 1.35),
+                      child: CupertinoActivityIndicator(
+                        radius: 15,
                       ),
-                    ),
-                    // ListView.builder for potential friends
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: NeverScrollableScrollPhysics(),
-                      itemCount: potentialFriends.length,
-                      itemBuilder: (context, index) {
-                        final userData = potentialFriends[index]['userDoc']
-                            as DocumentSnapshot<Map<String, dynamic>>;
-                        final commonFriendsCount = potentialFriends[index]
-                            ['commonFriendsCount'] as int;
+                    );
+                  } else if (snapshot.hasError) {
+                    return Text('Error: ${snapshot.error}');
+                  } else {
+                    final registeredContacts = snapshot.data;
 
-                        if (userData != null) {
-                          final name = userData['name'];
-                          final username = userData['username'];
-                          final profilePicture = userData['imageUrl'];
-                          final id = userData['id'];
-
-                          return Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 20),
-                            child: MutualFriendWidget(
-                              profilePicture: profilePicture,
-                              name: name,
-                              username: username,
-                              friendsInCommon: commonFriendsCount,
-                              id: id,
-                              onTap: () async {
-                                await sendFriendRequest(id);
-                                ref.refresh(sentRequestsProvider);
-                                ref.refresh(
-                                    potentialFriendsWithCommonFriendsProvider);
-                              },
+                    if (registeredContacts != null && registeredContacts.length > 0) {
+                      return Column(
+                        children: [
+                          Padding(
+                            padding:
+                            EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                'ADD YOUR CONTACTS',
+                                style: TextStyle(
+                                  fontFamily: 'Helvetica',
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
-                          );
-                        } else {
-                          return Text('User data not found.');
-                        }
-                      },
-                    ),
-                  ],
-                );
-              } else {
-                return Container();
-              }
-            }
-          },
+                          ),
+                          ListView.builder(
+                            padding: EdgeInsets.symmetric(horizontal: 20),
+                            shrinkWrap: true,
+                            physics: NeverScrollableScrollPhysics(),
+                            itemCount: registeredContacts.length,
+                            itemBuilder: (context, index) {
+                              final userData = registeredContacts[index];
+
+                              if (userData != null) {
+                                final name = userData['name'];
+                                final username = userData['username'];
+                                final profilePicture = userData['imageUrl'];
+                                final id = userData['id'];
+                                final displayName = userData['displayName'];
+
+                                return ContactWidget(
+                                  profilePicture: profilePicture,
+                                  name: name,
+                                  username: username,
+                                  nameContact: displayName ?? '',
+                                  id: id,
+                                  onTap: () async {
+                                    await sendFriendRequest(id);
+                                    ref.refresh(sentRequestsProvider);
+                                    setState(() {
+                                      registeredContacts.removeAt(index);
+                                    });
+                                  },
+                                );
+                              }
+                            },
+                          ),
+                        ],
+                      );
+                    } else {
+                      return Container();
+                    }
+                  }
+                },
+              ),
+              FutureBuilder<List<Map<String, dynamic>>>(
+                future: ref.watch(potentialFriendsWithCommonFriendsProvider.future),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Padding(
+                      padding: EdgeInsets.symmetric(vertical: 10),
+                      child: CupertinoActivityIndicator(
+                        radius: 15,
+                      ),
+                    );
+                  } else if (snapshot.hasError) {
+                    return Text('Error: ${snapshot.error}');
+                  } else {
+                    final potentialFriends = snapshot.data;
+
+                    if (potentialFriends != null && potentialFriends.length > 0) {
+                      return Column(
+                        children: [
+                          Padding(
+                            padding:
+                            EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                'PERSONE CHE POTRESTI CONOSCERE',
+                                style: TextStyle(
+                                  fontFamily: 'Helvetica',
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                          // ListView.builder for potential friends
+                          ListView.builder(
+                            shrinkWrap: true,
+                            physics: NeverScrollableScrollPhysics(),
+                            itemCount: potentialFriends.length,
+                            itemBuilder: (context, index) {
+                              final userData = potentialFriends[index]['userDoc']
+                              as DocumentSnapshot<Map<String, dynamic>>;
+                              final commonFriendsCount = potentialFriends[index]
+                              ['commonFriendsCount'] as int;
+
+                              if (userData != null) {
+                                final name = userData['name'];
+                                final username = userData['username'];
+                                final profilePicture = userData['imageUrl'];
+                                final id = userData['id'];
+
+                                return Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 20),
+                                  child: MutualFriendWidget(
+                                    profilePicture: profilePicture,
+                                    name: name,
+                                    username: username,
+                                    friendsInCommon: commonFriendsCount,
+                                    id: id,
+                                    onTap: () async {
+                                      await sendFriendRequest(id);
+                                      ref.refresh(sentRequestsProvider);
+                                      ref.refresh(
+                                          potentialFriendsWithCommonFriendsProvider);
+                                    },
+                                  ),
+                                );
+                              } else {
+                                return Text('User data not found.');
+                              }
+                            },
+                          ),
+                        ],
+                      );
+                    } else {
+                      return Container();
+                    }
+                  }
+                },
+              ),
+              FutureBuilder(
+                future: ref.watch(nonFriendsContactsProvider.future),
+                builder: (context, nonFriendsSnapshot) {
+                  return FutureBuilder<List<Map<String, dynamic>>>(
+                    future: ref.watch(potentialFriendsWithCommonFriendsProvider.future),
+                    builder: (context, potentialFriendsSnapshot) {
+                      if ((!nonFriendsSnapshot.hasData || nonFriendsSnapshot.data!.isEmpty) &&
+                          (!potentialFriendsSnapshot.hasData || potentialFriendsSnapshot.data!.isEmpty)) {
+                        return Container(
+                          padding: EdgeInsets.symmetric(vertical: 50),
+                          margin: EdgeInsets.symmetric(horizontal: 25, vertical: 20),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            color: AppColors.a,
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text('Nessun amico suggerito'),
+                              SizedBox(height: 20),
+                              Text('Cerca nuovi amici!'),
+                            ],
+                          ),
+                        );
+                      } else {
+                        return SizedBox.shrink();
+                      }
+                    },
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ],
     );
