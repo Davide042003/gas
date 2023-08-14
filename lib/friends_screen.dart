@@ -286,10 +286,12 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                             await friendSystem
                                                 .deleteSentRequest(id);
                                             setState(() {
-                                              //     sentRequests.removeAt(index);
                                               ref.refresh(sentRequestsProvider);
                                               ref.refresh(
                                                   nonFriendsContactsProvider);
+                                              setState(() {
+                                                searchResults.remove(result);
+                                              });
                                             });
                                           })));
                                 } else if (type == 'receivedRequest') {
@@ -303,12 +305,18 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                             .acceptFriendRequest(id);
                                         ref.refresh(receivedRequestsProvider);
                                         ref.refresh(friendsProvider);
+                                        setState(() {
+                                          searchResults.remove(result);
+                                        });
                                       },
                                       onDeleteSentRequest: () async {
                                         await friendSystem
                                             .declineFriendRequest(id);
                                         ref.refresh(receivedRequestsProvider);
                                         ref.refresh(nonFriendsContactsProvider);
+                                        setState(() {
+                                          searchResults.remove(result);
+                                        });
                                       }));
                                 } else if (type == 'contact') {
                                   widgets.add(Padding(
@@ -325,6 +333,9 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                             ref.refresh(sentRequestsProvider);
                                             ref.refresh(
                                                 nonFriendsContactsProvider);
+                                            setState(() {
+                                              searchResults.remove(result);
+                                            });
                                           })));
                                 } else if (type == 'mutual') {
                                   final userData = result['userDoc']
@@ -353,6 +364,9 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                               ref.refresh(sentRequestsProvider);
                                               ref.refresh(
                                                   potentialFriendsWithCommonFriendsProvider);
+                                              setState(() {
+                                                searchResults.remove(result);
+                                              });
                                             })));
                                   }
                                 } else if (type == 'general') {
@@ -364,7 +378,9 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                       onTap: () async {
                                   await sendFriendRequest(id);
                                   ref.refresh(sentRequestsProvider);
-                                  //rimuovi elemnto qui
+                                  setState(() {
+                                    searchResults.remove(result);
+                                  });
                                   })));
                                 }
                               }

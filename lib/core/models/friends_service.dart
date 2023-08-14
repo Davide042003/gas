@@ -494,11 +494,13 @@ class FriendSystem {
     final nonFriendsContacts = await ref.read(nonFriendsContactsProvider.future);
     final receivedRequestsSnapshot = await ref.read(receivedRequestsProvider.future);
     final sentRequestsSnapshot = await ref.read(sentRequestsProvider.future);
+    final potentialFriend = await ref.read(potentialFriendsWithCommonFriendsProvider.future);
 
     final friendsIds = friendsSnapshot.map((doc) => doc.id).toSet();
     List<String?> sentRequests = sentRequestsSnapshot.map((doc) => doc['recipientUserId'] as String?).toList();
     List<String?> receivedRequests = receivedRequestsSnapshot.map((doc) => doc['senderUserId'] as String?).toList();
     List<String?> nonFriendsContactsIDs = nonFriendsContacts.map((doc) => doc['id'] as String?).toList();
+    List<String?> potentialFriendId = potentialFriend.map((doc) => doc['id'] as String?).toList();
 
     Set<String> addedUserIds = Set(); // To keep track of added users
 
@@ -519,7 +521,7 @@ class FriendSystem {
     for (var doc in nameQuerySnapshot.docs) {
       String userId = doc.id;
 
-      if (!friendsIds.contains(userId) && !sentRequests.contains(userId) && !receivedRequests.contains(userId) && !nonFriendsContactsIDs.contains(userId) && !addedUserIds.contains(userId)) {
+      if (!friendsIds.contains(userId) && !sentRequests.contains(userId) && !receivedRequests.contains(userId) && !nonFriendsContactsIDs.contains(userId) && !potentialFriendId.contains(userId) && !addedUserIds.contains(userId)) {
         nonFriends.add(doc);
         addedUserIds.add(userId);
       }
@@ -532,7 +534,7 @@ class FriendSystem {
     for (var doc in usernameQuerySnapshot.docs) {
       String userId = doc.id;
 
-      if (!friendsIds.contains(userId) && !sentRequests.contains(userId) && !receivedRequests.contains(userId) && !nonFriendsContactsIDs.contains(userId) && !addedUserIds.contains(userId)) {
+      if (!friendsIds.contains(userId) && !sentRequests.contains(userId) && !receivedRequests.contains(userId) && !nonFriendsContactsIDs.contains(userId) && !potentialFriendId.contains(userId) && !addedUserIds.contains(userId)) {
         nonFriends.add(doc);
         addedUserIds.add(userId);
       }
