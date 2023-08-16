@@ -106,7 +106,7 @@ class _FriendPostState extends ConsumerState<FriendPost>
       } else if (widget.post.answersList!.length == 3) {
         totDomande = 3;
       }
-    }else if (widget.post.images != null) {
+    } else if (widget.post.images != null) {
       totDomande = 2;
     }
 
@@ -181,6 +181,9 @@ class _FriendPostState extends ConsumerState<FriendPost>
 
     if (hasVoted) {
       await fetchData();
+      for (AnimationController anim in animationControllers) {
+        anim.forward();
+      }
     }
   }
 
