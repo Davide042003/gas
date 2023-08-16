@@ -12,6 +12,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'friends_notifier.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
+import 'post_notifier.dart';
+import 'friend_post.dart';
 
 class BottomSheetProfile {
   static void showOtherProfileBottomSheet(BuildContext context, String userId) {
@@ -40,8 +42,96 @@ class BottomSheetProfile {
 
     // Method to show the friend widget
     Widget _buildFriendWidget() {
-      // You can return the widget for friend status here
-      return Text('You are friends!');
+      return Column(
+        children: [
+          SizedBox(height: 15),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              "Le sue Domande di Oggi",
+              textAlign: TextAlign.left,
+              style: TextStyle(
+                fontFamily: 'Helvetica',
+                fontWeight: FontWeight.bold,
+                fontSize: 28,
+                color: AppColors.brown,
+              ),
+            ),
+          ),
+          SizedBox(height: 10,),
+          Consumer(builder: (context, ref, _) {
+            final userPostsAsyncValue = ref.watch(userPostsProvider(userId));
+
+            return userPostsAsyncValue.when(
+              loading: () => CircularProgressIndicator(),
+              error: (error, stackTrace) => Text('Error: $error'),
+              data: (userPosts) {
+                if (userPosts.isEmpty) {
+                  return Text('No posts available.');
+                } else {
+                  // Display up to 3 posts for the actual user
+                  final postWidgets = userPosts
+                      .where((post) => post.isAnonymous == false)
+                      .take(3)
+                      .map((post) {
+                    final localDateTime = post.timestamp!.toDate().toLocal();
+                    final hour = localDateTime.hour.toString().padLeft(2, '0');
+                    final minute = localDateTime.minute.toString().padLeft(2, '0');
+
+                    return GestureDetector(onTap: () {Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => FriendPost(),
+                      ),
+                    );}, child: Container(
+                      padding: EdgeInsets.all(10),
+                      margin: EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(
+                        color: AppColors.white,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.question_mark_rounded),
+                              SizedBox(width: 10),
+                              Text(
+                                post.question!,
+                                style: TextStyle(
+                                  fontFamily: 'Helvetica',
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                  color: AppColors.brown,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Align(
+                            alignment: Alignment.bottomRight,
+                            child: Text(
+                              '$hour:$minute',
+                              style: TextStyle(
+                                fontFamily: 'Helvetica',
+                                fontSize: 15,
+                                color: AppColors.brown,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ));
+                  })
+                      .toList();
+
+                  return Column(children: postWidgets);
+                }
+              },
+            );
+          })
+        ],
+      );
     }
 
     // Method to show the sent request widget

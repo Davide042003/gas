@@ -207,7 +207,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                     color: AppColors.white,
                                   ),
                                   onTap: () {
-                                    context.pop();
+                                    Navigator.pop(context);
                                   },
                                 ),
                                 Container(

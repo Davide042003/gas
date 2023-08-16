@@ -186,6 +186,41 @@ class PostService {
     return friendPosts;
   }
 
+  Future<List<PostModel>> getUserPosts(String userId) async {
+    final userPostsQuery = FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .collection('posts')
+        .doc('published_posts')
+        .collection('posts')
+        .orderBy('timestamp', descending: true);
+
+    final userPostsSnapshot = await userPostsQuery.get();
+    final userPosts = <PostModel>[];
+
+    print('Number of posts for user with ID $userId: ${userPostsSnapshot.size}');
+
+    for (final postDoc in userPostsSnapshot.docs) {
+      final postId = postDoc.id;
+      final post = PostModel.fromData(postDoc.data());
+      print(postDoc.id);
+      post.postId = postId;
+
+      if (post.isMyFriends != null) {
+          int randomColor = Random().nextInt(5);
+
+          post.colorBackground = AppColors.backgroundColors[randomColor];
+          userPosts.add(post);
+      }
+    }
+
+    // Sort the userPosts list based on timestamp (descending order)
+    userPosts.sort((a, b) => b.timestamp!.compareTo(a.timestamp!));
+
+    print("ok");
+    return userPosts;
+  }
+
   Future<List<PostModel>> getGlobalPosts(AutoDisposeFutureProviderRef ref) async {
 
     final friends = await ref.watch(friendsProvider.future);

@@ -10,6 +10,7 @@ import 'profile_edit_screen.dart';
 import 'friends_screen.dart';
 import 'package:gas/home_page_view.dart';
 import 'package:gas/publish_post.dart';
+import 'friend_post.dart';
 
 final GoRouter router = GoRouter(
   routes: <GoRoute>[
@@ -101,46 +102,6 @@ final GoRouter router = GoRouter(
                     );
                   });
             },
-            routes: <GoRoute>[
-              GoRoute(
-                  path: 'editProfile',
-                  pageBuilder: (context, state) {
-                    return CustomTransitionPage(
-                        transitionDuration: const Duration(milliseconds: 200),
-                        child: EditProfileScreen(),
-                        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                          return Stack(
-                            children: <Widget>[
-                              SlideTransition(
-                                position: Tween<Offset>(
-                                  begin: const Offset(1.0, 0.0),
-                                  end: const Offset(0.0, 0.0),
-                                ).animate(
-                                  CurvedAnimation(
-                                    parent: animation,
-                                    curve: Curves.linear,
-                                  ),
-                                ),
-                                child: child,
-                              ),
-                              SlideTransition(
-                                position: Tween<Offset>(
-                                  begin: const Offset(0.0, 0.0),
-                                  end: const Offset(-1.0, 0.0),
-                                ).animate(
-                                  CurvedAnimation(
-                                    parent: animation,
-                                    curve: Curves.linear,
-                                  ),
-                                ),
-                                child: ProfileScreen(),
-                              )
-                            ],
-                          );
-                        });
-                  },
-              )
-            ]
 
           )
         ]),

@@ -16,3 +16,8 @@ final globalPostsProvider = FutureProvider.autoDispose<List<PostModel>>((ref) as
   final postService = ref.read(postServiceProvider);
   return postService.getGlobalPosts(ref);
 });
+
+final userPostsProvider = FutureProvider.family<List<PostModel>, String>((ref, userId) async {
+  final postService = ref.read(postServiceProvider);
+  return postService.getUserPosts(userId);
+});

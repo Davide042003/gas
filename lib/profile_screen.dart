@@ -9,6 +9,7 @@ import 'core/models/user_info_service.dart';
 import 'package:gas/user_notifier.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
+import 'profile_edit_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   @override
@@ -145,7 +146,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   width: screenWidth / 1.5,
                                   height: screenHeight / 3.5,),
                                 onTap: () {
-                                  context.push("/profile/editProfile");
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => EditProfileScreen(),
+                                    ),
+                                  );
                                 },),
                             ],
                           ),
