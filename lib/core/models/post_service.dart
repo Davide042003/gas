@@ -309,4 +309,45 @@ class PostService {
       return 0;
     }
   }
+
+  Future<bool> hasUserVotedForAnyAnswer(String postId, String userId, String postUserId) async {
+    try {
+      final postDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(postUserId)
+          .collection('posts')
+          .doc('published_posts')
+          .collection('posts')
+          .doc(postId)
+          .get();
+
+      final postData = postDoc.data();
+
+      if (postData != null) {
+        final Map<String, dynamic>? answersData = postData['answersTap'];
+        Map<int, List<AnswerPostModel>> answersMap = {};
+        if (answersData != null) {
+          answersMap = (answersData as Map<String, dynamic>).map(
+                (key, value) => MapEntry(int.parse(key), (value as List<dynamic>)
+                .map((answerData) => AnswerPostModel.fromData(answerData))
+                .toList()),
+          );
+        }
+
+        for (var answerList in answersMap.values) {
+          if (answerList.any((answer) => answer.id == userId)) {
+            return true;
+          }
+        }
+
+        return false;
+      } else {
+        print('Post with ID: $postId does not exist.');
+        return false;
+      }
+    } catch (error) {
+      print('Error checking if user has voted for any answer: $error');
+      return false;
+    }
+  }
 }
