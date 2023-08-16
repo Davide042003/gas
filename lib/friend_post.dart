@@ -23,15 +23,20 @@ import 'text_answer.dart';
 import 'image_answer.dart';
 
 class FriendPost extends ConsumerStatefulWidget {
+  final PostModel post;
+  final UserModel user;
+
+  FriendPost({required this.post, required this.user});
+
   @override
   _FriendPostState createState() => _FriendPostState();
 }
 
-class _FriendPostState extends ConsumerState<FriendPost> with TickerProviderStateMixin {
-  Color color = AppColors.backgroundDefault;
+class _FriendPostState extends ConsumerState<FriendPost>
+    with TickerProviderStateMixin {
   final String? userId = FirebaseAuth.instance.currentUser!.uid;
   final PostService postService =
-  PostService(userId: FirebaseAuth.instance.currentUser!.uid);
+      PostService(userId: FirebaseAuth.instance.currentUser!.uid);
 
   bool hasVoted = false;
   late PageController _pageController;
@@ -44,9 +49,40 @@ class _FriendPostState extends ConsumerState<FriendPost> with TickerProviderStat
 
   List<AnimationController> animationControllers = [];
 
+  String? username;
+  String? profilePictureUrl;
+  String? name;
+  String? id;
+  String? hour;
+  String? minute;
+
   @override
   void initState() {
     super.initState();
+
+    UserModel? userProfile = widget.user;
+    username = userProfile!.username!;
+    profilePictureUrl = userProfile!.imageUrl!;
+    name = userProfile!.name!;
+    final timestamp = userProfile!.timestamp ?? Timestamp.now();
+    id = userProfile!.id!;
+    final localDateTime = widget.post.timestamp!.toDate().toLocal();
+    hour = localDateTime.hour.toString().padLeft(2, '0');
+    minute = localDateTime.minute.toString().padLeft(2, '0');
+
+    int questionLenght = widget.post.answersList?.length! ?? 0;
+    if (questionLenght == 0) {
+      questionLenght = widget.post.images?.length! ?? 0;
+    }
+
+    for (int i = 0; i < questionLenght; i++) {
+      AnimationController controller = AnimationController(
+        vsync: this,
+        duration: Duration(seconds: 1),
+      );
+      animationControllers.add(controller);
+    }
+
     _pageController = PageController(initialPage: 0);
   }
 
@@ -63,8 +99,6 @@ class _FriendPostState extends ConsumerState<FriendPost> with TickerProviderStat
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Reset the background color every time the page is displayed
-    color = AppColors.backgroundDefault; // Set the initial background color
   }
 
   Future<void> goToNextPage() async {
@@ -89,8 +123,8 @@ class _FriendPostState extends ConsumerState<FriendPost> with TickerProviderStat
     });
   }
 
-  Future<void> clickAnswer(int indexAnswer, String postId, String idUserPost,
-      bool isAnonymous, bool answers2) async {
+  Future<void> clickAnswer(
+      int indexAnswer, String postId, bool isAnonymous, bool answers2) async {
     await postService.addAnswerToPost(
         postId,
         AnswerPostModel(
@@ -98,20 +132,20 @@ class _FriendPostState extends ConsumerState<FriendPost> with TickerProviderStat
           isAnonymous: isAnonymous,
           timestamp: Timestamp.now(),
         ),
-        idUserPost,
+        widget.user.id!,
         indexAnswer);
 
     //   await postService.markPostAsSeen(postId);
 
     if (answers2 == true) {
-      await fetchAnswersCounts(postService, postId, idUserPost, 2);
+      await fetchAnswersCounts(postService, postId, widget.user.id!, 2);
       totalAnswers = answersCount.reduce((a, b) => a + b);
 
       answersCount =
           answersCount.map((element) => element / totalAnswers).toList();
       print(answersCount);
-    }else{
-      await fetchAnswersCounts(postService, postId, idUserPost, 3);
+    } else {
+      await fetchAnswersCounts(postService, postId, widget.user.id!, 3);
       totalAnswers = answersCount.reduce((a, b) => a + b);
 
       answersCount =
@@ -124,7 +158,7 @@ class _FriendPostState extends ConsumerState<FriendPost> with TickerProviderStat
       hasVoted = true;
     });
 
-    for (AnimationController anim in animationControllers){
+    for (AnimationController anim in animationControllers) {
       anim.forward();
     }
   }
@@ -135,7 +169,7 @@ class _FriendPostState extends ConsumerState<FriendPost> with TickerProviderStat
 
     for (int i = 0; i < maxInnerListIndex; i++) {
       int count =
-      await postService.getAnswersLengthByIndex(postId, idUserPost, i);
+          await postService.getAnswersLengthByIndex(postId, idUserPost, i);
       answersCountsMap[i] = count;
     }
 
@@ -152,454 +186,442 @@ class _FriendPostState extends ConsumerState<FriendPost> with TickerProviderStat
     double screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
-        backgroundColor: color,
+        backgroundColor: AppColors.backgroundDefault,
         body: SingleChildScrollView(
-            physics: NeverScrollableScrollPhysics(), child: Stack (
-          children: [
-            Container(
-              width: screenWidth,
-              height: screenHeight,
-              child: Consumer(
-                    key: ValueKey<bool>(false),
-                    builder: (context, watch, _) {
-                      final friendPostsAsync = ref.watch(friendPostsProvider);
-
-                      return friendPostsAsync.when(
-                        data: (friendPosts) {
-                          if (friendPosts.isNotEmpty) {
-                            totalPosts = friendPosts.length;
-                            return PageView(
-                                controller: _pageController,
-                                scrollDirection: Axis.vertical,
-                                physics: NeverScrollableScrollPhysics(),
-                                children: List.generate(friendPosts.length, (index) {
-                                  final post = friendPosts[index];
-                                  final friendUserId = post.id as String;
-                                  final userInfoProvider = otherUserProfileProvider(friendUserId);
-                                  final userProfileFuture = ref.watch(userInfoProvider.future);
-
-                                  return FutureBuilder<UserModel?>(
-                                    future: userProfileFuture,
-                                    builder: (context, snapshot) {
-                                      if (snapshot.hasData) {
-                                        postId = post.postId!;
-
-                                        UserModel? userProfile = snapshot.data;
-                                        final username = userProfile!.username!;
-                                        final profilePictureUrl = userProfile!.imageUrl!;
-                                        final name = userProfile!.name!;
-                                        final timestamp = userProfile!.timestamp ?? Timestamp.now();
-                                        final id = userProfile!.id!;
-                                        final localDateTime =
-                                        post.timestamp!.toDate().toLocal();
-                                        final hour = localDateTime.hour
-                                            .toString()
-                                            .padLeft(2, '0');
-                                        final minute = localDateTime.minute
-                                            .toString()
-                                            .padLeft(2, '0');
-
-                                        int questionLenght = post.answersList?.length! ?? 0;
-                                        if (questionLenght == 0){
-                                          questionLenght = post.images?.length! ?? 0;
-                                        }
-
-                                        for (int i = 0; i < questionLenght; i++) {
-                                          AnimationController controller = AnimationController(
-                                            vsync: this,
-                                            duration: Duration(seconds: 1),
-                                          );
-                                          animationControllers.add(controller);
-                                        }
-
-                                        return Container(
-                                            color: index == 0
-                                                ? AppColors.backgroundDefault
-                                                : post.colorBackground,
-                                            child: Padding(
-                                              padding: EdgeInsets.only(
-                                                  right: 20,
-                                                  left: 20,
-                                                  top: screenHeight / 3.75),
-                                              child: Column(
-                                                children: [
-                                                  GestureDetector(onTap:() {
-                                                    post.isAnonymous! ? null : BottomSheetProfile.showOtherProfileBottomSheet(context, id);
-                                                  }, child: Row(
-                                                    children: <Widget>[
-                                                      post.isAnonymous!
-                                                          ? CircleAvatar(
-                                                        maxRadius: 25,
-                                                        backgroundImage: null,
-                                                        child: Icon(
-                                                            Icons.hide_image),
-                                                      )
-                                                          : CircleAvatar(
-                                                        radius: 25,
-                                                        child: Stack(
-                                                          children: [
-                                                            // Show CachedNetworkImage if userProfile?.imageUrl is not empty
-                                                            if (profilePictureUrl != null && profilePictureUrl != "")
-                                                              CachedNetworkImage(
-                                                                imageUrl: profilePictureUrl,
-                                                                imageBuilder: (context, imageProvider) => Container(
-                                                                  decoration: BoxDecoration(
-                                                                    shape: BoxShape.circle,
-                                                                    image: DecorationImage(
-                                                                      image: imageProvider,
-                                                                      fit: BoxFit.cover,
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                                progressIndicatorBuilder: (context, url, downloadProgress) =>
-                                                                    Center(child: CupertinoActivityIndicator()), // Show CircularProgressIndicator while loading
-                                                                errorWidget: (context, url, error) => Icon(Icons.error),
-                                                              ),
-
-                                                            if (profilePictureUrl == null || profilePictureUrl == "")
-                                                              Center(
-                                                                child: Text(
-                                                                  name != null && name != "" ? name![0] : '',
-                                                                  style: TextStyle(
-                                                                      fontFamily: 'Helvetica',
-                                                                      fontWeight: FontWeight.bold,
-                                                                      fontSize: 26,
-                                                                      color: AppColors.white),
-                                                                ),
-                                                              ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                      SizedBox(width: 16),
-                                                      Expanded(
-                                                        child: Container(
-                                                          color: Colors.transparent,
-                                                          child: Column(
-                                                            crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
-                                                            children: <Widget>[
-                                                              Text(
-                                                                post.isAnonymous!
-                                                                    ? "? ? ? ? ? ? "
-                                                                    : username ?? '',
-                                                                style: TextStyle(
-                                                                  fontFamily:
-                                                                  'Helvetica',
-                                                                  fontWeight:
-                                                                  FontWeight.w400,
-                                                                  fontSize: 20,
-                                                                  color:
-                                                                  AppColors.white,
-                                                                ),
-                                                              ),
-                                                              SizedBox(height: 2),
-                                                              Text(
-                                                                "$hour:$minute",
-                                                                style: TextStyle(
-                                                                  fontFamily:
-                                                                  'Helvetica',
-                                                                  fontWeight:
-                                                                  FontWeight.w400,
-                                                                  fontSize: 18,
-                                                                  color: AppColors
-                                                                      .whiteShadow,
-                                                                ),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      InkWell(onTap: () {print ("vamos");}, child:Container(
-                                                        width: 45,
-                                                        height: 45,
-                                                        decoration: BoxDecoration(
-                                                          shape: BoxShape.circle,
-                                                          color:
-                                                          AppColors.whiteShadow55,
-                                                        ),
-                                                        child: Icon(
-                                                          Ionicons.chatbubble,
-                                                          color: AppColors.white,
-                                                        ),
-                                                      )),
-                                                    ],
-                                                  )),
-                                                  SizedBox(height: post.images!.length == 2 ? 40 : post.answersList!.length == 2 ? 120 : 80),
-                                                  Text(
-                                                    post.question!,
-                                                    style: TextStyle(
-                                                      fontFamily: 'Helvetica',
-                                                      fontWeight: FontWeight.bold,
-                                                      color: AppColors.white,
-                                                      fontSize: 24,
-                                                    ),
-                                                  ),
-                                                  SizedBox(height: post.images!.length == 2 ? 30 : post.answersList!.length == 2 ? 70 : 40),
-                                                  post.images!.length == 2
-                                                      ? Row(
-                                                    mainAxisAlignment:
-                                                    MainAxisAlignment
-                                                        .spaceEvenly,
-                                                    children: [
-                                                      ImageAnswer(
-                                                        answersCount: hasVoted ? answersCount[0] ?? 0.0 : 0.0,
-                                                        imageUrl: post.images![0] ?? "",
-                                                        hasVoted: hasVoted,
-                                                        curvedAnimation: CurvedAnimation(
-                                                          parent: animationControllers[0],
-                                                          curve: Curves.easeInOut,
-                                                        ),
-                                                        clickAnswer: () async {
-                                                          if (!hasVoted) {
-                                                            await clickAnswer(0, post.postId!, friendUserId, isAnonymous, true);
-                                                          }
-                                                        },
-                                                      ),
-                                                      ImageAnswer(
-                                                        answersCount: hasVoted ? answersCount[1] ?? 0.0 : 0.0,
-                                                        imageUrl: post.images![1] ?? "",
-                                                        hasVoted: hasVoted,
-                                                        curvedAnimation: CurvedAnimation(
-                                                          parent: animationControllers[1],
-                                                          curve: Curves.easeInOut,
-                                                        ),
-                                                        clickAnswer: () async {
-                                                          if (!hasVoted) {
-                                                            await clickAnswer(1, post.postId!, friendUserId, isAnonymous, true);
-                                                          }
-                                                        },
-                                                      ),
-
-                                                    ],
-                                                  )
-                                                      : post.answersList!.length == 2 ? Row(
-                                                    mainAxisAlignment:
-                                                    MainAxisAlignment
-                                                        .spaceEvenly,
-                                                    children: [
-                                                      TextAnswer(
-                                                        answersCount: hasVoted ? answersCount[0] ?? 0.0 : 0.0,
-                                                        answerText: post.answersList?[0] ?? "",
-                                                        hasVoted: hasVoted,
-                                                        curvedAnimation: CurvedAnimation(
-                                                          parent: animationControllers[0],
-                                                          curve: Curves.easeInOut,
-                                                        ),
-                                                        clickAnswer: () async {
-                                                          if (!hasVoted) {
-                                                            await clickAnswer(0, post.postId!, friendUserId, isAnonymous, true);
-                                                          }
-                                                        },
-                                                      ),
-                                                      TextAnswer(
-                                                        answersCount: hasVoted ? answersCount[1] ?? 0.0 : 0.0,
-                                                        answerText: post.answersList?[1] ?? "",
-                                                        hasVoted: hasVoted,
-                                                        curvedAnimation: CurvedAnimation(
-                                                          parent: animationControllers[1],
-                                                          curve: Curves.easeInOut,
-                                                        ),
-                                                        clickAnswer: () async {
-                                                          if (!hasVoted) {
-                                                            await clickAnswer(1, post.postId!, friendUserId, isAnonymous, true);
-                                                          }
-                                                        },
-                                                      ),
-                                                    ],
-                                                  ): Column(
-                                                    children: [
-                                                      Row(
-                                                        mainAxisAlignment:
-                                                        MainAxisAlignment
-                                                            .spaceEvenly,
-                                                        children: [
-                                                          TextAnswer(
-                                                            answersCount: hasVoted ? answersCount[0] ?? 0.0 : 0.0,
-                                                            answerText: post.answersList?[0] ?? "",
-                                                            hasVoted: hasVoted,
-                                                            curvedAnimation: CurvedAnimation(
-                                                              parent: animationControllers[0],
-                                                              curve: Curves.easeInOut,
-                                                            ),
-                                                            clickAnswer: () async {
-                                                              if (!hasVoted) {
-                                                                await clickAnswer(0, post.postId!, friendUserId, isAnonymous, false);
-                                                              }
-                                                            },
-                                                          ),
-                                                          TextAnswer(
-                                                            answersCount: hasVoted ? answersCount[1] ?? 0.0 : 0.0,
-                                                            answerText: post.answersList?[1] ?? "",
-                                                            hasVoted: hasVoted,
-                                                            curvedAnimation: CurvedAnimation(
-                                                              parent: animationControllers[1],
-                                                              curve: Curves.easeInOut,
-                                                            ),
-                                                            clickAnswer: () async {
-                                                              if (!hasVoted) {
-                                                                await clickAnswer(1, post.postId!, friendUserId, isAnonymous, false);
-                                                              }
-                                                            },
-                                                          )
-                                                        ],
-                                                      ),
-                                                      SizedBox(height: screenHeight/40,),
-                                                      Row(
-                                                        mainAxisAlignment:
-                                                        MainAxisAlignment
-                                                            .spaceEvenly,
-                                                        children: [
-                                                          TextAnswer(
-                                                            answersCount: hasVoted ? answersCount[2] ?? 0.0 : 0.0,
-                                                            answerText: post.answersList?[2] ?? "",
-                                                            hasVoted: hasVoted,
-                                                            curvedAnimation: CurvedAnimation(
-                                                              parent: animationControllers[2],
-                                                              curve: Curves.easeInOut,
-                                                            ),
-                                                            clickAnswer: () async {
-                                                              if (!hasVoted) {
-                                                                await clickAnswer(2, post.postId!, friendUserId, isAnonymous, false);
-                                                              }
-                                                            },
-                                                          )
-                                                        ],
-                                                      )
-                                                    ],
-                                                  )
-                                                ],
-
-                                              ),
-                                            ));
-                                      }
-                                      return CupertinoActivityIndicator();
-                                    },
-                                  );
-                                }));
-                          } else {
-                            return Align(
-                                alignment: Alignment.center,
-                                child: Container(
-                                  height: screenHeight/4,
-                                  width: screenWidth/1.3,
-                                  padding: EdgeInsets.symmetric(vertical: 50),
-                                  margin: EdgeInsets.symmetric(horizontal: 50, vertical: 20),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(20),
-                                    color: AppColors.a,
-                                  ),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text('Nessun nuovo post'),
-                                      SizedBox(height: 20),
-                                      Text('Aggiungi nuovi amici!'),
-                                    ],
-                                  ),
-                                )
-                            );
-                          }
-                        },
-                        loading: () => Center(child: CupertinoActivityIndicator(radius: 20,)),
-                        error: (error, stackTrace) => Center(child: Text('Error: $error')),
-                      );
-                    },
-                  ),
-            ),
-            SafeArea(
-              child: Column(
-                children: [
-                  Padding(padding: EdgeInsets.symmetric(horizontal: 12),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          InkWell(
-                            child: Icon(
-                              Icons.arrow_back_rounded,
-                              size: 35,
-                              color: AppColors.white,
-                            ),
-                            onTap: () {
-                              Navigator.pop(context);
-                            },
-                          ),
-                          SizedBox(width: screenWidth/3.9),
-                          Container(
-                            child: Text(
-                              "Profile", textAlign: TextAlign.center,
-                              style: ref
-                                  .watch(stylesProvider)
-                                  .text
-                                  .titleOnBoarding
-                                  .copyWith(fontSize: 28),),
-                            width: 100,),
-                        ],)),
-                  SizedBox(height: 10),
-                  Stack(
-                    children: [
-                      Container(
-                        color: AppColors.whiteShadow,
-                        height: screenHeight / 600,
-                      ),
-                      Center(
-                        child: Container(
-                          color: AppColors.white,
-                          height: screenHeight / 400,
-                          width: screenWidth / 3,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(
-                    height: hasVoted ? screenHeight / 1.8 : screenHeight / 1.45,
-                  ),
-                  hasVoted
-                      ? Container()
-                      : Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 20),
+            physics: NeverScrollableScrollPhysics(),
+            child: Stack(
+              children: [
+                Container(
+                    width: screenWidth,
+                    height: screenHeight,
                     child: Container(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Container(width: screenWidth/4, child: Column(
+                        color: AppColors.backgroundDefault,
+                        child: Padding(
+                          padding: EdgeInsets.only(
+                              right: 20, left: 20, top: screenHeight / 3.75),
+                          child: Column(
+                            children: [
+                              Row(
+                                children: <Widget>[
+                                  CircleAvatar(
+                                    radius: 25,
+                                    child: Stack(
+                                      children: [
+                                        // Show CachedNetworkImage if userProfile?.imageUrl is not empty
+                                        if (profilePictureUrl != null &&
+                                            profilePictureUrl != "")
+                                          CachedNetworkImage(
+                                            imageUrl: profilePictureUrl!,
+                                            imageBuilder:
+                                                (context, imageProvider) =>
+                                                    Container(
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                image: DecorationImage(
+                                                  image: imageProvider,
+                                                  fit: BoxFit.cover,
+                                                ),
+                                              ),
+                                            ),
+                                            progressIndicatorBuilder: (context,
+                                                    url, downloadProgress) =>
+                                                Center(
+                                                    child:
+                                                        CupertinoActivityIndicator()), // Show CircularProgressIndicator while loading
+                                            errorWidget:
+                                                (context, url, error) =>
+                                                    Icon(Icons.error),
+                                          ),
+
+                                        if (profilePictureUrl == null ||
+                                            profilePictureUrl == "")
+                                          Center(
+                                            child: Text(
+                                              name != null && name != ""
+                                                  ? name![0]
+                                                  : '',
+                                              style: TextStyle(
+                                                  fontFamily: 'Helvetica',
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 26,
+                                                  color: AppColors.white),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                  SizedBox(width: 16),
+                                  Expanded(
+                                    child: Container(
+                                      color: Colors.transparent,
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: <Widget>[
+                                          Text(
+                                            username ?? '',
+                                            style: TextStyle(
+                                              fontFamily: 'Helvetica',
+                                              fontWeight: FontWeight.w400,
+                                              fontSize: 20,
+                                              color: AppColors.white,
+                                            ),
+                                          ),
+                                          SizedBox(height: 2),
+                                          Text(
+                                            "$hour:$minute",
+                                            style: TextStyle(
+                                              fontFamily: 'Helvetica',
+                                              fontWeight: FontWeight.w400,
+                                              fontSize: 18,
+                                              color: AppColors.whiteShadow,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  InkWell(
+                                      onTap: () {
+                                        print("vamos");
+                                      },
+                                      child: Container(
+                                        width: 45,
+                                        height: 45,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: AppColors.whiteShadow55,
+                                        ),
+                                        child: Icon(
+                                          Ionicons.chatbubble,
+                                          color: AppColors.white,
+                                        ),
+                                      )),
+                                ],
+                              ),
+                              SizedBox(
+                                  height: widget.post.images!.length == 2
+                                      ? 40
+                                      : widget.post.answersList!.length == 2
+                                          ? 120
+                                          : 80),
+                              Text(
+                                widget.post.question!,
+                                style: TextStyle(
+                                  fontFamily: 'Helvetica',
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.white,
+                                  fontSize: 24,
+                                ),
+                              ),
+                              SizedBox(
+                                  height: widget.post.images!.length == 2
+                                      ? 30
+                                      : widget.post.answersList!.length == 2
+                                          ? 70
+                                          : 40),
+                              widget.post.images!.length == 2
+                                  ? Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceEvenly,
+                                      children: [
+                                        ImageAnswer(
+                                          answersCount: hasVoted
+                                              ? answersCount[0] ?? 0.0
+                                              : 0.0,
+                                          imageUrl:
+                                              widget.post.images![0] ?? "",
+                                          hasVoted: hasVoted,
+                                          curvedAnimation: CurvedAnimation(
+                                            parent: animationControllers[0],
+                                            curve: Curves.easeInOut,
+                                          ),
+                                          clickAnswer: () async {
+                                            if (!hasVoted) {
+                                              await clickAnswer(
+                                                  0,
+                                                  widget.post.postId!,
+                                                  isAnonymous,
+                                                  true);
+                                            }
+                                          },
+                                        ),
+                                        ImageAnswer(
+                                          answersCount: hasVoted
+                                              ? answersCount[1] ?? 0.0
+                                              : 0.0,
+                                          imageUrl:
+                                              widget.post.images![1] ?? "",
+                                          hasVoted: hasVoted,
+                                          curvedAnimation: CurvedAnimation(
+                                            parent: animationControllers[1],
+                                            curve: Curves.easeInOut,
+                                          ),
+                                          clickAnswer: () async {
+                                            if (!hasVoted) {
+                                              await clickAnswer(
+                                                  1,
+                                                  widget.post.postId!,
+                                                  isAnonymous,
+                                                  true);
+                                            }
+                                          },
+                                        ),
+                                      ],
+                                    )
+                                  : widget.post.answersList!.length == 2
+                                      ? Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceEvenly,
+                                          children: [
+                                            TextAnswer(
+                                              answersCount: hasVoted
+                                                  ? answersCount[0] ?? 0.0
+                                                  : 0.0,
+                                              answerText:
+                                                  widget.post.answersList?[0] ??
+                                                      "",
+                                              hasVoted: hasVoted,
+                                              curvedAnimation: CurvedAnimation(
+                                                parent: animationControllers[0],
+                                                curve: Curves.easeInOut,
+                                              ),
+                                              clickAnswer: () async {
+                                                if (!hasVoted) {
+                                                  await clickAnswer(
+                                                      0,
+                                                      widget.post.postId!,
+                                                      isAnonymous,
+                                                      true);
+                                                }
+                                              },
+                                            ),
+                                            TextAnswer(
+                                              answersCount: hasVoted
+                                                  ? answersCount[1] ?? 0.0
+                                                  : 0.0,
+                                              answerText:
+                                                  widget.post.answersList?[1] ??
+                                                      "",
+                                              hasVoted: hasVoted,
+                                              curvedAnimation: CurvedAnimation(
+                                                parent: animationControllers[1],
+                                                curve: Curves.easeInOut,
+                                              ),
+                                              clickAnswer: () async {
+                                                if (!hasVoted) {
+                                                  await clickAnswer(
+                                                      1,
+                                                      widget.post.postId!,
+                                                      isAnonymous,
+                                                      true);
+                                                }
+                                              },
+                                            ),
+                                          ],
+                                        )
+                                      : Column(
+                                          children: [
+                                            Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.spaceEvenly,
+                                              children: [
+                                                TextAnswer(
+                                                  answersCount: hasVoted
+                                                      ? answersCount[0] ?? 0.0
+                                                      : 0.0,
+                                                  answerText: widget.post
+                                                          .answersList?[0] ??
+                                                      "",
+                                                  hasVoted: hasVoted,
+                                                  curvedAnimation:
+                                                      CurvedAnimation(
+                                                    parent:
+                                                        animationControllers[0],
+                                                    curve: Curves.easeInOut,
+                                                  ),
+                                                  clickAnswer: () async {
+                                                    if (!hasVoted) {
+                                                      await clickAnswer(
+                                                          0,
+                                                          widget.post.postId!,
+                                                          isAnonymous,
+                                                          false);
+                                                    }
+                                                  },
+                                                ),
+                                                TextAnswer(
+                                                  answersCount: hasVoted
+                                                      ? answersCount[1] ?? 0.0
+                                                      : 0.0,
+                                                  answerText: widget.post
+                                                          .answersList?[1] ??
+                                                      "",
+                                                  hasVoted: hasVoted,
+                                                  curvedAnimation:
+                                                      CurvedAnimation(
+                                                    parent:
+                                                        animationControllers[1],
+                                                    curve: Curves.easeInOut,
+                                                  ),
+                                                  clickAnswer: () async {
+                                                    if (!hasVoted) {
+                                                      await clickAnswer(
+                                                          1,
+                                                          widget.post.postId!,
+                                                          isAnonymous,
+                                                          false);
+                                                    }
+                                                  },
+                                                )
+                                              ],
+                                            ),
+                                            SizedBox(
+                                              height: screenHeight / 40,
+                                            ),
+                                            Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.spaceEvenly,
+                                              children: [
+                                                TextAnswer(
+                                                  answersCount: hasVoted
+                                                      ? answersCount[2] ?? 0.0
+                                                      : 0.0,
+                                                  answerText: widget.post
+                                                          .answersList?[2] ??
+                                                      "",
+                                                  hasVoted: hasVoted,
+                                                  curvedAnimation:
+                                                      CurvedAnimation(
+                                                    parent:
+                                                        animationControllers[2],
+                                                    curve: Curves.easeInOut,
+                                                  ),
+                                                  clickAnswer: () async {
+                                                    if (!hasVoted) {
+                                                      await clickAnswer(
+                                                          2,
+                                                          widget.post.postId!,
+                                                          isAnonymous,
+                                                          false);
+                                                    }
+                                                  },
+                                                )
+                                              ],
+                                            )
+                                          ],
+                                        )
+                            ],
+                          ),
+                        ))),
+                SafeArea(
+                  child: Column(
+                    children: [
+                      Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 12),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               InkWell(
                                 child: Icon(
-                                  isAnonymous ? Ionicons.eye_off : Ionicons.eye,
+                                  Icons.arrow_back_rounded,
                                   size: 35,
                                   color: AppColors.white,
                                 ),
                                 onTap: () {
-                                  setState(() {
-                                    if (isAnonymous == true) {
-                                      isAnonymous = false;
-                                    } else {
-                                      isAnonymous = true;
-                                    }
-                                  });
+                                  Navigator.pop(context);
                                 },
                               ),
-                              SizedBox(
-                                height: screenHeight / 200,
-                              ),
-                              Text(
-                                isAnonymous ? "ANONYMOUS" : "VISIBLE",
-                                style:
-                                ref.watch(stylesProvider).text.invite,
+                              SizedBox(width: screenWidth / 35),
+                              Container(
+                                width: screenWidth / 1.4,
+                                child: Text(
+                                  "Domanda di $name",
+                                  textAlign: TextAlign.center,
+                                  style: ref
+                                      .watch(stylesProvider)
+                                      .text
+                                      .titleOnBoarding
+                                      .copyWith(fontSize: 22),
+                                ),
                               ),
                             ],
-                          ),),
+                          )),
+                      SizedBox(height: 10),
+                      Stack(
+                        children: [
+                          Container(
+                            color: AppColors.whiteShadow,
+                            height: screenHeight / 600,
+                          ),
+                          Center(
+                            child: Container(
+                              color: AppColors.white,
+                              height: screenHeight / 400,
+                              width: screenWidth / 3,
+                            ),
+                          ),
                         ],
                       ),
-                    ),
+                      SizedBox(
+                        height:
+                            hasVoted ? screenHeight / 1.8 : screenHeight / 1.45,
+                      ),
+                      hasVoted
+                          ? Container()
+                          : Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 20),
+                              child: Container(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      width: screenWidth / 4,
+                                      child: Column(
+                                        children: [
+                                          InkWell(
+                                            child: Icon(
+                                              isAnonymous
+                                                  ? Ionicons.eye_off
+                                                  : Ionicons.eye,
+                                              size: 35,
+                                              color: AppColors.white,
+                                            ),
+                                            onTap: () {
+                                              setState(() {
+                                                if (isAnonymous == true) {
+                                                  isAnonymous = false;
+                                                } else {
+                                                  isAnonymous = true;
+                                                }
+                                              });
+                                            },
+                                          ),
+                                          SizedBox(
+                                            height: screenHeight / 200,
+                                          ),
+                                          Text(
+                                            isAnonymous
+                                                ? "ANONYMOUS"
+                                                : "VISIBLE",
+                                            style: ref
+                                                .watch(stylesProvider)
+                                                .text
+                                                .invite,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-          ],
-        )));
+                ),
+              ],
+            )));
   }
 }

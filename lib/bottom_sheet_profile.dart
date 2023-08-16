@@ -41,7 +41,7 @@ class BottomSheetProfile {
     }
 
     // Method to show the friend widget
-    Widget _buildFriendWidget() {
+    Widget _buildFriendWidget(UserModel user) {
       return Column(
         children: [
           SizedBox(height: 15),
@@ -81,7 +81,7 @@ class BottomSheetProfile {
                     return GestureDetector(onTap: () {Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => FriendPost(),
+                        builder: (context) => FriendPost(user: user, post: post,),
                       ),
                     );}, child: Container(
                       padding: EdgeInsets.all(10),
@@ -592,7 +592,7 @@ class BottomSheetProfile {
                                                     } else {
                                                       bool areFriends = friendsData.any((doc) => doc.id == userId);
                                                       if (areFriends) {
-                                                        return _buildFriendWidget();
+                                                        return _buildFriendWidget(userProfile);
                                                       } else {
                                                         return _nonFriends(() async {
                                                           await sendFriendRequest(userId);
