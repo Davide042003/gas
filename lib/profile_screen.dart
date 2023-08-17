@@ -10,6 +10,8 @@ import 'package:gas/user_notifier.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'profile_edit_screen.dart';
+import 'post_notifier.dart';
+import 'package:gas/my_post.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   @override
@@ -159,14 +161,86 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           Align(alignment: Alignment.centerLeft,
                               child: Padding(
                                 padding: EdgeInsets.only(left: 20), child: Text(
-                                "Your Pools",
+                                "Le Tue Domande",
                                 textAlign: TextAlign.left,
                                 style: ref
                                     .watch(stylesProvider)
                                     .text
                                     .titleOnBoarding
-                                    .copyWith(fontSize: 28),
-                              ),))
+                                    .copyWith(fontSize: 28, color: AppColors.brown),
+                              ),)),
+                          SizedBox(height: 10),
+                          Consumer(builder: (context, ref, _) {
+                            final userPostsAsyncValue = ref.watch(userPostsProvider(userProfile.id!));
+
+                            return userPostsAsyncValue.when(
+                              loading: () => CircularProgressIndicator(),
+                              error: (error, stackTrace) => Text('Error: $error'),
+                              data: (userPosts) {
+                                if (userPosts.isEmpty) {
+                                  return Text('No posts available.');
+                                } else {
+                                  // Display up to 3 posts for the actual user
+                                  final postWidgets = userPosts
+                                      .where((post) => post.isAnonymous == false)
+                                      .take(3)
+                                      .map((post) {
+                                    final localDateTime = post.timestamp!.toDate().toLocal();
+                                    final hour = localDateTime.hour.toString().padLeft(2, '0');
+                                    final minute = localDateTime.minute.toString().padLeft(2, '0');
+
+                                    return GestureDetector(onTap: () {Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => MyPost(user: userProfile, post: post,),
+                                      ),
+                                    );}, child: Container(
+                                      padding: EdgeInsets.all(10),
+                                      margin: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.white,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Icon(Icons.question_mark_rounded),
+                                              SizedBox(width: 10),
+                                              Text(
+                                                post.question!,
+                                                style: TextStyle(
+                                                  fontFamily: 'Helvetica',
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 18,
+                                                  color: AppColors.brown,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          Align(
+                                            alignment: Alignment.bottomRight,
+                                            child: Text(
+                                              '$hour:$minute',
+                                              style: TextStyle(
+                                                fontFamily: 'Helvetica',
+                                                fontSize: 15,
+                                                color: AppColors.brown,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ));
+                                  })
+                                      .toList();
+
+                                  return Column(children: postWidgets);
+                                }
+                              },
+                            );
+                          })
                         ]
                     );
                   } else {

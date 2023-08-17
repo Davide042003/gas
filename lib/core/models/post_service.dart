@@ -310,6 +310,46 @@ class PostService {
     }
   }
 
+  Future <Map<int, List<AnswerPostModel>>> getAnswersByIndex(String postId, String userId) async {
+    try {
+      // Get the reference to the post document in Firestore
+      final postRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('posts')
+          .doc('published_posts')
+          .collection('posts')
+          .doc(postId);
+
+      // Fetch the post data from Firestore
+      final postDoc = await postRef.get();
+      final postData = postDoc.data();
+
+      if (postData != null) {
+        // Convert the 'answersTap' data to a map of int keys to lists of AnswerPostModel objects
+        final Map<String, dynamic>? answersData = postData['answersTap'];
+        Map<int, List<AnswerPostModel>> answersMap = {};
+        if (answersData != null) {
+          answersMap = (answersData as Map<String, dynamic>).map(
+                (key, value) =>
+                MapEntry(int.parse(key), (value as List<dynamic>)
+                    .map((answerData) => AnswerPostModel.fromData(answerData))
+                    .toList()),
+          );
+        }
+        return answersMap;
+
+      } else {
+        print('Post with ID: $postId does not exist.');
+        return {};
+      }
+    } catch (error) {
+      // Handle any errors that occur during the process
+      print('Error retrieving answers length: $error');
+      return {};
+    }
+  }
+
   Future<bool> hasUserVotedForAnyAnswer(String postId, String userId, String postUserId) async {
     try {
       final postDoc = await FirebaseFirestore.instance
@@ -348,6 +388,23 @@ class PostService {
     } catch (error) {
       print('Error checking if user has voted for any answer: $error');
       return false;
+    }
+  }
+
+  Future<void> deletePost(String postId, String userId) async {
+    try {
+      final postRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('posts')
+          .doc('published_posts')
+          .collection('posts')
+          .doc(postId);
+
+      await postRef.delete();
+      print('Post with ID $postId deleted successfully.');
+    } catch (error) {
+      print('Error deleting post: $error');
     }
   }
 }
