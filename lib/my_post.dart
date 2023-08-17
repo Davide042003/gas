@@ -42,6 +42,7 @@ class _MyPostState extends ConsumerState<MyPost> with TickerProviderStateMixin {
   bool hasVoted = true;
   late Map<int, List<AnswerPostModel>> answersMap;
   late List<Future<UserModel?>> userFutures;
+  bool eliminaPost = false;
 
   List<AnimationController> animationControllers = [];
 
@@ -156,7 +157,16 @@ class _MyPostState extends ConsumerState<MyPost> with TickerProviderStateMixin {
             CupertinoDialogAction(
               child: Text('Elimina',
                   style: TextStyle(color: AppColors.backgroundRed)),
-              onPressed: () {},
+              onPressed: () {
+                Navigator.pop(context);
+                setState(() {
+                  eliminaPost = true;
+                });
+                postService.deletePost(widget.post!.postId!, widget.user!.id!);
+                ref.refresh(userPostsProvider(widget.post!.id!));
+
+                Navigator.pop(context);
+              },
             ),
           ],
         );
@@ -173,7 +183,9 @@ class _MyPostState extends ConsumerState<MyPost> with TickerProviderStateMixin {
         backgroundColor: AppColors.backgroundDefault,
         body: SingleChildScrollView(
             physics: NeverScrollableScrollPhysics(),
-            child: FutureBuilder(
+            child: eliminaPost ? Container(
+                width: screenWidth,
+                height: screenHeight, child: Center(child: CupertinoActivityIndicator(radius: 20,),)): FutureBuilder(
               future: checkUserVote(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
