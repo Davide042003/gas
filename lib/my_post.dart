@@ -617,7 +617,7 @@ class _MyPostState extends ConsumerState<MyPost> with TickerProviderStateMixin {
                                             .watch(stylesProvider)
                                             .text
                                             .titleOnBoarding
-                                            .copyWith(fontSize: 22),
+                                            .copyWith(fontSize: 28),
                                       ),
                                     ),
                                     PopupMenuButton<String>(
@@ -652,7 +652,6 @@ class _MyPostState extends ConsumerState<MyPost> with TickerProviderStateMixin {
                                     ),
                                   ],
                                 )),
-                            SizedBox(height: 10),
                             Stack(
                               children: [
                                 Container(
