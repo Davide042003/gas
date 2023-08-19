@@ -10,7 +10,7 @@ class ConversationWidget extends StatefulWidget {
   final String profilePictureUrl;
   final String username;
   final String lastMessage;
-  final bool isAnonymous;
+  final bool isAnonymous; // true if the other user is anonymous
   final Timestamp timestamp;
 
   ConversationWidget({

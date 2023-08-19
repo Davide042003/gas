@@ -160,8 +160,6 @@ class PostService {
 
       final friendPostsSnapshot = await friendPostsQuery.get();
 
-      print('Number of posts for friend with ID $friendId: ${friendPostsSnapshot.size}');
-
       for (final postDoc in friendPostsSnapshot.docs) {
         final postId = postDoc.id;
         final post = PostModel.fromData(postDoc.data());
@@ -182,7 +180,6 @@ class PostService {
     // Sort the friendPosts list based on timestamp (descending order)
     friendPosts.sort((a, b) => b.timestamp!.compareTo(a.timestamp!));
 
-    print("ok");
     return friendPosts;
   }
 
@@ -197,8 +194,6 @@ class PostService {
 
     final userPostsSnapshot = await userPostsQuery.get();
     final userPosts = <PostModel>[];
-
-    print('Number of posts for user with ID $userId: ${userPostsSnapshot.size}');
 
     for (final postDoc in userPostsSnapshot.docs) {
       final postId = postDoc.id;
@@ -217,7 +212,6 @@ class PostService {
     // Sort the userPosts list based on timestamp (descending order)
     userPosts.sort((a, b) => b.timestamp!.compareTo(a.timestamp!));
 
-    print("ok");
     return userPosts;
   }
 

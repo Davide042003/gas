@@ -92,6 +92,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                 ? conversation.participant2Id
                                 : conversation.participant1Id;
 
+                            bool anonymously = false;
+
+                            if(otherParticipantId == conversation.participant2Id) {
+                              if (conversation.participant2IsAnonymous) {
+                                anonymously = true;
+                              } else {
+                                anonymously = false;
+                              }
+                            } else if(otherParticipantId == conversation.participant1Id) {
+                              if (conversation.participant1IsAnonymous) {
+                                anonymously = true;
+                              } else {
+                                anonymously = false;
+                              }
+                            }
+
                             return Consumer(
                               builder: (context, watch, child) {
                                 final userProfileState = ref.watch(otherUserProfileProvider(otherParticipantId));
@@ -103,7 +119,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                         profilePictureUrl: userProfile!.imageUrl!,
                                         username: userProfile!.username!,
                                         lastMessage: conversation.lastMessage ?? "No messages",
-                                        isAnonymous: false,
+                                        isAnonymous: anonymously,
                                         timestamp: conversation.lastMessageTimestamp!,
                                       );
                                     } else {

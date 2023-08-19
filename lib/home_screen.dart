@@ -36,12 +36,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
 
   bool hasVoted = false;
   late PageController _pageController;
-  int totalPosts = 0;
-  String postId = "";
   List<dynamic> answersCount = [];
   int totalAnswers = 0;
   bool isAnonymous = false;
   bool isFriends = true;
+  List<PostModel> posts = [];
+  late PostModel actualPost;
 
   bool isTextFieldVisible = false;
   final FocusNode _focusNode = FocusNode();
@@ -77,7 +77,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
  //   await postService.markPostAsSeen(postId);
 
     int nextPage = _pageController.page!.toInt() + 1;
-    if (nextPage < totalPosts) {
+    if (nextPage < posts.length) {
       _pageController.animateToPage(nextPage,
           duration: Duration(milliseconds: 300), curve: Curves.easeInOut);
     }
@@ -85,7 +85,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
 
   void goToNextPageTapToContinue() {
     int nextPage = _pageController.page!.toInt() + 1;
-    if (nextPage < totalPosts) {
+    if (nextPage < posts.length) {
       _pageController.animateToPage(nextPage,
           duration: Duration(milliseconds: 300), curve: Curves.easeInOut);
     }
@@ -185,7 +185,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                             child: child,
                           );
                         },
-                        child: isFriends ? Consumer(
+                        child: Consumer(
                           key: ValueKey<bool>(false),
                           builder: (context, watch, _) {
                             final friendPostsAsync = ref.watch(friendPostsProvider);
@@ -193,7 +193,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                             return friendPostsAsync.when(
                               data: (friendPosts) {
                                 if (friendPosts.isNotEmpty) {
-                                  totalPosts = friendPosts.length;
+                                  posts = friendPosts;
                                   return PageView(
                                       controller: _pageController,
                                       scrollDirection: Axis.vertical,
@@ -203,14 +203,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                         final friendUserId = post.id as String;
                                         final userInfoProvider = otherUserProfileProvider(friendUserId);
                                         final userProfileFuture = ref.watch(userInfoProvider.future);
-                                        print(friendUserId);
 
                                         return FutureBuilder<UserModel?>(
                                           future: userProfileFuture,
                                           builder: (context, snapshot) {
                                             if (snapshot.hasData) {
-                                              postId = post.postId!;
-
                                               UserModel? userProfile = snapshot.data;
                                               final username = userProfile!.username!;
                                               final profilePictureUrl = userProfile!.imageUrl!;
@@ -539,7 +536,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                               error: (error, stackTrace) => Center(child: Text('Error: $error')),
                             );
                           },
-                        ) :
+                        )
+                 /*           :
                         Consumer(key: ValueKey<bool>(true),
                           builder: (context, watch, _) {
                             final globalPostsAsync = ref.watch(globalPostsProvider);
@@ -547,6 +545,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                               data: (globalPosts) {
                                 if (globalPosts.isNotEmpty) {
                                   totalPosts = globalPosts.length;
+                                  posts =
                                   return PageView(
                                       controller: _pageController,
                                       scrollDirection: Axis.vertical,
@@ -561,7 +560,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                           future: userProfileFuture,
                                           builder: (context, snapshot) {
                                             if (snapshot.hasData) {
-                                              postId = post.postId!;
 
                                               UserModel? userProfile = snapshot.data;
                                               final username = userProfile!.username!;
@@ -1269,7 +1267,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                               error: (error, stackTrace) => Center(child: Text('Error: $error')),
                             );
                           },
-                        )),
+                        )), */
+                    )
                   ),
                   SafeArea(
                     child: Column(
@@ -1486,7 +1485,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                     SizedBox(width: 8.0),
                     ElevatedButton(
                       onPressed: () async {
-                        await MessageService().sendInitialMessage(content: textEditingController.text, senderIsAnonymous: isAnonymous, receiverId: 'HDavmvM2O8YzrIITnPbKElnj2CB3',receiverIsAnonymous: false, idPost: postId,);
+                        actualPost = posts[_pageController.page!.round()];
+                        await MessageService().sendInitialMessage(
+                          content: textEditingController.text,
+                          senderIsAnonymous: isAnonymous,
+                          receiverId: actualPost.id!,
+                          receiverIsAnonymous: actualPost.isAnonymous!,
+                          idPost: actualPost.postId!,);
                       },
                       child: Icon(Icons.send),
                     ),

@@ -21,3 +21,19 @@ final userPostsProvider = FutureProvider.family<List<PostModel>, String>((ref, u
   final postService = ref.read(postServiceProvider);
   return postService.getUserPosts(userId);
 });
+
+class SelectedPostNotifier extends StateNotifier<PostModel?> {
+  SelectedPostNotifier() : super(null);
+
+  void setSelectedPost(PostModel post) {
+    state = post;
+  }
+
+  void clearSelectedPost() {
+    state = null;
+  }
+}
+
+final selectedPostProvider = StateNotifierProvider<SelectedPostNotifier, PostModel?>((ref) {
+  return SelectedPostNotifier();
+});
