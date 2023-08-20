@@ -16,6 +16,7 @@ import 'core/ui/conversation_widget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'core/models/conversation_model.dart';
 import 'package:gas/chat_service.dart';
+import 'chat_notifier.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   @override
@@ -25,123 +26,140 @@ class ChatScreen extends ConsumerStatefulWidget {
 class _ChatScreenState extends ConsumerState<ChatScreen> {
   @override
   Widget build(BuildContext context) {
-    double screenWidth = MediaQuery
-        .of(context)
-        .size
-        .width;
-    double screenHeight = MediaQuery
-        .of(context)
-        .size
-        .height;
+    double screenHeight = MediaQuery.of(context).size.height;
+    double screenWidth = MediaQuery.of(context).size.width;
+    final conversationListAsyncValue = ref.watch(conversationListProvider);
 
     return Scaffold(
-        backgroundColor: AppColors.backgroundDefault,
-        body: SafeArea(
-            child: Column(
-                children: [
-                  Padding(padding: EdgeInsets.symmetric(horizontal: 12),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Container(width: 40, height: 10),
-                          Container(
-                            child: Text(
-                              "Chat", textAlign: TextAlign.center,
-                              style: ref
-                                  .watch(stylesProvider)
-                                  .text
-                                  .titleOnBoarding
-                                  .copyWith(fontSize: 28),),
-                            width: 100,),
-                          InkWell(
-                            child: Icon(
-                              Icons.arrow_forward_rounded,
-                              size: 35,
-                              color: AppColors.white,
-                            ),
-                            onTap: () {
-                              context.pop();
-                            },
-                          ),
-                        ],)),
-                  SizedBox(height: 10,),
-                  Stack(children: [
+      backgroundColor: AppColors.backgroundDefault,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(padding: EdgeInsets.symmetric(horizontal: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
                     Container(
-                      color: AppColors.whiteShadow,
-                      height: screenHeight / 600,),
-                    Center(child: Container(color: AppColors.white,
-                      height: screenHeight / 400,
-                      width: screenWidth / 3,))
-                  ],),
-                  SizedBox(height: 10),
-                  Expanded(child: FutureBuilder<List<Conversation>>(
-                    future: MessageService().getConversationList(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return CupertinoActivityIndicator(radius: 15);
-                      } else if (snapshot.hasError) {
-                        return Text('Error: ${snapshot.error}');
-                      } else if (snapshot.hasData) {
-                        final conversationList = snapshot.data!;
-                        return ListView.builder(
-                          itemCount: conversationList.length,
-                          itemBuilder: (context, index) {
-                            final conversation = conversationList[index];
-                            final otherParticipantId = conversation.participant1Id == MessageService().uid
-                                ? conversation.participant2Id
-                                : conversation.participant1Id;
+                      width: 35,
+                    ),
+                    Container(
+                      child: Text(
+                        "Chat", textAlign: TextAlign.center,
+                        style: ref
+                            .watch(stylesProvider)
+                            .text
+                            .titleOnBoarding
+                            .copyWith(fontSize: 28),),
+                      width: 100,),
+                    InkWell(
+                      child: Icon(
+                        Icons.arrow_forward_rounded,
+                        size: 35,
+                        color: AppColors.white,
+                      ),
+                      onTap: () {
+                        context.pop();
+                      },
+                    ),
+                  ],)),
+            SizedBox(height: 10,),
+            Stack(children: [
+              Container(
+                color: AppColors.whiteShadow,
+                height: screenHeight / 600,),
+              Center(child: Container(color: AppColors.white,
+                height: screenHeight / 400,
+                width: screenWidth / 3,))
+            ],),
+            SizedBox(height: 10,),
+            Expanded(
+              child: CustomScrollView(
+                slivers: [
+                  CupertinoSliverRefreshControl(
+                    onRefresh: () async {
+                      ref.refresh(conversationListProvider);
+                    },
+                  ),
+                  SliverPadding(
+                    padding: EdgeInsets.only(right: 0, left: 0),
+                    sliver: SliverToBoxAdapter(
+                      child: conversationListAsyncValue.when(
+                        data: (conversationList) {
+                          if (conversationList.isNotEmpty) {
+                            return ListView.builder(
+                              shrinkWrap: true,
+                              physics: NeverScrollableScrollPhysics(),
+                              itemCount: conversationList.length,
+                              itemBuilder: (context, index) {
+                                final conversation = conversationList[index];
+                                final otherParticipantId = conversation.participant1Id == MessageService().uid
+                                    ? conversation.participant2Id
+                                    : conversation.participant1Id;
 
-                            bool anonymously = false;
+                                bool anonymously = false;
 
-                            if(otherParticipantId == conversation.participant2Id) {
-                              if (conversation.participant2IsAnonymous) {
-                                anonymously = true;
-                              } else {
-                                anonymously = false;
-                              }
-                            } else if(otherParticipantId == conversation.participant1Id) {
-                              if (conversation.participant1IsAnonymous) {
-                                anonymously = true;
-                              } else {
-                                anonymously = false;
-                              }
-                            }
+                                if(otherParticipantId == conversation.participant2Id) {
+                                  if (conversation.participant2IsAnonymous) {
+                                    anonymously = true;
+                                  } else {
+                                    anonymously = false;
+                                  }
+                                } else if(otherParticipantId == conversation.participant1Id) {
+                                  if (conversation.participant1IsAnonymous) {
+                                    anonymously = true;
+                                  } else {
+                                    anonymously = false;
+                                  }
+                                }
 
-                            return Consumer(
-                              builder: (context, watch, child) {
-                                final userProfileState = ref.watch(otherUserProfileProvider(otherParticipantId));
+                                return Consumer(
+                                  builder: (context, watch, child) {
+                                    final userProfileState = ref.watch(otherUserProfileProvider(otherParticipantId));
 
-                                return userProfileState.when(
-                                  data: (userProfile) {
-                                    if (userProfile != null) {
-                                      return ConversationWidget(
-                                        profilePictureUrl: userProfile!.imageUrl!,
-                                        username: userProfile!.username!,
-                                        lastMessage: conversation.lastMessage ?? "No messages",
-                                        isAnonymous: anonymously,
-                                        timestamp: conversation.lastMessageTimestamp!,
-                                      );
-                                    } else {
-                                      return CupertinoActivityIndicator(radius: 15,);
-                                    }
+                                    return userProfileState.when(
+                                      data: (userProfile) {
+                                        if (userProfile != null) {
+                                          return Column(children: [ConversationWidget(
+                                            profilePictureUrl: userProfile.imageUrl!,
+                                            username: userProfile.username!,
+                                            lastMessage: conversation.lastMessage ?? "No messages",
+                                            isAnonymous: anonymously,
+                                            timestamp: conversation.lastMessageTimestamp!,
+                                          ),
+                                            Container(
+                                                color: AppColors.whiteShadow,
+                                                height: 0.5,
+                                                width: 350)]);
+                                        } else {
+                                          return CupertinoActivityIndicator(radius: 15);
+                                        }
+                                      },
+                                      loading: () => CupertinoActivityIndicator(radius: 15),
+                                      error: (error, stackTrace) => Text('Error: $error'),
+                                    );
                                   },
-                                  loading: () => CupertinoActivityIndicator(radius: 15,),
-                                  error: (error, stackTrace) => Text('Error: $error'),
                                 );
                               },
                             );
-                          },
-                        );
-                      } else {
-                        return Text('No conversations available.');
-                      }
-                    },
+                          } else {
+                            return Text('No conversations available.');
+                          }
+                        },
+                        loading: () => Padding(
+                          padding: EdgeInsets.only(bottom: screenHeight / 1.35),
+                          child: CupertinoActivityIndicator(radius: 15),
+                        ),
+                        error: (_, __) => Text("Error loading conversations"),
+                      ),
+                    ),
                   ),
-                  ),
-                ]
-            )
-        )
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
