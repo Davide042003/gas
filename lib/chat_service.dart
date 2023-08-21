@@ -23,40 +23,78 @@ class MessageService {
       timestamp: Timestamp.now(),
     );
 
-    // Add the message to Firestore
-    await _firestore.collection('messages').add(newMessage.toJson());
+    // Get or create conversation and get the conversation ID
+    final conversationId = await getOrCreateConversationId(
+      senderId: uid,
+      receiverId: receiverId,
+      senderIsAnonymous: senderIsAnonymous,
+      receiverIsAnonymous: receiverIsAnonymous,
+      newMessage: newMessage,
+    );
 
-    // Update conversation details if needed
-    await getOrCreateConversationId(senderId: uid,
-        receiverId: receiverId,
-        senderIsAnonymous: senderIsAnonymous,
-        receiverIsAnonymous: receiverIsAnonymous,
-        newMessage: newMessage);
+    // Add the message to the conversation subcollection
+    await _firestore
+        .collection('conversations')
+        .doc(conversationId)
+        .collection('messages')
+        .add(newMessage.toJson());
   }
+
+  Future<void> sendMessage({
+    required String content,
+    required String receiverId,
+    required String conversationId,
+  }) async {
+    final newMessage = Message(
+      id: "",
+      content: content,
+      senderId: uid,
+      receiverId: receiverId,
+      timestamp: Timestamp.now(),
+    );
+
+
+      await _firestore.collection('conversations').doc(conversationId).set(
+        {
+          'lastMessage': newMessage.content,
+          'lastMessageTimestamp': newMessage.timestamp,
+        },
+        SetOptions(merge: true),
+      );
+
+    // Add the message to the conversation subcollection
+    await _firestore
+        .collection('conversations')
+        .doc(conversationId)
+        .collection('messages')
+        .add(newMessage.toJson());
+  }
+
 
   Future<String> getOrCreateConversationId({
     required String senderId,
     required String receiverId,
-    required senderIsAnonymous,
-    required receiverIsAnonymous,
+    required bool senderIsAnonymous,
+    required bool receiverIsAnonymous,
     required Message newMessage,
   }) async {
     final conversationId = _generateConversationId(
-        senderId, receiverId, senderIsAnonymous, receiverIsAnonymous);
+      senderId,
+      receiverId,
+      senderIsAnonymous,
+      receiverIsAnonymous,
+    );
 
-    print("conversationId" + conversationId);
-
-    final querySnapshot = await _firestore
-        .collection('conversations')
-        .doc(conversationId)
-        .get();
+    final querySnapshot = await _firestore.collection('conversations').doc(conversationId).get();
 
     if (querySnapshot.exists) {
-      await querySnapshot.reference.set({
-        'lastMessage': newMessage.content,
-        'lastMessageTimestamp': newMessage.timestamp,
-      }, SetOptions(merge: true));
-
+      await querySnapshot.reference.set(
+        {
+          'lastMessage': newMessage.content,
+          'lastMessageTimestamp': newMessage.timestamp,
+        },
+        SetOptions(merge: true),
+      );
       return conversationId;
     } else {
       final newConversation = Conversation(
@@ -69,10 +107,7 @@ class MessageService {
         lastMessageTimestamp: newMessage.timestamp,
       );
 
-      await _firestore
-          .collection('conversations')
-          .doc(conversationId)
-          .set(newConversation.toJson());
+      await _firestore.collection('conversations').doc(conversationId).set(newConversation.toJson());
 
       return conversationId;
     }
@@ -114,4 +149,23 @@ class MessageService {
 
     return mergedConversationList;
   }
+
+  Future<List<Message>> getMessagesForConversation(String conversationId) async {
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('conversations')
+        .doc(conversationId)
+        .collection('messages')
+        .get();
+
+    final messages = querySnapshot.docs.map((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      return Message.fromData(data);
+    }).toList();
+
+    // Sort messages based on their timestamp
+    messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
+    return messages;
+  }
+
 }

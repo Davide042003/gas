@@ -22,6 +22,7 @@ import 'package:gas/fractional_range_clipper.dart';
 import 'text_answer.dart';
 import 'image_answer.dart';
 import 'chat_service.dart';
+import 'chat_notifier.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   @override
@@ -339,7 +340,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                                                 isTextFieldVisible = true;
                                                               });
                                                               FocusScope.of(context).requestFocus(_focusNode);
-                                                              print('ViewInsets Bottom: ${bottom}');
 
                                                             }, child:Container(
                                                               width: 45,
@@ -1492,6 +1492,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                           receiverId: actualPost.id!,
                           receiverIsAnonymous: actualPost.isAnonymous!,
                           idPost: actualPost.postId!,);
+                        ref.refresh(conversationListProvider);
                       },
                       child: Icon(Icons.send),
                     ),

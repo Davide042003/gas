@@ -17,6 +17,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'core/models/conversation_model.dart';
 import 'package:gas/chat_service.dart';
 import 'chat_notifier.dart';
+import 'package:gas/messages_screen.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   @override
@@ -120,13 +121,26 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                     return userProfileState.when(
                                       data: (userProfile) {
                                         if (userProfile != null) {
-                                          return Column(children: [ConversationWidget(
+                                          return Column(children: [
+                                            GestureDetector(
+                                              onTap: () {
+                                                Navigator.of(context).push(
+                                                  MaterialPageRoute(
+                                                    builder: (context) => MessageScreen(
+                                                      conversation: conversation,
+                                                      userProfile: userProfile,
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                            child: ConversationWidget(
                                             profilePictureUrl: userProfile.imageUrl!,
                                             username: userProfile.username!,
                                             lastMessage: conversation.lastMessage ?? "No messages",
                                             isAnonymous: anonymously,
                                             timestamp: conversation.lastMessageTimestamp!,
                                           ),
+                                            ),
                                             Container(
                                                 color: AppColors.whiteShadow,
                                                 height: 0.5,
